@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Eye, EyeOff, X } from 'lucide-react'
+import { getApiUrl } from '../../lib/api'
 import { useAuthStore, useUIStore } from '../../lib/store'
 
 type AuthMode = 'login' | 'signup'
@@ -86,7 +87,9 @@ export default function AuthModal() {
     setLoading(true)
 
     try {
-      const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/register'
+      const endpoint = getApiUrl(
+        authMode === 'login' ? '/api/auth/login' : '/api/auth/register'
+      )
       const payload =
         authMode === 'login'
           ? { email: form.email, password: form.password }
