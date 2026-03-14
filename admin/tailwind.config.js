@@ -1,0 +1,77 @@
+export default {
+  content: ['./index.html', './src/**/*.{ts,tsx}'],
+  theme: {
+    extend: {
+      colors: {
+        Mbrand: {
+          dark: '#102d26',
+          yellow: '#ddde92',
+          teal: '#9edccd',
+        },
+        Mneutral: {
+          900: '#102d26',
+          800: '#27423b',
+          700: '#3f5650',
+          600: '#6e7f7b',
+          500: '#859390',
+          400: '#9ca8a5',
+          300: '#b4bcba',
+          200: '#cccccc',
+          100: '#e7eae9',
+          50: '#f1f3f3',
+        },
+        cream: {
+          50: '#fdf9f3',
+          100: '#faf0e4',
+          200: '#f5e1c8',
+          300: '#eecba3',
+          400: '#e5b07d',
+          500: '#d9935a',
+          600: '#c67640',
+          700: '#a55e31',
+          800: '#864b2a',
+          900: '#6d3f26',
+        },
+        sage: {
+          50: '#f4f7f0',
+          100: '#e6eedd',
+          200: '#cfdcbc',
+          300: '#afc292',
+          400: '#8da66a',
+          500: '#6f8a4a',
+          600: '#576e39',
+          700: '#455830',
+          800: '#39472a',
+          900: '#313d25',
+        },
+        blush: {
+          50: '#fef5f5',
+          100: '#fde8e8',
+          200: '#fbd5d5',
+          300: '#f8b4b4',
+          400: '#f38080',
+          500: '#e85050',
+          600: '#d42b2b',
+          700: '#b21e1e',
+          800: '#941b1b',
+          900: '#7b1d1d',
+        },
+      },
+      fontFamily: {
+        display: ['"Inter Tight"', 'sans-serif'],
+        body: ['"Inter Tight"', 'sans-serif'],
+        accent: ['"Inter Tight"', 'sans-serif'],
+      },
+      boxShadow: {
+        soft: '0 24px 80px rgba(16, 45, 38, 0.08)',
+      },
+      backgroundImage: {
+        grain: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.35'/%3E%3C/svg%3E\")",
+      },
+      screens: {
+        xs: '576px',
+      },
+    },
+  },
+  plugins: [],
+}

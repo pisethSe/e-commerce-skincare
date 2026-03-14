@@ -1,0 +1,25 @@
+{
+  "name": "lumiere-skincare",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Lumière — Full-stack Premium Skincare & Beauty Platform",
+  "scripts": {
+    "install:all": "npm i && cd frontend && npm i && cd ../admin && npm i && cd ../backend && npm i",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:admin\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:admin": "cd admin && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "build:frontend": "cd frontend && npm run build",
+    "build:admin": "cd admin && npm run build",
+    "build:backend": "cd backend && npm run build",
+    "build": "npm run build:backend && npm run build:frontend && npm run build:admin",
+    "db:generate": "cd backend && npm run db:generate",
+    "db:push": "cd backend && npm run db:push",
+    "db:migrate": "cd backend && npm run db:migrate",
+    "db:seed": "cd backend && npm run db:seed",
+    "db:studio": "cd backend && npm run db:studio"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

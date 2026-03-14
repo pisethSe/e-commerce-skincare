@@ -1,0 +1,152 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --sidebar-w: 288px;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    font-size: 16px;
+  }
+
+  body {
+    font-family: 'Inter Tight', sans-serif;
+    background:
+      radial-gradient(circle at top left, rgba(221, 222, 146, 0.22), transparent 28%),
+      radial-gradient(circle at top right, rgba(158, 220, 205, 0.28), transparent 22%),
+      linear-gradient(180deg, #fdf9f3 0%, #f1f3f3 42%, #f8f8f5 100%);
+    color: #102d26;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  ::selection {
+    background: rgba(201, 169, 110, 0.22);
+    color: #102d26;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #f1f3f3;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #c9a96e;
+    border-radius: 9999px;
+  }
+}
+
+@layer components {
+  .text__12 { @apply text-[12px]; }
+  .text__14 { @apply text-[12px] lg:text-[14px]; }
+  .text__16 { @apply text-[14px] lg:text-[16px]; }
+  .text__18 { @apply text-[16px] lg:text-[18px]; }
+  .text__20 { @apply text-[18px] lg:text-[20px]; }
+  .text__24 { @apply text-[18px] md:text-[20px] lg:text-[24px]; }
+  .text__28 { @apply text-[20px] md:text-[24px] lg:text-[28px]; }
+  .text__32 { @apply text-[24px] md:text-[28px] lg:text-[32px]; }
+  .text__40 { @apply text-[28px] md:text-[32px] lg:text-[40px]; }
+
+  .font-display { font-family: 'Inter Tight', sans-serif; }
+
+  .admin-shell {
+    @apply min-h-screen bg-transparent bg-grain;
+  }
+
+  .admin-card {
+    @apply rounded-[32px] border border-white/70 bg-white/75 shadow-soft backdrop-blur-xl;
+  }
+
+  .admin-soft-card {
+    @apply rounded-[28px] border border-Mneutral-100 bg-Mneutral-50/80;
+  }
+
+  .admin-muted {
+    @apply text__14 text-Mneutral-600;
+  }
+
+  .admin-kicker {
+    @apply text__12 font-medium uppercase tracking-[0.28em] text-Mneutral-500;
+  }
+
+  .admin-heading {
+    @apply font-display text__32 font-medium text-Mneutral-900;
+  }
+
+  .sidebar-link {
+    @apply flex items-center gap-3 rounded-full px-4 py-3 text__14 font-medium text-Mneutral-700 transition-all duration-200 hover:bg-white hover:text-Mneutral-900;
+  }
+
+  .sidebar-link.active {
+    @apply bg-Mneutral-900 text-white shadow-lg shadow-Mneutral-900/10;
+  }
+
+  .sidebar-link.active .sidebar-link-icon {
+    @apply border-white/15 bg-white/10 text-white;
+  }
+
+  .sidebar-link-icon {
+    @apply flex h-9 w-9 items-center justify-center rounded-full border border-Mneutral-100 bg-white text-Mneutral-700 transition-colors;
+  }
+
+  .admin-metric-card {
+    @apply admin-card p-5;
+  }
+
+  .btn-admin {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-Mneutral-900 px-5 py-3 text__14 font-medium text-white transition-all duration-300 hover:-translate-y-0.5 hover:opacity-95;
+  }
+
+  .btn-admin-outline {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-Mneutral-200 bg-white/70 px-5 py-3 text__14 font-medium text-Mneutral-900 transition-all duration-300 hover:border-Mneutral-900 hover:bg-white;
+  }
+
+  .admin-chip {
+    @apply inline-flex items-center gap-2 rounded-full border border-Mneutral-100 bg-white px-3 py-2 text__12 font-medium text-Mneutral-700;
+  }
+
+  .table-th {
+    @apply px-5 py-4 text-left text__12 font-medium uppercase tracking-[0.24em] text-Mneutral-500;
+  }
+
+  .table-td {
+    @apply px-5 py-4 align-top text__14 text-Mneutral-800;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full px-3 py-1.5 text__12 font-medium;
+  }
+
+  .input-admin {
+    @apply w-full rounded-[20px] border border-Mneutral-100 bg-white px-4 py-3 text__14 text-Mneutral-900 outline-none transition-all duration-200 placeholder:text-Mneutral-400 focus:border-Mneutral-900 focus:ring-4 focus:ring-Mneutral-100/80;
+  }
+
+  .label-admin {
+    @apply mb-2 block text__12 font-medium uppercase tracking-[0.24em] text-Mneutral-500;
+  }
+
+  .panel-divider {
+    @apply h-px w-full bg-Mneutral-100;
+  }
+}
