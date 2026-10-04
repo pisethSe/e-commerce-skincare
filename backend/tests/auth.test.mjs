@@ -1,6 +1,6 @@
 import { test, before } from 'node:test'
 import assert from 'node:assert/strict'
-import { call, isServerUp, adminToken, customerToken, makeUser } from './helpers.mjs'
+import { call, isServerUp, adminToken, customerToken, makeUser, BASE } from './helpers.mjs'
 
 let serverUp = false
 before(async () => { serverUp = await isServerUp() })
@@ -188,4 +188,42 @@ test('role tokens resolve to the right roles', async () => {
   assert.equal(admin.body.data.role, 'ADMIN')
   const customer = await call('GET', '/api/auth/me', { token: await customerToken() })
   assert.equal(customer.body.data.role, 'USER')
+})
+
+/* ── Google OAuth2 ────────────────────────────── */
+test('GET /api/auth/google redirects to Google consent with the configured client', async () => {
+  if (!serverUp) return
+  const res = await fetch(`${BASE}/api/auth/google`, { redirect: 'manual' })
+  assert.equal(res.status, 302)
+  const location = res.headers.get('location') ?? ''
+  assert.ok(location.includes('accounts.google.com'), 'should redirect to Google')
+  assert.ok(location.includes('client_id='), 'should include the client id param')
+  assert.ok(location.includes('redirect_uri='), 'should include the redirect uri')
+  assert.ok(location.includes('scope=openid'), 'should request openid scope')
+})
+
+test('Google callback with an invalid code redirects to the frontend with an error', async () => {
+  if (!serverUp) return
+  const res = await fetch(`${BASE}/api/auth/google/callback?code=fake-invalid-code`, { redirect: 'manual' })
+  assert.equal(res.status, 302)
+  const location = res.headers.get('location') ?? ''
+  assert.ok(location.includes('/auth/callback'), 'should redirect to the frontend callback page')
+  assert.ok(location.includes('status=error'), 'should carry the error status')
+})
+
+test('Google callback without a code redirects with an error', async () => {
+  if (!serverUp) return
+  const res = await fetch(`${BASE}/api/auth/google/callback`, { redirect: 'manual' })
+  assert.equal(res.status, 302)
+  const location = res.headers.get('location') ?? ''
+  assert.ok(location.includes('status=error'))
+})
+
+test('login response includes createdAt for the account page', async () => {
+  if (!serverUp) return
+  const { status, body } = await call('POST', '/api/auth/login', {
+    body: { email: 'sophie@example.com', password: 'User@lumiere123' },
+  })
+  assert.equal(status, 200)
+  assert.ok(body.data.user.createdAt, 'createdAt should be in the login response')
 })

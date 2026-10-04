@@ -64,44 +64,44 @@ test('POST /api/orders decrements product stock', async () => {
   }
 })
 
-test('POST /api/orders supports express and overnight shipping methods', async () => {
+test('POST /api/orders has one shipping method and accepts card/aba_payway/bakong', async () => {
   if (!serverUp) return
   const user = await makeUser('ship')
   const addressId = await makeAddress(user.token)
-  const product = await pickStockedProduct(1)
+  // Six orders from one product — needs a product with plenty of stock
+  const product = await pickStockedProduct(10)
 
-  // Express — always 12.95
-  const { status: expressStatus, body: expressOrder } = await call('POST', '/api/orders', {
-    token: user.token,
-    body: { items: [{ productId: product.id, quantity: 1 }], addressId, shippingMethod: 'express' },
-  })
-  assert.equal(expressStatus, 201)
-  assert.ok(Math.abs(Number(expressOrder.data.shipping) - 12.95) < 0.01, `express shipping ${expressOrder.data.shipping}`)
-
-  // Overnight — always 24.95
-  const { body: overnightOrder } = await call('POST', '/api/orders', {
-    token: user.token,
-    body: { items: [{ productId: product.id, quantity: 1 }], addressId, shippingMethod: 'overnight' },
-  })
-  assert.ok(Math.abs(Number(overnightOrder.data.shipping) - 24.95) < 0.01)
-
-  // Standard with a big subtotal — free over $75
-  const rich = await pickStockedProduct(2)
-  const bigSubtotal = Number(rich.price) >= 80 ? rich : null
-  if (bigSubtotal) {
-    const { body: standardOrder } = await call('POST', '/api/orders', {
+  // Legacy method names map back to standard pricing (free over $75, else 8.95)
+  for (const legacy of ['express', 'overnight', 'teleport']) {
+    const { status: legacyStatus, body: legacyBody } = await call('POST', '/api/orders', {
       token: user.token,
-      body: { items: [{ productId: bigSubtotal.id, quantity: 1 }], addressId, shippingMethod: 'standard' },
+      body: { items: [{ productId: product.id, quantity: 1 }], addressId, shippingMethod: legacy },
     })
-    assert.equal(Number(standardOrder.data.shipping), 0)
+    assert.equal(legacyStatus, 201, `legacy method ${legacy} should still place an order: ${legacyBody.message ?? ''}`)
+    const expectedShipping = Number(legacyBody.data.subtotal) >= 75 ? 0 : 8.95
+    assert.ok(
+      Math.abs(Number(legacyBody.data.shipping) - expectedShipping) < 0.01,
+      `${legacy} shipping should be standard (${expectedShipping}), got ${legacyBody.data.shipping}`
+    )
   }
 
-  // Unknown method falls back to standard pricing
-  const { body: fallbackOrder } = await call('POST', '/api/orders', {
+  // Payment methods — all three accepted
+  for (const paymentMethod of ['card', 'aba_payway', 'bakong']) {
+    const { status: statusOk, body: payOrder } = await call('POST', '/api/orders', {
+      token: user.token,
+      body: { items: [{ productId: product.id, quantity: 1 }], addressId, paymentMethod },
+    })
+    assert.equal(statusOk, 201, `paymentMethod ${paymentMethod} should be accepted`)
+    assert.equal(payOrder.data.paymentMethod, paymentMethod, 'payment method should be recorded')
+  }
+
+  // Unknown payment method rejected
+  const { status: badPay, body: badPayBody } = await call('POST', '/api/orders', {
     token: user.token,
-    body: { items: [{ productId: product.id, quantity: 1 }], addressId, shippingMethod: 'teleport' },
+    body: { items: [{ productId: product.id, quantity: 1 }], addressId, paymentMethod: 'paypal' },
   })
-  assert.ok(Math.abs(Number(fallbackOrder.data.shipping) - 8.95) < 0.01)
+  assert.equal(badPay, 400)
+  assert.match(badPayBody.message, /card, aba_payway, or bakong/i)
 })
 
 /* ── Create order — validation ─────────────────── */

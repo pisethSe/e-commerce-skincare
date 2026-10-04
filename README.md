@@ -127,7 +127,19 @@ DATABASE_URL="postgresql://user:password@ep-xxx.neon.tech/lumiere?sslmode=requir
 JWT_SECRET=your-super-secret-key-min-32-chars
 JWT_REFRESH_SECRET=your-refresh-secret-min-32-chars
 STRIPE_SECRET_KEY=sk_test_...
+
+# Google sign-in (optional)
+GOOGLE_CLIENT_ID=...apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-...
+GOOGLE_REDIRECT_URI=http://localhost:5001/api/auth/google/callback
+FRONTEND_URL=http://localhost:3003
 ```
+
+> **Google sign-in:** in your Google Cloud console (Credentials → OAuth client),
+> add the backend callback to **Authorized redirect URIs**:
+> `http://localhost:5001/api/auth/google/callback` (adjust the port to wherever
+> the backend runs). The *JavaScript origins* entry is only needed for Google's
+> popup sign-in mode — this app uses the server-side redirect flow.
 
 ### 3. Initialize Database
 
@@ -207,7 +219,12 @@ npm run db:clean
 - ✅ Shop page with filters, sort, category pills
 - ✅ Product detail with image gallery, accordion, related products
 - ✅ Cart page with coupon input
-- ✅ Multi-step checkout flow
+- ✅ Multi-step checkout: Cambodia-only shipping with province picker and
+      validation, one standard delivery method (free over $75), payment via
+      Credit/Debit Card, ABA PayWay, or Bakong (KHQR), order confirmation step
+- ✅ Sign in with Google (OAuth2) + password strength meter on signup
+- ✅ Account page (/account): profile, order history, spending stats
+- ✅ Silent token refresh — expired sessions recover without re-login
 - ✅ About page with timeline
 - ✅ Journal listing page
 - ✅ 404 page
@@ -228,13 +245,14 @@ npm run db:clean
 ### Backend API
 - ✅ JWT auth (access + refresh token rotation)
 - ✅ Register / Login / Logout / Change password
+- ✅ Google OAuth2 sign-in (`GET /api/auth/google` → consent → `/api/auth/google/callback`)
 - ✅ Products: CRUD, filtering, search, pagination, related
 - ✅ Categories: CRUD
-- ✅ Orders: create, list, detail, status update
+- ✅ Orders: create, list, detail, status update (cancel restocks stock)
 - ✅ Cart: server-side sync for authenticated users
 - ✅ Reviews: create, list, verified purchase badge
 - ✅ Wishlist: add/remove per user
-- ✅ Addresses: manage shipping addresses
+- ✅ Addresses: manage shipping addresses (Cambodia-only validation)
 - ✅ Blog: CRUD, published/draft
 - ✅ Coupons: validate, percentage/fixed discount
 - ✅ Newsletter: subscribe/unsubscribe

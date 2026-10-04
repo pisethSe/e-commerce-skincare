@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { BadgeCheck, Package, ShoppingBag, LogOut, ArrowRight } from 'lucide-react'
 import { useAuthStore, useUIStore } from '../lib/store'
-import { getApiUrl } from '../lib/api'
+import { getApiUrl, apiFetch } from '../lib/api'
 import { formatPrice } from '../lib/utils'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
 
@@ -61,8 +61,8 @@ export default function AccountPage() {
     }
     let alive = true
     setLoading(true)
-    fetch(getApiUrl('/api/orders/my'), {
-      headers: { Authorization: `Bearer ${accessToken}` },
+    apiFetch('/api/orders/my', {
+      headers: { token: accessToken },
     })
       .then((r) => r.json())
       .then((result) => {

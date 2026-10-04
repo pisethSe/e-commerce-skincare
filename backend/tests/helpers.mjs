@@ -108,13 +108,13 @@ export async function seededProduct() {
   return stable
 }
 
-/** Returns N distinct stable (non-test) products — immune to test cleanups. */
+/** Returns N distinct stable (non-test), in-stock products — immune to test cleanups. */
 export async function stableProducts(count = 2) {
   const products = await freshProducts()
   const stable = products.filter(
-    (p) => !p.slug.startsWith('test-') && !p.slug.startsWith('put-diag') && !p.slug.startsWith('test-wf-'),
+    (p) => p.inStock && !p.slug.startsWith('test-') && !p.slug.startsWith('put-diag') && !p.slug.startsWith('test-wf-'),
   )
-  if (stable.length < count) throw new Error(`need ${count} stable products, found ${stable.length}`)
+  if (stable.length < count) throw new Error(`need ${count} stable in-stock products, found ${stable.length}`)
   return stable.slice(0, count)
 }
 
@@ -135,14 +135,15 @@ export async function makeUser(prefix = 'test') {
   }
 }
 
-/** Creates a shipping address for a user token; returns the address id. */
+/** Creates a shipping address for a user token; returns the address id.
+ *  Cambodia-only shipping — valid Khmer province, postal code, and phone. */
 export async function makeAddress(token) {
   const { status, body } = await call('POST', '/api/users/addresses', {
     token,
     body: {
       firstName: 'Test', lastName: 'User',
-      street: '42 Test Lane', city: 'Testville', state: 'TS', zip: '00000',
-      country: 'United States', isDefault: false,
+      street: 'Street 215, House 12', city: 'Phnom Penh', state: 'Phnom Penh', zip: '12000',
+      country: 'Cambodia', phone: '012345678', isDefault: false,
     },
   })
   if (status !== 201) throw new Error(`makeAddress failed: ${status} ${body.message ?? ''}`)

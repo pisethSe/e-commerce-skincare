@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { createReview, getProductReviews, subscribeNewsletter, unsubscribeNewsletter } from '../controllers/miscControllers'
 import { authenticate, requireAdmin, optionalAuth } from '../middleware/auth'
+import { validateCambodianAddress } from '../lib/validation'
 import { prisma } from '../lib/prisma'
 import { getDashboardStats } from '../controllers/adminController'
 
@@ -313,6 +314,11 @@ userRoutes.get('/addresses', authenticate, async (req: any, res) => {
 })
 
 userRoutes.post('/addresses', authenticate, async (req: any, res) => {
+  // Cambodia-only shipping with validation
+  const addressError = validateCambodianAddress(req.body)
+  if (addressError) {
+    res.status(400).json({ success: false, message: addressError }); return
+  }
   const addr = await prisma.address.create({ data: { ...req.body, userId: req.user.id } })
   res.status(201).json({ success: true, data: addr })
 })

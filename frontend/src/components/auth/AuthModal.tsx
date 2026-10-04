@@ -14,6 +14,30 @@ const initialForm = {
   confirmPassword: '',
 }
 
+/** Simple strength heuristic — length + character variety. */
+function passwordStrength(password: string): { score: 0 | 1 | 2 | 3; label: string; bar: string } {
+  if (!password) return { score: 0, label: '', bar: '' }
+  const hasLetter = /[a-zA-Z]/.test(password)
+  const hasNumber = /\d/.test(password)
+  const hasSymbol = /[^a-zA-Z0-9]/.test(password)
+  const hasUpper = /[A-Z]/.test(password)
+  const classes = [hasLetter, hasNumber, hasSymbol, hasUpper].filter(Boolean).length
+  if (password.length < 8 || classes <= 1) return { score: 1, label: 'Weak', bar: 'bg-red-500' }
+  if (password.length < 10 || classes <= 2) return { score: 2, label: 'Fair', bar: 'bg-amber-500' }
+  return { score: 3, label: 'Strong', bar: 'bg-emerald-600' }
+}
+
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 5.86C12.43 13.72 17.74 9.5 24 9.5z" />
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-5.86C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 5.86C6.51 42.62 14.62 48 24 48z" />
+    </svg>
+  )
+}
+
 export default function AuthModal() {
   const { isAuthModalOpen, authMode, closeAuthModal, openAuthModal } = useUIStore()
   const setSession = useAuthStore((s) => s.setSession)
@@ -218,6 +242,33 @@ export default function AuthModal() {
                   toggleVisible={() => setShowPassword((current) => !current)}
                 />
 
+                {authMode === 'signup' && form.password && (
+                  <div className="-mt-4">
+                    <div className="flex items-center gap-2">
+                      <div className="flex flex-1 gap-1">
+                        {[1, 2, 3].map((segment) => (
+                          <div
+                            key={segment}
+                            className={`h-[4px] flex-1 rounded-full transition-colors duration-300 ${
+                              passwordStrength(form.password).score >= segment
+                                ? passwordStrength(form.password).bar
+                                : 'bg-Mneutral-200'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text__12 text-Mneutral-500">
+                        {passwordStrength(form.password).label}
+                      </span>
+                    </div>
+                    {passwordStrength(form.password).score < 3 && (
+                      <p className="mt-1.5 text__12 text-Mneutral-400">
+                        Tip: use 10+ characters with a mix of upper & lower case, numbers, and symbols for a strong password.
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 {authMode === 'signup' && (
                   <>
                     <PasswordInput
@@ -260,6 +311,24 @@ export default function AuthModal() {
                   className="inline-flex w-full items-center justify-center rounded-full bg-Mneutral-900 px-[20px] py-[14px] font-medium text__16 text-center text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loading ? 'Please wait...' : authMode === 'login' ? 'LOGIN' : 'SIGN UP'}
+                </button>
+
+                <div className="flex items-center gap-3">
+                  <span className="h-px flex-1 bg-Mneutral-200" />
+                  <span className="text__12 text-Mneutral-400">or</span>
+                  <span className="h-px flex-1 bg-Mneutral-200" />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    // /api prefix — the vite proxy routes it to the backend
+                    window.location.href = getApiUrl('/api/auth/google')
+                  }}
+                  className="inline-flex w-full items-center justify-center gap-3 rounded-full border border-Mneutral-300 bg-white px-[20px] py-[14px] font-medium text__16 text-center text-Mneutral-900 transition-colors hover:bg-Mneutral-50"
+                >
+                  <GoogleIcon />
+                  Continue with Google
                 </button>
               </form>
             </div>

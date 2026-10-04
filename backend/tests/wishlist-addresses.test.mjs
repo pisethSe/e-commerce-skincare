@@ -75,8 +75,8 @@ test('address lifecycle: create, list, isolated per user', async () => {
     token: user.token,
     body: {
       firstName: 'Test', lastName: 'User',
-      street: '1 Address Way', city: 'Town', state: 'TS', zip: '11111',
-      country: 'United States', isDefault: true,
+      street: 'Street 215, House 12', city: 'Phnom Penh', state: 'Phnom Penh', zip: '12000',
+      country: 'Cambodia', phone: '012345678', isDefault: true,
     },
   })
   assert.equal(createStatus, 201)
@@ -89,6 +89,73 @@ test('address lifecycle: create, list, isolated per user', async () => {
 
   const { body: strangerList } = await call('GET', '/api/users/addresses', { token: stranger.token })
   assert.equal((strangerList.data ?? []).length, 0)
+})
+
+/* ── Cambodia-only address validation ─────────── */
+test('address validation: non-Cambodia country rejected', async () => {
+  if (!serverUp) return
+  const user = await makeUser('kh-country')
+  const { status, body } = await call('POST', '/api/users/addresses', {
+    token: user.token,
+    body: {
+      firstName: 'Test', lastName: 'User',
+      street: '1 Beach Road', city: 'Bangkok', state: 'Bangkok', zip: '10110',
+      country: 'Thailand', phone: '012345678',
+    },
+  })
+  assert.equal(status, 400)
+  assert.match(body.message, /cambodia/i)
+})
+
+test('address validation: unknown province, bad postal code, bad phone', async () => {
+  if (!serverUp) return
+  const user = await makeUser('kh-fields')
+  const base = {
+    firstName: 'Test', lastName: 'User', street: 'Street 1', city: 'Phnom Penh',
+    country: 'Cambodia', phone: '012345678',
+  }
+
+  const badProvince = await call('POST', '/api/users/addresses', {
+    token: user.token,
+    body: { ...base, state: 'California', zip: '12000' },
+  })
+  assert.equal(badProvince.status, 400)
+  assert.match(badProvince.message ?? badProvince.body.message ?? '', /province/i)
+
+  const badZip = await call('POST', '/api/users/addresses', {
+    token: user.token,
+    body: { ...base, state: 'Phnom Penh', zip: '1234' },
+  })
+  assert.equal(badZip.status, 400)
+  assert.match(badZip.body.message, /postal code|5 digits/i)
+
+  const badPhone = await call('POST', '/api/users/addresses', {
+    token: user.token,
+    body: { ...base, state: 'Siem Reap', zip: '17000', phone: '555-1234' },
+  })
+  assert.equal(badPhone.status, 400)
+  assert.match(badPhone.body.message, /phone/i)
+
+  // Valid +855 phone format accepted
+  const validPhone = await call('POST', '/api/users/addresses', {
+    token: user.token,
+    body: { ...base, state: 'Siem Reap', zip: '17000', phone: '+855 12 345 678' },
+  })
+  assert.equal(validPhone.status, 201)
+})
+
+test('address without province is rejected', async () => {
+  if (!serverUp) return
+  const user = await makeUser('kh-noprovince')
+  const { status, body } = await call('POST', '/api/users/addresses', {
+    token: user.token,
+    body: {
+      firstName: 'Test', lastName: 'User', street: 'Street 1', city: 'Phnom Penh',
+      zip: '12000', country: 'Cambodia', phone: '012345678',
+    },
+  })
+  assert.equal(status, 400)
+  assert.match(body.message, /province/i)
 })
 
 /* ── Users ────────────────────────────────────── */

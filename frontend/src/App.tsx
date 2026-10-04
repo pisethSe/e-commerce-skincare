@@ -9,6 +9,7 @@ import CheckoutPage from './pages/CheckoutPage'
 import AboutPage from './pages/AboutPage'
 import JournalPage from './pages/JournalPage'
 import AccountPage from './pages/AccountPage'
+import AuthCallbackPage from './pages/AuthCallbackPage'
 import { useCatalogStore } from './lib/catalog'
 
 // AOS init
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/journal" element={<JournalPage />} />
           <Route path="/account" element={<AccountPage />} />
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Layout>

@@ -18,14 +18,16 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
   if (!items || items.length === 0) throw new ApiError('Order must have at least one item', 400)
   if (!addressId) throw new ApiError('Shipping address is required', 400)
 
-  // Shipping method prices (standard is free over $75 after discount)
-  const SHIPPING_METHODS: Record<string, number> = {
-    standard: 8.95,
-    express: 12.95,
-    overnight: 24.95,
+  // One shipping method — standard delivery (free over $75 after discount).
+  // Legacy clients sending other methods map back to standard.
+  void shippingMethod
+
+  // Payment methods accepted at checkout
+  const PAYMENT_METHODS = ['card', 'aba_payway', 'bakong']
+  const method = (typeof paymentMethod === 'string' ? paymentMethod : 'card').toLowerCase()
+  if (!PAYMENT_METHODS.includes(method)) {
+    throw new ApiError('Payment method must be card, aba_payway, or bakong', 400)
   }
-  const chosenMethod = (typeof shippingMethod === 'string' ? shippingMethod : 'standard').toLowerCase()
-  const effectiveMethod = SHIPPING_METHODS[chosenMethod] !== undefined ? chosenMethod : 'standard'
 
   // Verify address belongs to user
   const address = await prisma.address.findFirst({
@@ -83,10 +85,8 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
     couponId = coupon.id
   }
 
-  // Standard ships free over $75 (after discount); express/overnight always charge
-  const shipping = effectiveMethod === 'standard'
-    ? (subtotal - discount >= 75 ? 0 : SHIPPING_METHODS.standard)
-    : SHIPPING_METHODS[effectiveMethod]
+  // Standard ships free over $75 (after discount)
+  const shipping = subtotal - discount >= 75 ? 0 : 8.95
   const tax = (subtotal - discount) * 0.08
   const total = subtotal - discount + shipping + tax
 
@@ -102,10 +102,9 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
         tax,
         discount,
         total,
-        paymentMethod,
+        paymentMethod: method,
         paymentId,
         couponId,
-        notes: `Shipping method: ${effectiveMethod}`,
         items: {
           create: orderItems,
         },

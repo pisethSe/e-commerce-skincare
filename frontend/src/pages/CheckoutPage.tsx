@@ -10,14 +10,20 @@ import {
   Lock,
   ChevronDown,
   ShoppingBag,
+  QrCode,
+  Wallet,
 } from 'lucide-react'
 import { useCartStore, useAuthStore, useUIStore } from '../lib/store'
 import { formatPrice } from '../lib/utils'
-import { getApiUrl } from '../lib/api'
+import { getApiUrl, apiFetch } from '../lib/api'
+import { CAMBODIA_PROVINCES, isValidProvince, isValidZip, isValidKhPhone } from '../lib/cambodia'
 import ImageWithFallback from '../components/ui/ImageWithFallback'
+import ConfirmDialog from '../components/ui/ConfirmDialog'
 
 const steps = ['info', 'shipping', 'payment'] as const
 type Step = (typeof steps)[number]
+
+type PaymentChoice = 'card' | 'aba_payway' | 'bakong'
 
 interface CheckoutForm {
   firstName: string
@@ -40,8 +46,10 @@ const INITIAL_FORM: CheckoutForm = {
   city: '',
   state: '',
   zip: '',
-  country: 'United States',
+  country: 'Cambodia',
 }
+
+const STANDARD_SHIPPING = 8.95
 
 export default function CheckoutPage() {
   const { items, total, coupon, clearCart } = useCartStore()
@@ -56,7 +64,8 @@ export default function CheckoutPage() {
   const [orderNumber, setOrderNumber] = useState<string | null>(null)
   const [orderError, setOrderError] = useState<string | null>(null)
   const [card, setCard] = useState({ number: '', expiry: '', cvc: '', name: '' })
-  const [shippingChoice, setShippingChoice] = useState<'standard' | 'express' | 'overnight'>('standard')
+  const [paymentChoice, setPaymentChoice] = useState<PaymentChoice>('card')
+  const [confirmPlace, setConfirmPlace] = useState(false)
 
   useEffect(() => {
     document.title = 'Calesta — Checkout'
@@ -76,11 +85,8 @@ export default function CheckoutPage() {
 
   const subtotal = total()
   const discount = coupon?.discount ?? 0
-  // Standard ships free over $75 (after discount); express/overnight always charge
-  const SHIPPING_METHODS = { standard: 8.95, express: 12.95, overnight: 24.95 } as const
-  const shipping = shippingChoice === 'standard'
-    ? (subtotal - discount >= 75 ? 0 : SHIPPING_METHODS.standard)
-    : SHIPPING_METHODS[shippingChoice]
+  // One shipping method — standard, free over $75 (after discount)
+  const shipping = subtotal - discount >= 75 ? 0 : STANDARD_SHIPPING
   const tax = (subtotal - discount) * 0.08
   const orderTotal = subtotal - discount + shipping + tax
 
@@ -99,8 +105,28 @@ export default function CheckoutPage() {
       }
     }
     if (target === 'payment') {
-      if (!form.street.trim() || !form.city.trim() || !form.state.trim() || !form.zip.trim()) {
-        setStepError('Please complete your shipping address.')
+      if (!form.street.trim()) {
+        setStepError('Please enter your street address.')
+        return false
+      }
+      if (!form.city.trim()) {
+        setStepError('Please enter your city or district.')
+        return false
+      }
+      if (!form.state.trim()) {
+        setStepError('Please choose your province.')
+        return false
+      }
+      if (!isValidProvince(form.state)) {
+        setStepError("Please choose a valid Cambodian province from the list.")
+        return false
+      }
+      if (!isValidZip(form.zip)) {
+        setStepError('Please enter a valid 5-digit postal code (e.g. 12000 for Phnom Penh).')
+        return false
+      }
+      if (form.phone.trim() && !isValidKhPhone(form.phone)) {
+        setStepError('Please enter a valid Cambodian phone number (e.g. 012 345 678).')
         return false
       }
     }
@@ -120,13 +146,15 @@ export default function CheckoutPage() {
       openAuthModal('login')
       return
     }
+    setConfirmPlace(false)
     setPlacing(true)
     setOrderError(null)
     try {
-      // 1. Create the shipping address
-      const addressRes = await fetch(getApiUrl('/api/users/addresses'), {
+      // apiFetch retries once after silently refreshing an expired access token —
+      // no more forced re-login mid-checkout
+      const addressRes = await apiFetch('/api/users/addresses', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        headers: { 'Content-Type': 'application/json', token: accessToken },
         body: JSON.stringify({
           firstName: form.firstName.trim(),
           lastName: form.lastName.trim(),
@@ -134,7 +162,7 @@ export default function CheckoutPage() {
           city: form.city.trim(),
           state: form.state.trim(),
           zip: form.zip.trim(),
-          country: form.country.trim() || 'United States',
+          country: 'Cambodia',
           phone: form.phone.trim() || null,
           isDefault: false,
         }),
@@ -144,16 +172,16 @@ export default function CheckoutPage() {
         throw new Error(addressResult.message || 'Could not save the shipping address.')
       }
 
-      // 2. Create the order
-      const orderRes = await fetch(getApiUrl('/api/orders'), {
+      // Create the order
+      const orderRes = await apiFetch('/api/orders', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        headers: { 'Content-Type': 'application/json', token: accessToken },
         body: JSON.stringify({
           items: items.map((i) => ({ productId: i.product.id, quantity: i.quantity })),
           addressId: addressResult.data.id,
           ...(coupon ? { couponCode: coupon.code } : {}),
-          paymentMethod: 'card',
-          shippingMethod: shippingChoice,
+          paymentMethod: paymentChoice,
+          shippingMethod: 'standard',
         }),
       })
       const orderResult = await orderRes.json()
@@ -276,7 +304,7 @@ export default function CheckoutPage() {
                   <CheckoutInput label="Last Name" placeholder="Martin" value={form.lastName} onChange={(v) => setField('lastName', v)} />
                 </div>
                 <CheckoutInput label="Email" placeholder="sophie@example.com" type="email" value={form.email} onChange={(v) => setField('email', v)} />
-                <CheckoutInput label="Phone" placeholder="+1 (555) 000-0000" type="tel" value={form.phone} onChange={(v) => setField('phone', v)} />
+                <CheckoutInput label="Phone" placeholder="012 345 678" type="tel" value={form.phone} onChange={(v) => setField('phone', v)} />
                 {stepError && (
                   <p role="alert" className="rounded-[16px] bg-blush-50 px-4 py-3 text__14 text-blush-700">
                     {stepError}
@@ -291,45 +319,50 @@ export default function CheckoutPage() {
             {step === 'shipping' && (
               <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
                 <h2 className="mb-6 text__32 font-medium">Shipping Address</h2>
-                <CheckoutInput label="Street Address" placeholder="123 Beauty Lane" value={form.street} onChange={(v) => setField('street', v)} />
+                <CheckoutInput label="Street Address" placeholder="Street 215, House 12" value={form.street} onChange={(v) => setField('street', v)} />
                 <div className="grid gap-5 sm:grid-cols-2">
-                  <CheckoutInput label="City" placeholder="New York" value={form.city} onChange={(v) => setField('city', v)} />
-                  <CheckoutInput label="State" placeholder="NY" value={form.state} onChange={(v) => setField('state', v)} />
+                  <CheckoutInput label="City / District" placeholder="Phnom Penh" value={form.city} onChange={(v) => setField('city', v)} />
+                  <div>
+                    <label className="mb-2 block text__14 text-Mneutral-500">Province</label>
+                    <div className="relative">
+                      <select
+                        value={form.state}
+                        onChange={(e) => setField('state', e.target.value)}
+                        className="w-full appearance-none rounded-full border border-Mneutral-100 bg-white px-4 py-3 text__16 outline-none transition-colors focus:border-Mneutral-900"
+                      >
+                        <option value="">Choose province…</option>
+                        {CAMBODIA_PROVINCES.map((province) => (
+                          <option key={province} value={province}>{province}</option>
+                        ))}
+                      </select>
+                      <ChevronDown size={14} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-Mneutral-400" />
+                    </div>
+                  </div>
                 </div>
                 <div className="grid gap-5 sm:grid-cols-2">
-                  <CheckoutInput label="ZIP Code" placeholder="10001" value={form.zip} onChange={(v) => setField('zip', v)} />
-                  <CheckoutInput label="Country" placeholder="United States" value={form.country} onChange={(v) => setField('country', v)} />
+                  <CheckoutInput label="Postal Code" placeholder="12000" inputMode="numeric" value={form.zip} onChange={(v) => setField('zip', v.replace(/[^\d]/g, '').slice(0, 5))} />
+                  <div>
+                    <label className="mb-2 block text__14 text-Mneutral-500">Country</label>
+                    <div className="flex items-center gap-2 rounded-full border border-Mneutral-100 bg-Mneutral-50 px-4 py-3">
+                      <span className="text__16 text-Mneutral-700">🇰🇭 Cambodia</span>
+                      <span className="ml-auto text__12 text-Mneutral-400">We ship within Cambodia only</span>
+                    </div>
+                  </div>
                 </div>
 
                 <h2 className="mb-2 mt-8 text__32 font-medium">Shipping Method</h2>
-                {[
-                  { value: 'standard' as const, label: 'Standard Shipping', time: '5–7 business days' },
-                  { value: 'express' as const, label: 'Express Shipping', time: '2–3 business days' },
-                  { value: 'overnight' as const, label: 'Overnight', time: 'Next business day' },
-                ].map((option) => {
-                  const price = option.value === 'standard'
-                    ? (subtotal - discount >= 75 ? 'Free' : formatPrice(SHIPPING_METHODS.standard))
-                    : formatPrice(SHIPPING_METHODS[option.value])
-                  return (
-                    <label
-                      key={option.value}
-                      className="flex cursor-pointer items-center gap-4 rounded-[24px] border border-Mneutral-100 p-4 transition-colors has-[:checked]:border-Mneutral-900 has-[:checked]:bg-Mneutral-50"
-                    >
-                      <input
-                        type="radio"
-                        name="shipping"
-                        checked={shippingChoice === option.value}
-                        onChange={() => setShippingChoice(option.value)}
-                        className="accent-[#102d26]"
-                      />
-                      <div className="flex-1">
-                        <p className="text__16 font-medium">{option.label}</p>
-                        <p className="text__14 text-Mneutral-500">{option.time}</p>
-                      </div>
-                      <span className="text__16 font-medium">{price}</span>
-                    </label>
-                  )
-                })}
+                <div className="flex items-center gap-4 rounded-[24px] border border-Mneutral-900 bg-Mneutral-50 p-4">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-Mneutral-900 text-white">
+                    <ShoppingBag size={15} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text__16 font-medium">Standard Delivery</p>
+                    <p className="text__14 text-Mneutral-500">Nationwide across Cambodia · 2–5 business days</p>
+                  </div>
+                  <span className="text__16 font-medium">
+                    {subtotal - discount >= 75 ? 'Free' : formatPrice(STANDARD_SHIPPING)}
+                  </span>
+                </div>
                 {stepError && (
                   <p role="alert" className="rounded-[16px] bg-blush-50 px-4 py-3 text__14 text-blush-700">
                     {stepError}
@@ -352,15 +385,64 @@ export default function CheckoutPage() {
                   <Lock size={16} className="text-Mneutral-500" />
                   Payment
                 </h2>
-                <CheckoutInput label="Card Number" placeholder="4242 4242 4242 4242" value={card.number} onChange={(v) => setCard((c) => ({ ...c, number: v }))} />
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <CheckoutInput label="Expiry Date" placeholder="MM / YY" value={card.expiry} onChange={(v) => setCard((c) => ({ ...c, expiry: v }))} />
-                  <CheckoutInput label="CVC" placeholder="123" value={card.cvc} onChange={(v) => setCard((c) => ({ ...c, cvc: v }))} />
-                </div>
-                <CheckoutInput label="Name on Card" placeholder="Sophie Martin" value={card.name} onChange={(v) => setCard((c) => ({ ...c, name: v }))} />
+
+                {[
+                  { value: 'card' as const, label: 'Credit / Debit Card', desc: 'Visa, Mastercard', icon: CreditCard },
+                  { value: 'aba_payway' as const, label: 'ABA PayWay', desc: 'Pay via ABA Mobile or cards', icon: Wallet },
+                  { value: 'bakong' as const, label: 'Bakong (KHQR)', desc: 'Scan with any Cambodian bank app', icon: QrCode },
+                ].map((option) => {
+                  const Icon = option.icon
+                  return (
+                    <label
+                      key={option.value}
+                      className="flex cursor-pointer items-center gap-4 rounded-[24px] border border-Mneutral-100 p-4 transition-colors has-[:checked]:border-Mneutral-900 has-[:checked]:bg-Mneutral-50"
+                    >
+                      <input
+                        type="radio"
+                        name="payment"
+                        checked={paymentChoice === option.value}
+                        onChange={() => setPaymentChoice(option.value)}
+                        className="accent-[#102d26]"
+                      />
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-Mneutral-100 text-Mneutral-700">
+                        <Icon size={16} />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text__16 font-medium">{option.label}</p>
+                        <p className="text__14 text-Mneutral-500">{option.desc}</p>
+                      </div>
+                    </label>
+                  )
+                })}
+
+                {paymentChoice === 'card' && (
+                  <div className="space-y-5 border-t border-Mneutral-100 pt-5">
+                    <CheckoutInput label="Card Number" placeholder="4242 4242 4242 4242" value={card.number} onChange={(v) => setCard((c) => ({ ...c, number: v }))} />
+                    <div className="grid gap-5 sm:grid-cols-2">
+                      <CheckoutInput label="Expiry Date" placeholder="MM / YY" value={card.expiry} onChange={(v) => setCard((c) => ({ ...c, expiry: v }))} />
+                      <CheckoutInput label="CVC" placeholder="123" value={card.cvc} onChange={(v) => setCard((c) => ({ ...c, cvc: v }))} />
+                    </div>
+                    <CheckoutInput label="Name on Card" placeholder="Sophie Martin" value={card.name} onChange={(v) => setCard((c) => ({ ...c, name: v }))} />
+                  </div>
+                )}
+
+                {paymentChoice === 'aba_payway' && (
+                  <p className="flex items-center gap-2 rounded-[20px] bg-cream-100/50 px-4 py-3 text__12 text-Mneutral-600">
+                    <BadgeCheck size={14} className="flex-shrink-0 text-sage-600" />
+                    You'll be redirected to ABA PayWay to complete the payment securely.
+                  </p>
+                )}
+
+                {paymentChoice === 'bakong' && (
+                  <p className="flex items-center gap-2 rounded-[20px] bg-cream-100/50 px-4 py-3 text__12 text-Mneutral-600">
+                    <BadgeCheck size={14} className="flex-shrink-0 text-sage-600" />
+                    A KHQR code will be shown after you confirm — scan it with any Cambodian bank app.
+                  </p>
+                )}
+
                 <p className="flex items-center gap-2 rounded-[20px] bg-cream-100/50 px-4 py-3 text__12 text-Mneutral-600">
                   <BadgeCheck size={14} className="flex-shrink-0 text-sage-600" />
-                  Demo checkout — no card is charged. Payment processing is Stripe-ready on the backend.
+                  Demo checkout — no payment is charged. Card processing is Stripe-ready; ABA PayWay and Bakong are wired for merchant credentials.
                 </p>
 
                 {orderError && (
@@ -375,7 +457,7 @@ export default function CheckoutPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={placeOrder}
+                    onClick={() => setConfirmPlace(true)}
                     disabled={placing}
                     className="filled-pill-button flex-1 justify-center disabled:opacity-60"
                   >
@@ -433,12 +515,7 @@ export default function CheckoutPage() {
                 </div>
               )}
               <div className="flex justify-between text-Mneutral-600">
-                <span>
-                  Shipping
-                  {shippingChoice !== 'standard' && (
-                    <span className="text-Mneutral-400"> ({shippingChoice})</span>
-                  )}
-                </span>
+                <span>Shipping (Standard)</span>
                 <span>{shipping === 0 ? 'Free' : formatPrice(shipping)}</span>
               </div>
               <div className="flex justify-between text-Mneutral-600">
@@ -453,6 +530,15 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmPlace}
+        title="CONFIRM ORDER"
+        message={`Place your order for ${formatPrice(orderTotal)}? Your items will be reserved and a confirmation email sent to ${form.email || 'your inbox'}.`}
+        confirmLabel="Yes, place order"
+        onCancel={() => setConfirmPlace(false)}
+        onConfirm={placeOrder}
+      />
     </div>
   )
 }
@@ -462,12 +548,14 @@ function CheckoutInput({
   label,
   placeholder,
   type = 'text',
+  inputMode,
   value,
   onChange,
 }: {
   label: string
   placeholder: string
   type?: string
+  inputMode?: 'text' | 'numeric' | 'tel' | 'email'
   value: string
   onChange: (value: string) => void
 }) {
@@ -476,6 +564,7 @@ function CheckoutInput({
       <label className="mb-2 block text__14 text-Mneutral-500">{label}</label>
       <input
         type={type}
+        inputMode={inputMode}
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
