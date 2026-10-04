@@ -1,4 +1,5 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   Area,
@@ -14,89 +15,161 @@ import {
 } from 'recharts'
 import {
   ArrowUpRight,
-  CircleDollarSign,
+  ArrowDownRight,
+  Star,
+  Users,
   Package,
   ShoppingCart,
   Sparkles,
-  Star,
-  Users,
 } from 'lucide-react'
+import { api, apiData, apiList } from '../lib/api'
+import { formatMoney, formatMoneyShort, formatDate, percentDelta, isPositiveDelta, ORDER_STATUS_STYLES } from '../lib/format'
 
-const revenueData = [
-  { month: 'Sep', revenue: 18400, orders: 142 },
-  { month: 'Oct', revenue: 22100, orders: 178 },
-  { month: 'Nov', revenue: 31500, orders: 246 },
-  { month: 'Dec', revenue: 48200, orders: 389 },
-  { month: 'Jan', revenue: 35600, orders: 287 },
-  { month: 'Feb', revenue: 41200, orders: 324 },
-  { month: 'Mar', revenue: 52800, orders: 412 },
-]
-
-const categoryData = [
-  { name: 'Serums', value: 38, color: '#c9a96e' },
-  { name: 'Moisturizers', value: 27, color: '#6f8a4a' },
-  { name: 'Cleansers', value: 18, color: '#9edccd' },
-  { name: 'Sunscreen', value: 10, color: '#e5b07d' },
-  { name: 'Other', value: 7, color: '#cccccc' },
-]
-
-const topProducts = [
-  { name: 'Radiance Brightening Serum', sales: 342, revenue: 23256, note: 'Best in glow routine bundles' },
-  { name: 'Hyaluronic Acid Booster', sales: 521, revenue: 28655, note: 'Strong repurchase velocity' },
-  { name: 'Silk Barrier Moisturizer', sales: 486, revenue: 34992, note: 'Top cross-sell with cleanser' },
-]
-
-const recentOrders = [
-  { id: '#1042', customer: 'Sarah Mitchell', amount: 136, status: 'Delivered', date: 'Mar 12' },
-  { id: '#1041', customer: 'Emma Richardson', amount: 72, status: 'Shipped', date: 'Mar 12' },
-  { id: '#1040', customer: 'Priya Desai', amount: 213, status: 'Processing', date: 'Mar 11' },
-  { id: '#1039', customer: 'Olivia Kim', amount: 68, status: 'Delivered', date: 'Mar 11' },
-]
-
-const statusColors: Record<string, string> = {
-  Delivered: 'bg-sage-100 text-sage-700',
-  Shipped: 'bg-Mbrand-teal/20 text-Mneutral-900',
-  Processing: 'bg-cream-100 text-cream-800',
+interface Stats {
+  revenue: { current: number; last: number }
+  orders: { current: number; last: number; pending: number }
+  customers: { current: number; last: number }
+  lowStockProducts: number
+  recentOrders: Array<{
+    id: string
+    orderNumber: string
+    status: string
+    total: number
+    createdAt: string
+    user: { firstName: string | null; lastName: string | null; email: string }
+    items: Array<{ id: string }>
+  }>
+  topProducts: Array<{
+    productId: string
+    _sum: { quantity: number | null }
+    _count: { id: number }
+    product: { id: string; name: string; price: string; images: string[] } | undefined
+  }>
+  revenueChart: Array<{ month: string; revenue: number; orders: number }>
 }
 
-const stats = [
-  {
-    label: 'Revenue',
-    value: '$249.8k',
-    change: '+18.2%',
-    detail: 'Month over month',
-    icon: CircleDollarSign,
-    accent: 'from-cream-100 via-white to-white',
-  },
-  {
-    label: 'Orders',
-    value: '1,978',
-    change: '+12.5%',
-    detail: '412 this week',
-    icon: ShoppingCart,
-    accent: 'from-Mbrand-teal/20 via-white to-white',
-  },
-  {
-    label: 'Customers',
-    value: '3,241',
-    change: '+8.1%',
-    detail: '79 VIP members joined',
-    icon: Users,
-    accent: 'from-sage-100 via-white to-white',
-  },
-  {
-    label: 'Products',
-    value: '126',
-    change: '+6 new',
-    detail: '12 low stock alerts',
-    icon: Package,
-    accent: 'from-cream-50 via-white to-white',
-  },
-]
+const CATEGORY_COLORS = ['#102d26', '#6f8a4a', '#9edccd', '#c9a96e', '#ddde92', '#b4bcba']
 
 export default function DashboardPage() {
+  const { pathname } = useLocation()
+  const [stats, setStats] = useState<Stats | null>(null)
+  const [catalogMix, setCatalogMix] = useState<Array<{ name: string; value: number; color: string }>>([])
+  const [reviewsWaiting, setReviewsWaiting] = useState<number | null>(null)
+  const [subscribers, setSubscribers] = useState<number | null>(null)
+  const [productCount, setProductCount] = useState<number | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let alive = true
+    // Re-fetch when navigating back to the dashboard so numbers stay live
+    apiData<Stats>({ url: '/admin/stats' })
+      .then((data) => alive && (setStats(data), setError(null)))
+      .catch((e) => alive && setError(e.message))
+
+    apiList({ url: '/products?all=1&limit=1' })
+      .then((r) => alive && setProductCount(r.pagination?.total ?? null))
+      .catch(() => {})
+
+    apiList({ url: '/reviews?approved=false&limit=1' })
+      .then((r) => alive && setReviewsWaiting(r.pagination?.total ?? 0))
+      .catch(() => {})
+
+    api.get<{ success: boolean; total: number }>('/admin/newsletter')
+      .then((res) => alive && setSubscribers(res.data.total))
+      .catch(() => {})
+
+    apiList<{ name: string; _count: { products: number } }>({ url: '/categories' })
+      .then(({ items }) => {
+        if (!alive) return
+        const sorted = [...items].sort((a, b) => b._count.products - a._count.products)
+        setCatalogMix(
+          sorted.map((c, i) => ({
+            name: c.name,
+            value: c._count.products,
+            color: CATEGORY_COLORS[i % CATEGORY_COLORS.length],
+          }))
+        )
+      })
+      .catch(() => {})
+
+    return () => {
+      alive = false
+    }
+  }, [pathname])
+
+  if (error) {
+    return (
+      <div className="admin-card p-6 text__14 text-[#a83636]">
+        Could not load store data — {error}. Is the backend running on :5001?
+      </div>
+    )
+  }
+
+  if (!stats) {
+    return (
+      <div className="space-y-6">
+        <div className="admin-card h-[320px] animate-pulse" />
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="admin-card h-[150px] animate-pulse" />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  const revDelta = percentDelta(stats.revenue.current, stats.revenue.last)
+  const ordDelta = percentDelta(stats.orders.current, stats.orders.last)
+  const cusDelta = percentDelta(stats.customers.current, stats.customers.last)
+  const topProduct = stats.topProducts[0]?.product
+  const topProductUnits = stats.topProducts[0]?._sum.quantity ?? 0
+  const topProductRevenue = topProductUnits * Number(stats.topProducts[0]?.product?.price ?? 0)
+
+  const glance: Array<[string, string]> = [
+    ['Pending fulfillments', `${stats.orders.pending} order${stats.orders.pending === 1 ? '' : 's'}`],
+    ['Low stock alerts', `${stats.lowStockProducts} product${stats.lowStockProducts === 1 ? '' : 's'}`],
+    ['Reviews awaiting approval', reviewsWaiting === null ? '—' : `${reviewsWaiting}`],
+    ['Newsletter subscribers', subscribers === null ? '—' : `${subscribers}`],
+  ]
+
+  const kpis = [
+    {
+      label: 'Revenue',
+      value: formatMoneyShort(stats.revenue.current),
+      change: revDelta,
+      up: isPositiveDelta(stats.revenue.current, stats.revenue.last),
+      detail: `${formatDate(new Date())}`,
+      icon: Sparkles,
+    },
+    {
+      label: 'Orders',
+      value: String(stats.orders.current),
+      change: ordDelta,
+      up: isPositiveDelta(stats.orders.current, stats.orders.last),
+      detail: 'this month',
+      icon: ShoppingCart,
+    },
+    {
+      label: 'Customers',
+      value: String(stats.customers.current),
+      change: cusDelta,
+      up: isPositiveDelta(stats.customers.current, stats.customers.last),
+      detail: 'new this month',
+      icon: Users,
+    },
+    {
+      label: 'Products',
+      value: productCount === null ? '—' : String(productCount),
+      change: stats.lowStockProducts > 0 ? `${stats.lowStockProducts} low` : 'Healthy',
+      up: stats.lowStockProducts === 0,
+      detail: 'in catalog',
+      icon: Package,
+    },
+  ]
+
   return (
     <div className="space-y-6">
+      {/* Row 1 — revenue hero + today at a glance */}
       <section className="grid gap-6 xl:grid-cols-[1.35fr_0.85fr]">
         <motion.div
           className="admin-card overflow-hidden"
@@ -104,60 +177,76 @@ export default function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
-          <div className="grid h-full gap-6 p-6 lg:grid-cols-[1.15fr_0.85fr] lg:p-7">
+          <div className="grid h-full gap-6 p-6 lg:grid-cols-[1fr_0.9fr] lg:p-7">
             <div className="flex flex-col justify-between">
               <div>
-                <p className="admin-kicker">Performance Snapshot</p>
-                <h2 className="mt-3 max-w-[12ch] font-display text__40 font-medium leading-tight text-Mneutral-900">
-                  Shape the next launch with confidence.
-                </h2>
-                <p className="mt-4 max-w-[58ch] text__16 text-Mneutral-600">
-                  Your signature serum line is leading growth. Inventory is healthy in the core range,
-                  while replenishment demand is strongest on hydration rituals.
+                <p className="admin-kicker">Revenue · This month</p>
+                <p className="mt-3 font-display text__48 font-medium tabular-nums tracking-tight text-[#102d26]">
+                  {formatMoney(stats.revenue.current)}
+                </p>
+                <p className="mt-3 inline-flex items-center gap-1.5 text__14 font-medium">
+                  {isPositiveDelta(stats.revenue.current, stats.revenue.last) ? (
+                    <span className="inline-flex items-center gap-1 text-[#4a6132]">
+                      <ArrowUpRight size={14} /> {revDelta}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[#a83636]">
+                      <ArrowDownRight size={14} /> {revDelta}
+                    </span>
+                  )}
+                  <span className="font-normal text-[#9ca8a5]">vs last month</span>
                 </p>
               </div>
 
               <div className="mt-8 flex flex-wrap gap-3">
-                <button type="button" className="btn-admin">
+                <Link to="/products" className="btn-admin">
                   <Sparkles size={16} />
-                  Launch Campaign
-                </button>
-                <button type="button" className="btn-admin-outline">
-                  Review Inventory
-                </button>
+                  Manage catalog
+                </Link>
+                <Link to="/orders" className="btn-admin-outline">
+                  Review orders
+                </Link>
               </div>
             </div>
 
             <div className="admin-soft-card relative overflow-hidden p-5">
-              <div className="pointer-events-none absolute right-[-42px] top-[-42px] h-32 w-32 rounded-full bg-cream-200/70 blur-2xl" />
-              <div className="relative flex h-full flex-col justify-between">
+              <div className="relative flex h-full flex-col">
                 <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="admin-kicker">Best Seller</p>
-                    <h3 className="mt-2 font-display text__24 font-medium text-Mneutral-900">
-                      Radiance Brightening Serum
+                  <div className="min-w-0">
+                    <p className="admin-kicker">Top seller</p>
+                    <h3 className="mt-2 truncate font-display text__20 font-medium text-[#102d26]">
+                      {topProduct?.name ?? 'No sales yet'}
                     </h3>
                   </div>
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-Mneutral-900 shadow-sm">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[8px] border border-[#e7eae9] bg-white text-[#3f5650]">
                     <Star size={18} />
                   </div>
                 </div>
 
-                <div className="mt-6 space-y-4">
-                  <div className="flex items-center justify-between rounded-[22px] bg-white px-4 py-3">
-                    <span className="text__14 text-Mneutral-600">Units sold</span>
-                    <span className="text__18 font-medium text-Mneutral-900">521</span>
+                <div className="mt-5 flex-1">
+                  <ResponsiveContainer width="100%" height={110}>
+                    <AreaChart data={stats.revenueChart}>
+                      <defs>
+                        <linearGradient id="dashSpark" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#102d26" stopOpacity={0.16} />
+                          <stop offset="95%" stopColor="#102d26" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <Area type="monotone" dataKey="revenue" stroke="#102d26" strokeWidth={2} fill="url(#dashSpark)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <div className="rounded-[10px] bg-white px-4 py-3">
+                    <p className="text__12 text-[#9ca8a5]">Units sold</p>
+                    <p className="mt-1 text__18 font-medium tabular-nums text-[#102d26]">{topProductUnits}</p>
                   </div>
-                  <div className="flex items-center justify-between rounded-[22px] bg-white px-4 py-3">
-                    <span className="text__14 text-Mneutral-600">Revenue</span>
-                    <span className="text__18 font-medium text-Mneutral-900">$28,655</span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-[22px] bg-white px-4 py-3">
-                    <span className="text__14 text-Mneutral-600">Conversion lift</span>
-                    <span className="inline-flex items-center gap-1 text__14 font-medium text-sage-700">
-                      <ArrowUpRight size={14} />
-                      12.4%
-                    </span>
+                  <div className="rounded-[10px] bg-white px-4 py-3">
+                    <p className="text__12 text-[#9ca8a5]">Revenue</p>
+                    <p className="mt-1 text__18 font-medium tabular-nums text-[#102d26]">
+                      {formatMoneyShort(topProductRevenue)}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -173,38 +262,32 @@ export default function DashboardPage() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="admin-kicker">Daily Pulse</p>
-              <h3 className="mt-2 font-display text__24 font-medium text-Mneutral-900">
-                Today at a glance
-              </h3>
+              <p className="admin-kicker">Today</p>
+              <h3 className="mt-2 font-display text__24 font-medium text-[#102d26]">At a glance</h3>
             </div>
-            <div className="admin-chip">14 live updates</div>
+            <div className="admin-chip">Live</div>
           </div>
 
           <div className="mt-6 space-y-3">
-            {[
-              ['Pending fulfillments', '18 orders'],
-              ['Low stock alerts', '3 products'],
-              ['New reviews', '12 waiting'],
-              ['VIP support replies', '4 open'],
-            ].map(([label, value]) => (
+            {glance.map(([label, value]) => (
               <div
                 key={label}
-                className="flex items-center justify-between rounded-[22px] border border-Mneutral-100 bg-white px-4 py-4"
+                className="flex items-center justify-between rounded-[10px] border border-[#e7eae9] bg-white px-4 py-4"
               >
-                <span className="text__14 text-Mneutral-600">{label}</span>
-                <span className="text__16 font-medium text-Mneutral-900">{value}</span>
+                <span className="text__14 text-[#6e7f7b]">{label}</span>
+                <span className="text__16 font-medium tabular-nums text-[#102d26]">{value}</span>
               </div>
             ))}
           </div>
         </motion.div>
       </section>
 
+      {/* Row 2 — KPI cards */}
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {stats.map((item, index) => (
+        {kpis.map((item, index) => (
           <motion.div
             key={item.label}
-            className={`admin-metric-card bg-gradient-to-br ${item.accent}`}
+            className="admin-metric-card"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
@@ -212,25 +295,30 @@ export default function DashboardPage() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="admin-kicker">{item.label}</p>
-                <p className="mt-4 font-display text__32 font-medium text-Mneutral-900">
+                <p className="mt-4 font-display text__32 font-medium tabular-nums text-[#102d26]">
                   {item.value}
                 </p>
               </div>
-              <div className="flex h-11 w-11 items-center justify-center rounded-full border border-white/80 bg-white/90 text-Mneutral-900">
-                <item.icon size={18} />
+              <div className="flex h-10 w-10 items-center justify-center rounded-[8px] border border-[#e7eae9] bg-[#f8f9f8] text-[#3f5650]">
+                <item.icon size={16} />
               </div>
             </div>
             <div className="mt-5 flex items-center justify-between">
-              <span className="inline-flex items-center gap-1 text__14 font-medium text-sage-700">
-                <ArrowUpRight size={14} />
+              <span
+                className={`inline-flex items-center gap-1 text__14 font-medium ${
+                  item.up ? 'text-[#4a6132]' : 'text-[#a83636]'
+                }`}
+              >
+                {item.up ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
                 {item.change}
               </span>
-              <span className="text__12 text-Mneutral-500">{item.detail}</span>
+              <span className="text__12 text-[#9ca8a5]">{item.detail}</span>
             </div>
           </motion.div>
         ))}
       </section>
 
+      {/* Row 3 — revenue chart + catalog mix */}
       <section className="grid gap-6 xl:grid-cols-[1.35fr_0.85fr]">
         <motion.div
           className="admin-card p-6"
@@ -240,18 +328,18 @@ export default function DashboardPage() {
         >
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <p className="admin-kicker">Revenue Overview</p>
-              <h3 className="mt-2 font-display text__24 font-medium text-Mneutral-900">
-                Growth over the last 7 months
+              <p className="admin-kicker">Revenue overview</p>
+              <h3 className="mt-2 font-display text__24 font-medium text-[#102d26]">
+                The last 7 months
               </h3>
             </div>
             <div className="admin-chip">Monthly</div>
           </div>
 
           <ResponsiveContainer width="100%" height={290}>
-            <AreaChart data={revenueData}>
+            <AreaChart data={stats.revenueChart}>
               <defs>
-                <linearGradient id="adminRevenue" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="dashRevenue" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#c9a96e" stopOpacity={0.25} />
                   <stop offset="95%" stopColor="#c9a96e" stopOpacity={0.02} />
                 </linearGradient>
@@ -267,7 +355,7 @@ export default function DashboardPage() {
                 tick={{ fontSize: 12, fill: '#6e7f7b' }}
                 axisLine={false}
                 tickLine={false}
-                tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                tickFormatter={(value) => `$${(value / 1000).toFixed(1)}k`}
               />
               <Tooltip
                 contentStyle={{
@@ -276,14 +364,14 @@ export default function DashboardPage() {
                   background: 'rgba(255,255,255,0.96)',
                   boxShadow: '0 16px 48px rgba(16,45,38,0.08)',
                 }}
-                formatter={(value: number) => [`$${value.toLocaleString()}`, 'Revenue']}
+                formatter={(value: number) => [formatMoney(value), 'Revenue']}
               />
               <Area
                 type="monotone"
                 dataKey="revenue"
                 stroke="#102d26"
                 strokeWidth={2.4}
-                fill="url(#adminRevenue)"
+                fill="url(#dashRevenue)"
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -296,48 +384,52 @@ export default function DashboardPage() {
           transition={{ delay: 0.24 }}
         >
           <div className="mb-5">
-            <p className="admin-kicker">Category Mix</p>
-            <h3 className="mt-2 font-display text__24 font-medium text-Mneutral-900">
-              Sales by collection
+            <p className="admin-kicker">Catalog mix</p>
+            <h3 className="mt-2 font-display text__24 font-medium text-[#102d26]">
+              Products by collection
             </h3>
           </div>
 
-          <ResponsiveContainer width="100%" height={220}>
-            <PieChart>
-              <Pie
-                data={categoryData}
-                cx="50%"
-                cy="50%"
-                innerRadius={58}
-                outerRadius={84}
-                paddingAngle={3}
-                dataKey="value"
-              >
-                {categoryData.map((entry) => (
-                  <Cell key={entry.name} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(value) => [`${value}%`, 'Share']} />
-            </PieChart>
-          </ResponsiveContainer>
+          {catalogMix.length === 0 ? (
+            <p className="py-10 text-center text__14 text-[#9ca8a5]">No categories yet.</p>
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={200}>
+                <PieChart>
+                  <Pie
+                    data={catalogMix}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={58}
+                    outerRadius={84}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    {catalogMix.map((entry) => (
+                      <Cell key={entry.name} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => [`${value} products`, 'Count']} />
+                </PieChart>
+              </ResponsiveContainer>
 
-          <div className="mt-2 space-y-3">
-            {categoryData.map((cat) => (
-              <div key={cat.name} className="flex items-center justify-between text__14">
-                <div className="flex items-center gap-3">
-                  <span
-                    className="h-3 w-3 rounded-full"
-                    style={{ backgroundColor: cat.color }}
-                  />
-                  <span className="text-Mneutral-700">{cat.name}</span>
-                </div>
-                <span className="font-medium text-Mneutral-900">{cat.value}%</span>
+              <div className="mt-2 space-y-3">
+                {catalogMix.map((cat) => (
+                  <div key={cat.name} className="flex items-center justify-between text__14">
+                    <div className="flex items-center gap-3">
+                      <span className="h-3 w-3 rounded-full" style={{ backgroundColor: cat.color }} />
+                      <span className="text-[#3f5650]">{cat.name}</span>
+                    </div>
+                    <span className="font-medium tabular-nums text-[#102d26]">{cat.value}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </>
+          )}
         </motion.div>
       </section>
 
+      {/* Row 4 — top products + recent orders */}
       <section className="grid gap-6 xl:grid-cols-2">
         <motion.div
           className="admin-card p-6"
@@ -348,37 +440,54 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="admin-kicker">Merchandising</p>
-              <h3 className="mt-2 font-display text__24 font-medium text-Mneutral-900">
-                Top performing products
+              <h3 className="mt-2 font-display text__24 font-medium text-[#102d26]">
+                Top selling products
               </h3>
             </div>
-            <a href="/admin/products" className="text__14 font-medium text-Mneutral-900 underline underline-offset-4">
-              View library
-            </a>
+            <Link to="/products" className="text__14 font-medium text-[#102d26] underline underline-offset-4">
+              View catalog
+            </Link>
           </div>
 
-          <div className="mt-6 space-y-4">
-            {topProducts.map((product, index) => (
-              <div
-                key={product.name}
-                className="grid grid-cols-[52px_1fr_auto] items-center gap-4 rounded-[26px] border border-Mneutral-100 bg-Mneutral-50/70 px-4 py-4"
-              >
-                <div className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-white text__14 font-medium text-Mneutral-900">
-                  0{index + 1}
-                </div>
-                <div className="min-w-0">
-                  <p className="truncate text__16 font-medium text-Mneutral-900">{product.name}</p>
-                  <p className="mt-1 text__12 text-Mneutral-500">{product.note}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text__16 font-medium text-Mneutral-900">
-                    ${product.revenue.toLocaleString()}
-                  </p>
-                  <p className="text__12 text-Mneutral-500">{product.sales} sold</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          {stats.topProducts.length === 0 ? (
+            <p className="py-10 text-center text__14 text-[#9ca8a5]">No sales recorded yet.</p>
+          ) : (
+            <div className="mt-6 space-y-4">
+              {stats.topProducts.map((product, index) => {
+                const units = product._sum.quantity ?? 0
+                const revenue = units * Number(product.product?.price ?? 0)
+                return (
+                  <div
+                    key={product.productId}
+                    className="grid grid-cols-[52px_1fr_auto] items-center gap-4 rounded-[10px] border border-[#e7eae9] bg-[#f8f9f8] px-4 py-4"
+                  >
+                    <div className="flex h-[52px] w-[52px] items-center justify-center overflow-hidden rounded-[10px] border border-[#e7eae9] bg-white">
+                      {product.product?.images?.[0] ? (
+                        <img
+                          src={product.product.images[0]}
+                          alt=""
+                          className="h-full w-full object-contain p-1.5"
+                        />
+                      ) : (
+                        <span className="text__14 font-medium text-[#102d26]">0{index + 1}</span>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text__16 font-medium text-[#102d26]">
+                        {product.product?.name ?? 'Deleted product'}
+                      </p>
+                      <p className="mt-1 text__12 text-[#9ca8a5]">{units} sold</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text__16 font-medium tabular-nums text-[#102d26]">
+                        {formatMoneyShort(revenue)}
+                      </p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </motion.div>
 
         <motion.div
@@ -389,41 +498,54 @@ export default function DashboardPage() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="admin-kicker">Order Feed</p>
-              <h3 className="mt-2 font-display text__24 font-medium text-Mneutral-900">
+              <p className="admin-kicker">Order feed</p>
+              <h3 className="mt-2 font-display text__24 font-medium text-[#102d26]">
                 Recent activity
               </h3>
             </div>
-            <a href="/admin/orders" className="text__14 font-medium text-Mneutral-900 underline underline-offset-4">
+            <Link to="/orders" className="text__14 font-medium text-[#102d26] underline underline-offset-4">
               View orders
-            </a>
+            </Link>
           </div>
 
-          <div className="mt-6 space-y-3">
-            {recentOrders.map((order) => (
-              <div
-                key={order.id}
-                className="grid grid-cols-[auto_1fr_auto] items-center gap-4 rounded-[26px] border border-Mneutral-100 bg-white px-4 py-4"
-              >
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-Mneutral-50 text__12 font-medium text-Mneutral-900">
-                  {order.customer
-                    .split(' ')
-                    .map((part) => part[0])
-                    .join('')}
-                </div>
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text__16 font-medium text-Mneutral-900">{order.customer}</p>
-                    <span className={`badge ${statusColors[order.status]}`}>{order.status}</span>
+          {stats.recentOrders.length === 0 ? (
+            <p className="py-10 text-center text__14 text-[#9ca8a5]">No orders yet.</p>
+          ) : (
+            <div className="mt-6 space-y-3">
+              {stats.recentOrders.map((order) => {
+                const name = `${order.user.firstName ?? ''} ${order.user.lastName ?? ''}`.trim() || order.user.email
+                const style = ORDER_STATUS_STYLES[order.status] ?? ORDER_STATUS_STYLES.PENDING
+                return (
+                  <div
+                    key={order.id}
+                    className="grid grid-cols-[auto_1fr_auto] items-center gap-4 rounded-[10px] border border-[#e7eae9] bg-white px-4 py-4"
+                  >
+                    <div className="flex h-11 w-11 items-center justify-center rounded-[10px] bg-[#f1f3f3] text__12 font-medium text-[#102d26]">
+                      {name
+                        .split(' ')
+                        .map((part) => part[0])
+                        .slice(0, 2)
+                        .join('')
+                        .toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="truncate text__16 font-medium text-[#102d26]">{name}</p>
+                        <span className={`badge ${style.chip}`}>{style.label}</span>
+                      </div>
+                      <p className="mt-1 truncate text__12 text-[#9ca8a5]">
+                        {order.orderNumber} · {formatDate(order.createdAt)} · {order.items.length} item
+                        {order.items.length === 1 ? '' : 's'}
+                      </p>
+                    </div>
+                    <p className="text__16 font-medium tabular-nums text-[#102d26]">
+                      {formatMoney(order.total)}
+                    </p>
                   </div>
-                  <p className="mt-1 text__12 text-Mneutral-500">
-                    {order.id} • {order.date}
-                  </p>
-                </div>
-                <p className="text__16 font-medium text-Mneutral-900">${order.amount}</p>
-              </div>
-            ))}
-          </div>
+                )
+              })}
+            </div>
+          )}
         </motion.div>
       </section>
     </div>

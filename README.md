@@ -19,14 +19,25 @@ A full-stack, production-ready e-commerce platform for premium skincare, built w
 - **Swiper** — product/testimonial carousels
 - **Lucide React** — icon system
 
-### Admin Panel (`/admin`) — Port 3001
-- **React 18** + **TypeScript**
-- **Recharts** — revenue, category, orders charts
-- **Framer Motion** — smooth transitions
-- Full CRUD for Products, Orders management
-- Real-time dashboard stats
+### Admin Dashboard (`/admin`, port 3001)
+- **JWT-protected admin login gate** (admin role required)
+- All pages wired to the live API — no demo data
+- KPI stat cards with real month-over-month deltas
+- Revenue area chart + revenue sparkline (Recharts, real data)
+- Catalog mix donut from live category counts
+- Top products table with real sales figures
+- Recent orders feed with live statuses
+- **Products CRUD** — search, category filter, pagination, add/edit drawer with image previews and **file upload**, delete
+- Cart is **persisted across page reloads** (localStorage)
+- **Orders** — server-side status filter tabs, search, inline status update (persists), order detail drawer, CSV export
+- **Customers** — live customer list with verification status
+- **Analytics** — honest snapshots: AOV, orders by status, top products, catalog mix
+- **Reviews** — approve / unpublish / delete, verified purchase badges, rating recalculation
+- **Journal** — create, edit, publish/draft, delete posts
+- **Coupons** — create percentage/fixed codes, activate/deactivate, usage tracking
+- **Settings** — profile editing, password change, store info, sign out
 
-### Backend (`/backend`) — Port 5000
+### Backend (`/backend`) — Port 5001
 - **Node.js** + **Express** + **TypeScript**
 - **Prisma ORM** — type-safe database queries
 - **PostgreSQL** via **Neon** (serverless cloud DB)
@@ -35,7 +46,8 @@ A full-stack, production-ready e-commerce platform for premium skincare, built w
 - **Helmet** + **CORS** + **Rate limiting** — security
 - **Zod** — request validation
 - **Stripe** — payment processing (ready)
-- **Nodemailer** — transactional emails
+- **Nodemailer** — transactional emails (order confirmation, newsletter welcome; gracefully logs when unconfigured)
+- **Multer** — local image uploads at `POST /api/uploads` (admin-only, served at `/uploads`)
 
 ---
 
@@ -86,7 +98,19 @@ cd lumiere-skincare
 npm run install:all
 ```
 
-### 2. Set Up Database (Neon)
+### 2. Set Up Database
+
+**Option A — Local PostgreSQL (fastest for development):**
+
+```bash
+brew install postgresql@17
+brew services start postgresql@17
+createdb lumiere
+```
+
+Set `DATABASE_URL="postgresql://<you>@localhost:5432/lumiere?schema=public"` in `backend/.env`.
+
+**Option B — Neon (cloud):**
 
 1. Go to [neon.tech](https://neon.tech) → Create free account
 2. Create a new project → Copy your **Connection String**
@@ -125,9 +149,9 @@ npm run db:seed
 npm run dev
 
 # Or individually:
-npm run dev:backend    # API on :5000
+npm run dev:backend    # API on :5001
 npm run dev:frontend   # Store on :3000
-npm run dev:admin      # Admin on :3001
+npm run dev:admin      # Admin on :3001 (console at /admin)
 ```
 
 ---
@@ -138,6 +162,29 @@ npm run dev:admin      # Admin on :3001
 |----------|------------------------|-------------------|
 | Admin    | admin@lumiere.com      | Admin@lumiere123  |
 | Customer | sophie@example.com     | User@lumiere123   |
+
+---
+
+## 🧪 Testing
+
+```bash
+# With the backend running on :5001
+cd backend
+npm test
+```
+
+The suite (116 tests) covers every feature end-to-end against the local database:
+auth & token rotation, products/categories CRUD, orders with coupon math, shipping
+methods, and stock handling, cart, reviews with approval flow, wishlist, addresses,
+blog drafts, newsletter, coupons, uploads, role guards, and the business-workflow
+rules (order cancellation restocks, coupon usage limits, slug/category guards).
+
+Test runs create throwaway fixtures (test users/products). Clean them afterwards:
+
+```bash
+cd backend
+npm run db:clean
+```
 
 ---
 
@@ -264,6 +311,8 @@ POST   /api/newsletter/unsubscribe
 
 POST   /api/coupons/validate
 GET    /api/coupons           (admin)
+PATCH  /api/coupons/:id       (admin)
+POST   /api/uploads           (admin, image upload)
 
 GET    /api/admin/stats       (admin)
 

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'
 import bcrypt from 'bcryptjs'
 import jwt, { type Secret, type SignOptions } from 'jsonwebtoken'
+import { randomUUID } from 'crypto'
 import { prisma } from '../lib/prisma'
 import { ApiError } from '../middleware/errorHandler'
 import { AuthRequest } from '../middleware/auth'
@@ -13,13 +14,15 @@ const generateTokens = (userId: string, email: string, role: string) => {
   const refreshTokenExpiresIn: SignOptions['expiresIn'] =
     (process.env.JWT_REFRESH_EXPIRES_IN as SignOptions['expiresIn']) || '7d'
 
+  // Unique jti per token — identical payloads issued in the same second
+  // would otherwise collide on the refresh-token primary key
   const accessToken = jwt.sign(
-    { id: userId, email, role },
+    { id: userId, email, role, jti: randomUUID() },
     jwtSecret,
     { expiresIn: accessTokenExpiresIn }
   )
   const refreshToken = jwt.sign(
-    { id: userId },
+    { id: userId, jti: randomUUID() },
     jwtRefreshSecret,
     { expiresIn: refreshTokenExpiresIn }
   )

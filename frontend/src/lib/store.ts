@@ -1,10 +1,15 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { getApiUrl } from './api'
 import { CartItem, CartState, Product, ProductVariant } from '../types'
 
-export const useCartStore = create<CartState>((set, get) => ({
-  items: [],
-  isOpen: false,
+export const useCartStore = create<CartState>()(
+  persist(
+    (set, get) => ({
+      items: [],
+      isOpen: false,
+      coupon: null,
+      couponError: null,
 
   addItem: (product: Product, quantity = 1, variant?: ProductVariant) => {
     set((state) => {
@@ -46,9 +51,41 @@ export const useCartStore = create<CartState>((set, get) => ({
     }))
   },
 
-  clearCart: () => set({ items: [] }),
+  clearCart: () => set({ items: [], coupon: null, couponError: null }),
 
   toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
+
+  applyCoupon: async (code: string) => {
+    const trimmed = code.trim()
+    if (!trimmed) {
+      set({ couponError: 'Enter a coupon code.' })
+      return false
+    }
+    const orderTotal = get()
+      .items.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
+    try {
+      const response = await fetch(getApiUrl('/api/coupons/validate'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: trimmed, orderTotal }),
+      })
+      const result = await response.json()
+      if (!response.ok || !result.success) {
+        set({ coupon: null, couponError: result.message || 'Invalid or expired coupon.' })
+        return false
+      }
+      set({
+        coupon: { code: result.data.coupon.code, discount: Number(result.data.discount) },
+        couponError: null,
+      })
+      return true
+    } catch {
+      set({ coupon: null, couponError: 'Could not validate the coupon — is the API running?' })
+      return false
+    }
+  },
+
+  clearCoupon: () => set({ coupon: null, couponError: null }),
 
   total: () => {
     const { items } = get()
@@ -59,7 +96,13 @@ export const useCartStore = create<CartState>((set, get) => ({
     const { items } = get()
     return items.reduce((sum, item) => sum + item.quantity, 0)
   },
-}))
+  }),
+  {
+    name: 'calesta-cart',
+    // Persist bag contents + coupon; isOpen is transient UI state
+    partialize: (s) => ({ items: s.items, coupon: s.coupon }),
+  }
+))
 
 // Wishlist store
 interface WishlistState {
@@ -110,6 +153,7 @@ interface AuthState {
     lastName: string
     role: 'USER' | 'ADMIN'
     avatar?: string
+    createdAt?: string
   } | null
   accessToken: string | null
   refreshToken: string | null

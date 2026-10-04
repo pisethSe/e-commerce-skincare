@@ -2,6 +2,7 @@ import { Request, Response } from 'express'
 import { prisma } from '../lib/prisma'
 import { ApiError } from '../middleware/errorHandler'
 import { AuthRequest } from '../middleware/auth'
+import { sendMail, newsletterWelcomeEmail } from '../lib/email'
 
 // =============================================
 // REVIEWS
@@ -75,7 +76,7 @@ export const getProductReviews = async (req: Request, res: Response): Promise<vo
 
   const [reviews, total] = await Promise.all([
     prisma.review.findMany({
-      where: { productId: req.params.productId, approved: true },
+      where: { productId: req.params.productId as string, approved: true },
       include: {
         user: { select: { firstName: true, lastName: true, avatar: true } },
       },
@@ -83,7 +84,7 @@ export const getProductReviews = async (req: Request, res: Response): Promise<vo
       skip,
       take: Number(limit),
     }),
-    prisma.review.count({ where: { productId: req.params.productId, approved: true } }),
+    prisma.review.count({ where: { productId: req.params.productId as string, approved: true } }),
   ])
 
   res.json({
@@ -134,13 +135,13 @@ export const updateCartItem = async (req: AuthRequest, res: Response): Promise<v
   const { quantity } = req.body
   if (quantity <= 0) {
     await prisma.cartItem.deleteMany({
-      where: { userId: req.user!.id, productId: req.params.productId },
+      where: { userId: req.user!.id, productId: req.params.productId as string },
     })
     res.json({ success: true, message: 'Item removed from cart' })
     return
   }
   const item = await prisma.cartItem.updateMany({
-    where: { userId: req.user!.id, productId: req.params.productId },
+    where: { userId: req.user!.id, productId: req.params.productId as string },
     data: { quantity },
   })
   res.json({ success: true, data: item })
@@ -149,7 +150,7 @@ export const updateCartItem = async (req: AuthRequest, res: Response): Promise<v
 // DELETE /api/cart/:productId
 export const removeFromCart = async (req: AuthRequest, res: Response): Promise<void> => {
   await prisma.cartItem.deleteMany({
-    where: { userId: req.user!.id, productId: req.params.productId },
+    where: { userId: req.user!.id, productId: req.params.productId as string },
   })
   res.json({ success: true, message: 'Removed from cart' })
 }
@@ -176,6 +177,13 @@ export const subscribeNewsletter = async (req: Request, res: Response): Promise<
   })
 
   res.json({ success: true, message: 'Successfully subscribed!' })
+
+  // Fire-and-forget welcome email
+  void sendMail({
+    to: email,
+    subject: 'Welcome to the Calesta journal',
+    html: newsletterWelcomeEmail(),
+  })
 }
 
 // POST /api/newsletter/unsubscribe

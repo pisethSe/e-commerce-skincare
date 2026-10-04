@@ -1,12 +1,23 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react'
+import { BadgeCheck, Minus, Plus, ShoppingBag, Tag, Trash2, X } from 'lucide-react'
 import { useCartStore } from '../lib/store'
 import { formatPrice } from '../lib/utils'
 import ImageWithFallback from '../components/ui/ImageWithFallback'
 
 export default function CartPage() {
-  const { items, removeItem, updateQuantity, total } = useCartStore()
+  const {
+    items,
+    removeItem,
+    updateQuantity,
+    total,
+    coupon,
+    couponError,
+    applyCoupon,
+    clearCoupon,
+  } = useCartStore()
+  const [couponInput, setCouponInput] = useState('')
+  const [checkingCoupon, setCheckingCoupon] = useState(false)
 
   useEffect(() => {
     document.title = 'Calesta — Cart'
@@ -28,9 +39,10 @@ export default function CartPage() {
   }
 
   const subtotal = total()
-  const shipping = subtotal >= 75 ? 0 : 8.95
-  const tax = subtotal * 0.08
-  const orderTotal = subtotal + shipping + tax
+  const discount = coupon?.discount ?? 0
+  const shipping = subtotal - discount >= 75 ? 0 : 8.95
+  const tax = (subtotal - discount) * 0.08
+  const orderTotal = subtotal - discount + shipping + tax
 
   return (
     <div className="bg-Mneutral-50 pt-[92px] text-Mneutral-900">
@@ -96,6 +108,23 @@ export default function CartPage() {
                 <span>Subtotal</span>
                 <span>{formatPrice(subtotal)}</span>
               </div>
+              {coupon && (
+                <div className="flex justify-between text-sage-600">
+                  <span className="inline-flex items-center gap-2">
+                    <Tag size={13} />
+                    {coupon.code}
+                    <button
+                      type="button"
+                      onClick={clearCoupon}
+                      aria-label="Remove coupon"
+                      className="text-Mneutral-400 transition-colors hover:text-Mneutral-900"
+                    >
+                      <X size={13} />
+                    </button>
+                  </span>
+                  <span>−{formatPrice(discount)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-Mneutral-600">
                 <span>Shipping</span>
                 <span>{shipping === 0 ? 'Free' : formatPrice(shipping)}</span>
@@ -108,6 +137,62 @@ export default function CartPage() {
                 <span>Total</span>
                 <span>{formatPrice(orderTotal)}</span>
               </div>
+            </div>
+
+            {/* Coupon code — validated against the API */}
+            <div className="mb-6 rounded-[24px] bg-Mneutral-50 p-4">
+              <label htmlFor="coupon-code" className="mb-2 flex items-center gap-2 text__14 text-Mneutral-500">
+                <Tag size={13} />
+                Coupon code
+              </label>
+              {coupon ? (
+                <div className="flex items-center justify-between rounded-full border border-sage-200 bg-white px-4 py-2.5">
+                  <span className="inline-flex items-center gap-2 text__14 font-medium text-sage-700">
+                    <BadgeCheck size={15} />
+                    {coupon.code} applied — you save {formatPrice(coupon.discount)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      clearCoupon()
+                      setCouponInput('')
+                    }}
+                    className="text__12 text-Mneutral-500 underline underline-offset-2 transition-colors hover:text-Mneutral-900"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <form
+                  className="flex gap-2"
+                  onSubmit={async (e) => {
+                    e.preventDefault()
+                    setCheckingCoupon(true)
+                    await applyCoupon(couponInput)
+                    setCheckingCoupon(false)
+                  }}
+                >
+                  <input
+                    id="coupon-code"
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value)}
+                    placeholder="Try WELCOME15"
+                    className="w-full rounded-full border border-Mneutral-200 bg-white px-4 py-2.5 text__14 outline-none transition-colors focus:border-Mneutral-900"
+                  />
+                  <button
+                    type="submit"
+                    disabled={checkingCoupon || !couponInput.trim()}
+                    className="filled-pill-button flex-shrink-0 px-5 py-2.5 disabled:opacity-50"
+                  >
+                    {checkingCoupon ? 'Checking…' : 'Apply'}
+                  </button>
+                </form>
+              )}
+              {couponError && (
+                <p role="alert" className="mt-2 px-2 text__12 text-blush-500">
+                  {couponError}
+                </p>
+              )}
             </div>
 
             <div className="mb-6 rounded-[24px] bg-Mneutral-50 p-4">

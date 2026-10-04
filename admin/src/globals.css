@@ -4,9 +4,28 @@
 @tailwind components;
 @tailwind utilities;
 
+/* =============================================
+   CALESTA ADMIN — "QUIET LEDGER"
+   Flat, clean, dense. Matches the storefront:
+   #f1f3f3 canvas, white cards, #102d26 ink.
+   No glass, no gradients, no decorative blur.
+============================================= */
 @layer base {
   :root {
-    --sidebar-w: 288px;
+    --sidebar-w: 248px;
+    --canvas: #f1f3f3;
+    --card: #ffffff;
+    --inset: #f8f9f8;
+    --line: #e7eae9;
+    --line-strong: #d9dedc;
+    --ink: #102d26;
+    --ink-soft: #3f5650;
+    --muted: #6e7f7b;
+    --faint: #9ca8a5;
+    --accent: #102d26;
+    --gold: #c9a96e;
+    --sage: #6f8a4a;
+    --blush: #d64545;
   }
 
   * {
@@ -21,11 +40,8 @@
 
   body {
     font-family: 'Inter Tight', sans-serif;
-    background:
-      radial-gradient(circle at top left, rgba(221, 222, 146, 0.22), transparent 28%),
-      radial-gradient(circle at top right, rgba(158, 220, 205, 0.28), transparent 22%),
-      linear-gradient(180deg, #fdf9f3 0%, #f1f3f3 42%, #f8f8f5 100%);
-    color: #102d26;
+    background: var(--canvas);
+    color: var(--ink);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -38,8 +54,8 @@
   }
 
   ::selection {
-    background: rgba(201, 169, 110, 0.22);
-    color: #102d26;
+    background: rgba(16, 45, 38, 0.12);
+    color: var(--ink);
   }
 
   ::-webkit-scrollbar {
@@ -48,105 +64,134 @@
   }
 
   ::-webkit-scrollbar-track {
-    background: #f1f3f3;
+    background: transparent;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: #c9a96e;
-    border-radius: 9999px;
+    background: #c9cfc9;
+    border-radius: 8px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #b3bab3;
   }
 }
 
 @layer components {
-  .text__12 { @apply text-[12px]; }
-  .text__14 { @apply text-[12px] lg:text-[14px]; }
-  .text__16 { @apply text-[14px] lg:text-[16px]; }
-  .text__18 { @apply text-[16px] lg:text-[18px]; }
-  .text__20 { @apply text-[18px] lg:text-[20px]; }
-  .text__24 { @apply text-[18px] md:text-[20px] lg:text-[24px]; }
-  .text__28 { @apply text-[20px] md:text-[24px] lg:text-[28px]; }
-  .text__32 { @apply text-[24px] md:text-[28px] lg:text-[32px]; }
-  .text__40 { @apply text-[28px] md:text-[32px] lg:text-[40px]; }
+  /* ── Type scale ───────────────────────────── */
+  .text__12 { @apply text-[11px] lg:text-[12px]; }
+  .text__14 { @apply text-[13px] lg:text-[13.5px]; }
+  .text__16 { @apply text-[13.5px] lg:text-[14px]; }
+  .text__18 { @apply text-[15px] lg:text-[15.5px]; }
+  .text__20 { @apply text-[16px] lg:text-[17px]; }
+  .text__24 { @apply text-[17px] lg:text-[18px]; }
+  .text__28 { @apply text-[18px] lg:text-[20px]; }
+  .text__32 { @apply text-[20px] lg:text-[22px]; }
+  .text__40 { @apply text-[24px] lg:text-[28px]; }
+  .text__48 { @apply text-[28px] lg:text-[32px]; }
 
   .font-display { font-family: 'Inter Tight', sans-serif; }
 
+  /* ── Surfaces ─────────────────────────────── */
   .admin-shell {
-    @apply min-h-screen bg-transparent bg-grain;
+    @apply min-h-screen;
   }
 
   .admin-card {
-    @apply rounded-[32px] border border-white/70 bg-white/75 shadow-soft backdrop-blur-xl;
+    @apply rounded-[12px] border border-[#e7eae9] bg-white;
   }
 
   .admin-soft-card {
-    @apply rounded-[28px] border border-Mneutral-100 bg-Mneutral-50/80;
+    @apply rounded-[10px] border border-[#eef1ef] bg-[#f8f9f8];
   }
 
   .admin-muted {
-    @apply text__14 text-Mneutral-600;
+    @apply text__14 text-[#6e7f7b];
   }
 
+  /* Micro-label — subtle uppercase, not the old 0.28em tracking */
   .admin-kicker {
-    @apply text__12 font-medium uppercase tracking-[0.28em] text-Mneutral-500;
+    @apply text-[11px] font-semibold uppercase tracking-[0.08em] text-[#6e7f7b];
   }
 
   .admin-heading {
-    @apply font-display text__32 font-medium text-Mneutral-900;
+    @apply font-display text__24 font-semibold text-[#102d26];
   }
 
+  /* ── Sidebar (dark flat panel) ────────────── */
   .sidebar-link {
-    @apply flex items-center gap-3 rounded-full px-4 py-3 text__14 font-medium text-Mneutral-700 transition-all duration-200 hover:bg-white hover:text-Mneutral-900;
+    @apply flex items-center gap-2.5 rounded-[8px] px-3 py-2 text__14 font-medium text-[#c2d2c8] transition-colors duration-150 hover:bg-white/[0.06] hover:text-white;
   }
 
   .sidebar-link.active {
-    @apply bg-Mneutral-900 text-white shadow-lg shadow-Mneutral-900/10;
+    @apply bg-white/10 text-white;
   }
 
   .sidebar-link.active .sidebar-link-icon {
-    @apply border-white/15 bg-white/10 text-white;
+    @apply text-[#9edccd];
   }
 
   .sidebar-link-icon {
-    @apply flex h-9 w-9 items-center justify-center rounded-full border border-Mneutral-100 bg-white text-Mneutral-700 transition-colors;
+    @apply flex h-5 w-5 items-center justify-center text-[#8ba397];
   }
 
-  .admin-metric-card {
-    @apply admin-card p-5;
-  }
-
+  /* ── Buttons ──────────────────────────────── */
   .btn-admin {
-    @apply inline-flex items-center justify-center gap-2 rounded-full bg-Mneutral-900 px-5 py-3 text__14 font-medium text-white transition-all duration-300 hover:-translate-y-0.5 hover:opacity-95;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-[8px] bg-[#102d26] px-3.5 py-2 text__14 font-semibold text-white transition-colors duration-150 hover:bg-[#1a3d33] active:scale-[0.98] disabled:opacity-50 disabled:hover:bg-[#102d26];
   }
 
   .btn-admin-outline {
-    @apply inline-flex items-center justify-center gap-2 rounded-full border border-Mneutral-200 bg-white/70 px-5 py-3 text__14 font-medium text-Mneutral-900 transition-all duration-300 hover:border-Mneutral-900 hover:bg-white;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-[8px] border border-[#d9dedc] bg-white px-3.5 py-2 text__14 font-medium text-[#102d26] transition-colors duration-150 hover:border-[#102d26] active:scale-[0.98] disabled:opacity-50;
   }
 
+  /* ── Chips & badges ───────────────────────── */
   .admin-chip {
-    @apply inline-flex items-center gap-2 rounded-full border border-Mneutral-100 bg-white px-3 py-2 text__12 font-medium text-Mneutral-700;
-  }
-
-  .table-th {
-    @apply px-5 py-4 text-left text__12 font-medium uppercase tracking-[0.24em] text-Mneutral-500;
-  }
-
-  .table-td {
-    @apply px-5 py-4 align-top text__14 text-Mneutral-800;
+    @apply inline-flex items-center gap-1.5 rounded-[6px] border border-[#e7eae9] bg-white px-2.5 py-1 text-[12px] font-medium text-[#3f5650];
   }
 
   .badge {
-    @apply inline-flex items-center rounded-full px-3 py-1.5 text__12 font-medium;
+    @apply inline-flex items-center gap-1.5 rounded-[6px] px-2 py-[3px] text-[11.5px] font-semibold;
   }
 
+  /* ── Tables ───────────────────────────────── */
+  .table-th {
+    @apply whitespace-nowrap px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-[#8a9a95];
+  }
+
+  .table-td {
+    @apply px-4 py-3 align-top text__14 text-[#27423b];
+  }
+
+  /* ── Forms ────────────────────────────────── */
   .input-admin {
-    @apply w-full rounded-[20px] border border-Mneutral-100 bg-white px-4 py-3 text__14 text-Mneutral-900 outline-none transition-all duration-200 placeholder:text-Mneutral-400 focus:border-Mneutral-900 focus:ring-4 focus:ring-Mneutral-100/80;
+    @apply w-full rounded-[8px] border border-[#dfe4e1] bg-white px-3 py-2 text__14 text-[#102d26] outline-none transition-all duration-150 placeholder:text-[#9ca8a5] focus:border-[#102d26] focus:ring-[3px] focus:ring-[rgba(16,45,38,0.08)];
   }
 
   .label-admin {
-    @apply mb-2 block text__12 font-medium uppercase tracking-[0.24em] text-Mneutral-500;
+    @apply mb-1.5 block text-[12px] font-medium text-[#3f5650];
   }
 
   .panel-divider {
-    @apply h-px w-full bg-Mneutral-100;
+    @apply h-px w-full bg-[#e7eae9];
   }
+}
+
+/* Dialog entrance — pure CSS (compositor-driven) so it can never get stuck
+   invisible when the JS frame loop stalls (e.g. hidden/minimized window). */
+@keyframes dialog-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes dialog-panel-in {
+  from { opacity: 0; transform: scale(0.96) translateY(6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.dialog-overlay-in {
+  animation: dialog-overlay-in 160ms ease-out both;
+}
+
+.dialog-panel-in {
+  animation: dialog-panel-in 200ms cubic-bezier(0.23, 1, 0.32, 1) both;
 }

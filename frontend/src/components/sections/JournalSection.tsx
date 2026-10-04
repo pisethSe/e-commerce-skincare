@@ -2,10 +2,11 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowRight, Clock } from 'lucide-react'
-import { BLOG_POSTS } from '../../lib/data'
+import { useCatalogStore } from '../../lib/catalog'
 import { formatDate } from '../../lib/utils'
 
 export default function JournalSection() {
+  const { posts } = useCatalogStore()
   return (
     <section className="section-padding bg-white">
       <div className="container-custom">
@@ -27,7 +28,7 @@ export default function JournalSection() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
-          {BLOG_POSTS.map((post, i) => (
+          {posts.slice(0, 3).map((post, i) => (
             <motion.article
               key={post.id}
               className="group cursor-pointer"

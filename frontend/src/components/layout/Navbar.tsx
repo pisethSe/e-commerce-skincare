@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ShoppingBag, Menu, X } from 'lucide-react'
 import { NAV_LINKS } from '../../lib/data'
 import { useAuthStore, useCartStore, useUIStore } from '../../lib/store'
+import ConfirmDialog from '../ui/ConfirmDialog'
 
 export default function Navbar() {
   const location = useLocation()
+  const navigate = useNavigate()
   const [scrolled, setScrolled] = useState(false)
+  const [confirmLogout, setConfirmLogout] = useState(false)
   const itemCount = useCartStore((s) => s.itemCount)
   const toggleCart = useCartStore((s) => s.toggleCart)
   const user = useAuthStore((s) => s.user)
@@ -58,13 +61,18 @@ export default function Navbar() {
               <div className="flex items-center gap-2">
                 {user ? (
                   <div className="hidden items-center gap-2 md:flex">
-                    <span className="rounded-full border border-Mneutral-900 px-[12px] py-[10px] text__14">
+                    <Link
+                      to="/account"
+                      className={`rounded-full border border-Mneutral-900 px-[12px] py-[10px] text__14 transition-opacity duration-200 hover:opacity-80 ${
+                        location.pathname === '/account' ? 'bg-Mneutral-900 text-white' : ''
+                      }`}
+                    >
                       HI, {user.firstName.toUpperCase()}
-                    </span>
+                    </Link>
                     <button
                       type="button"
-                      onClick={logout}
-                      className="rounded-full border border-Mneutral-200 px-[12px] py-[10px] text__14 text-Mneutral-600"
+                      onClick={() => setConfirmLogout(true)}
+                      className="rounded-full border border-Mneutral-200 px-[12px] py-[10px] text__14 text-Mneutral-600 transition-colors hover:border-Mneutral-900 hover:text-Mneutral-900"
                     >
                       LOGOUT
                     </button>
@@ -133,13 +141,21 @@ export default function Navbar() {
                 </motion.div>
               ))}
               {user ? (
-                <button
-                  type="button"
-                  onClick={logout}
-                  className="mt-4 inline-flex w-fit items-center rounded-full border border-Mneutral-900 px-[12px] py-[10px] text__14"
-                >
-                  LOGOUT
-                </button>
+                <div className="mt-4 flex flex-col gap-3">
+                  <Link
+                    to="/account"
+                    className="inline-flex w-fit items-center rounded-full border border-Mneutral-900 px-[12px] py-[10px] text__14"
+                  >
+                    MY ACCOUNT
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmLogout(true)}
+                    className="inline-flex w-fit items-center rounded-full border border-Mneutral-200 px-[12px] py-[10px] text__14 text-Mneutral-600"
+                  >
+                    LOGOUT
+                  </button>
+                </div>
               ) : (
                 <div className="mt-4 flex gap-2">
                   <button
@@ -162,6 +178,19 @@ export default function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ConfirmDialog
+        open={confirmLogout}
+        title="LOGOUT"
+        message={user ? `Are you sure you want to log out, ${user.firstName}? Your bag stays saved for next time.` : 'Are you sure you want to log out?'}
+        confirmLabel="Yes, log out"
+        onCancel={() => setConfirmLogout(false)}
+        onConfirm={() => {
+          setConfirmLogout(false)
+          logout()
+          navigate('/')
+        }}
+      />
     </>
   )
 }

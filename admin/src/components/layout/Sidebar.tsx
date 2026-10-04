@@ -1,19 +1,20 @@
-import React from 'react'
-import { motion } from 'framer-motion'
-import { NavLink } from 'react-router-dom'
+import React, { useEffect, useState } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
 import {
-  CircleDollarSign,
   FileText,
   LayoutDashboard,
+  Leaf,
   Package,
   Settings,
   ShoppingBag,
-  Sparkles,
   Star,
   Tag,
   TrendingUp,
   Users,
 } from 'lucide-react'
+import { apiData } from '../../lib/api'
+import { formatMoneyShort } from '../../lib/format'
+import { useAuthStore, adminInitials } from '../../lib/authStore'
 
 const PRIMARY_NAV = [
   { label: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -30,86 +31,106 @@ const SECONDARY_NAV = [
   { label: 'Settings', href: '/settings', icon: Settings },
 ]
 
+/** Dark flat sidebar — clear navigation, live month figure at the bottom. */
 export default function Sidebar() {
+  const { pathname } = useLocation()
+  const user = useAuthStore((s) => s.user)
+  const [monthRevenue, setMonthRevenue] = useState<number | null>(null)
+  const [pendingOrders, setPendingOrders] = useState<number | null>(null)
+
+  useEffect(() => {
+    let alive = true
+    apiData<{ revenue: { current: number }; orders: { pending: number } }>({ url: '/admin/stats' })
+      .then((data) => {
+        if (!alive) return
+        setMonthRevenue(data.revenue.current)
+        setPendingOrders(data.orders.pending)
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [pathname])
+
   return (
-    <motion.aside
-      className="fixed inset-y-0 left-0 z-30 hidden w-[288px] p-4 lg:block"
-      initial={{ x: -40, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-    >
-      <div className="admin-card flex h-full flex-col overflow-hidden px-4 py-5">
-        <div className="rounded-[28px] border border-Mneutral-100 bg-gradient-to-br from-white via-cream-50 to-Mneutral-50 px-5 py-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-Mneutral-900 text-white">
-              <Sparkles size={18} />
-            </div>
-            <div>
-              <p className="admin-kicker">Premium Commerce</p>
-              <h2 className="mt-1 font-display text__24 font-medium text-Mneutral-900">
-                LUMIERE
-              </h2>
-            </div>
-          </div>
-          <p className="mt-4 text__14 text-Mneutral-600">
-            A refined control center for merchandising, orders, and brand storytelling.
-          </p>
+    <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-[#0b1f19] bg-[#102d26] lg:flex">
+      {/* Brand */}
+      <div className="flex items-center gap-2.5 px-5 pb-5 pt-5">
+        <div className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[#9edccd] text-[#102d26]">
+          <Leaf size={15} strokeWidth={2.2} />
         </div>
-
-        <div className="mt-6 flex-1 overflow-y-auto pr-1">
-          <div className="mb-6">
-            <p className="admin-kicker px-3">Commerce</p>
-            <nav className="mt-3 space-y-1.5">
-              {PRIMARY_NAV.map(({ label, href, icon: Icon }) => (
-                <NavLink
-                  key={label}
-                  to={href}
-                  end={href === '/'}
-                  className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
-                >
-                  <span className="sidebar-link-icon">
-                    <Icon size={16} strokeWidth={1.8} />
-                  </span>
-                  <span>{label}</span>
-                </NavLink>
-              ))}
-            </nav>
-          </div>
-
-          <div>
-            <p className="admin-kicker px-3">Content & Growth</p>
-            <nav className="mt-3 space-y-1.5">
-              {SECONDARY_NAV.map(({ label, href, icon: Icon }) => (
-                <NavLink
-                  key={label}
-                  to={href}
-                  className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
-                >
-                  <span className="sidebar-link-icon">
-                    <Icon size={16} strokeWidth={1.8} />
-                  </span>
-                  <span>{label}</span>
-                </NavLink>
-              ))}
-            </nav>
-          </div>
-        </div>
-
-        <div className="mt-6 rounded-[28px] bg-Mneutral-900 px-5 py-5 text-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text__12 uppercase tracking-[0.28em] text-white/60">This Week</p>
-              <h3 className="mt-2 font-display text__24 font-medium">$52.8k</h3>
-            </div>
-            <div className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10">
-              <CircleDollarSign size={18} />
-            </div>
-          </div>
-          <p className="mt-3 text__14 text-white/70">
-            Revenue is up 18.2% with strongest traction from serums and replenishment orders.
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#7fa092]">
+            Admin
           </p>
+          <h2 className="text__16 font-semibold tracking-[0.06em] text-white">CALESTA</h2>
         </div>
       </div>
-    </motion.aside>
+
+      <div className="h-px bg-white/[0.07]" />
+
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4">
+        <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#5f7f70]">
+          Commerce
+        </p>
+        <div className="space-y-0.5">
+          {PRIMARY_NAV.map(({ label, href, icon: Icon }) => (
+            <NavLink
+              key={label}
+              to={href}
+              end={href === '/'}
+              className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+            >
+              <span className="sidebar-link-icon">
+                <Icon size={15} strokeWidth={2} />
+              </span>
+              <span>{label}</span>
+            </NavLink>
+          ))}
+        </div>
+
+        <p className="px-3 pb-2 pt-5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#5f7f70]">
+          Content & Growth
+        </p>
+        <div className="space-y-0.5">
+          {SECONDARY_NAV.map(({ label, href, icon: Icon }) => (
+            <NavLink
+              key={label}
+              to={href}
+              className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
+            >
+              <span className="sidebar-link-icon">
+                <Icon size={15} strokeWidth={2} />
+              </span>
+              <span>{label}</span>
+            </NavLink>
+          ))}
+        </div>
+      </nav>
+
+      {/* Live month footer */}
+      <div className="border-t border-white/[0.07] px-5 py-4">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#5f7f70]">
+          This month
+        </p>
+        <p className="mt-1.5 text__20 font-semibold tabular-nums text-white">
+          {monthRevenue === null ? '—' : formatMoneyShort(monthRevenue)}
+        </p>
+        <p className="mt-1 text-[11.5px] text-[#7fa092]">
+          {pendingOrders === null
+            ? 'Loading store data…'
+            : `${pendingOrders} order${pendingOrders === 1 ? '' : 's'} to fulfill`}
+        </p>
+        {user && (
+          <div className="mt-3 flex items-center gap-2.5 border-t border-white/[0.07] pt-3">
+            <div className="flex h-7 w-7 items-center justify-center rounded-[7px] bg-white/10 text-[10.5px] font-semibold text-white">
+              {adminInitials(user)}
+            </div>
+            <p className="truncate text-[11.5px] text-[#a8bfaf]">{user.email}</p>
+          </div>
+        )}
+      </div>
+    </aside>
   )
 }

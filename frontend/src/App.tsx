@@ -8,6 +8,8 @@ import CartPage from './pages/CartPage'
 import CheckoutPage from './pages/CheckoutPage'
 import AboutPage from './pages/AboutPage'
 import JournalPage from './pages/JournalPage'
+import AccountPage from './pages/AccountPage'
+import { useCatalogStore } from './lib/catalog'
 
 // AOS init
 declare global {
@@ -17,6 +19,8 @@ declare global {
 }
 
 export default function App() {
+  const loadCatalog = useCatalogStore((s) => s.load)
+
   useEffect(() => {
     if (window.AOS) {
       window.AOS.init({
@@ -26,7 +30,9 @@ export default function App() {
         offset: 80,
       })
     }
-  }, [])
+    // Load live catalog from the API (falls back to bundled mock data)
+    loadCatalog()
+  }, [loadCatalog])
 
   return (
     <BrowserRouter>
@@ -39,6 +45,7 @@ export default function App() {
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/journal" element={<JournalPage />} />
+          <Route path="/account" element={<AccountPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Layout>

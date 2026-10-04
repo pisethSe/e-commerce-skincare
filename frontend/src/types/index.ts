@@ -115,14 +115,23 @@ export interface CartItem {
   variant?: ProductVariant
 }
 
+export interface AppliedCoupon {
+  code: string
+  discount: number
+}
+
 export interface CartState {
   items: CartItem[]
   isOpen: boolean
+  coupon: AppliedCoupon | null
+  couponError: string | null
   addItem: (product: Product, quantity?: number, variant?: ProductVariant) => void
   removeItem: (productId: string) => void
   updateQuantity: (productId: string, quantity: number) => void
   clearCart: () => void
   toggleCart: () => void
+  applyCoupon: (code: string) => Promise<boolean>
+  clearCoupon: () => void
   total: () => number
   itemCount: () => number
 }

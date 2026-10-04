@@ -2,9 +2,11 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowUpRight } from 'lucide-react'
-import { CATEGORIES } from '../../lib/data'
+import { useCatalogStore } from '../../lib/catalog'
 
 export default function CategoriesSection() {
+  const { categories } = useCatalogStore()
+
   return (
     <section className="section-padding bg-white">
       <div className="container-custom">
@@ -16,7 +18,7 @@ export default function CategoriesSection() {
 
         {/* Grid — asymmetric layout */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {CATEGORIES.map((cat, i) => (
+          {categories.map((cat, i) => (
             <motion.div
               key={cat.id}
               className={`group relative overflow-hidden cursor-pointer ${

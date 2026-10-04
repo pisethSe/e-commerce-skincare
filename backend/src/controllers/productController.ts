@@ -21,8 +21,8 @@ export const getProducts = async (req: Request, res: Response): Promise<void> =>
 
   const skip = (Number(page) - 1) * Number(limit)
 
-  // Build where clause
-  const where: Record<string, unknown> = { inStock: true }
+  // Build where clause — admins can pass ?all=1 to include out-of-stock products
+  const where: Record<string, unknown> = req.query.all === '1' ? {} : { inStock: true }
 
   if (category) {
     where.category = { slug: category }
@@ -83,7 +83,7 @@ export const getProducts = async (req: Request, res: Response): Promise<void> =>
 // GET /api/products/:slug
 export const getProductBySlug = async (req: Request, res: Response): Promise<void> => {
   const product = await prisma.product.findUnique({
-    where: { slug: req.params.slug },
+    where: { slug: req.params.slug as string },
     include: {
       category: { select: { id: true, name: true, slug: true } },
       variants: true,
@@ -106,7 +106,7 @@ export const getProductBySlug = async (req: Request, res: Response): Promise<voi
 // GET /api/products/:id/related
 export const getRelatedProducts = async (req: Request, res: Response): Promise<void> => {
   const product = await prisma.product.findUnique({
-    where: { id: req.params.id },
+    where: { id: req.params.id as string },
     select: { categoryId: true },
   })
   if (!product) throw new ApiError('Product not found', 404)
@@ -114,7 +114,7 @@ export const getRelatedProducts = async (req: Request, res: Response): Promise<v
   const related = await prisma.product.findMany({
     where: {
       categoryId: product.categoryId,
-      id: { not: req.params.id },
+      id: { not: req.params.id as string },
       inStock: true,
     },
     include: { category: { select: { id: true, name: true, slug: true } } },
@@ -141,54 +141,80 @@ export const createProduct = async (req: AuthRequest, res: Response): Promise<vo
   const category = await prisma.category.findUnique({ where: { id: categoryId } })
   if (!category) throw new ApiError('Category not found', 404)
 
-  const product = await prisma.product.create({
-    data: {
-      name,
-      slug: slug || name.toLowerCase().replace(/\s+/g, '-'),
-      tagline,
-      description,
-      longDescription,
-      price,
-      comparePrice,
-      volume,
-      categoryId,
-      images: images || [],
-      tags: tags || [],
-      ingredients: ingredients || [],
-      benefits: benefits || [],
-      howToUse,
-      isNew: isNew || false,
-      isBestseller: isBestseller || false,
-      isFeatured: isFeatured || false,
-      inStock: inStock !== undefined ? inStock : true,
-      stockCount: stockCount || 0,
-    },
-    include: { category: true },
-  })
-
-  res.status(201).json({ success: true, data: product })
+  try {
+    const product = await prisma.product.create({
+      data: {
+        name,
+        slug: slug || name.toLowerCase().replace(/\s+/g, '-'),
+        tagline,
+        description,
+        longDescription,
+        price,
+        comparePrice,
+        volume,
+        categoryId,
+        images: images || [],
+        tags: tags || [],
+        ingredients: ingredients || [],
+        benefits: benefits || [],
+        howToUse,
+        isNew: isNew || false,
+        isBestseller: isBestseller || false,
+        isFeatured: isFeatured || false,
+        inStock: inStock !== undefined ? inStock : true,
+        stockCount: stockCount || 0,
+      },
+      include: { category: true },
+    })
+    res.status(201).json({ success: true, data: product })
+  } catch (err: unknown) {
+    if ((err as { code?: string })?.code === 'P2002') {
+      throw new ApiError('A product with that slug already exists — pick a different name or slug', 409)
+    }
+    throw err
+  }
 }
 
 // PUT /api/products/:id — Admin only
 export const updateProduct = async (req: AuthRequest, res: Response): Promise<void> => {
-  const product = await prisma.product.findUnique({ where: { id: req.params.id } })
+  const product = await prisma.product.findUnique({ where: { id: req.params.id as string } })
   if (!product) throw new ApiError('Product not found', 404)
 
-  const updated = await prisma.product.update({
-    where: { id: req.params.id },
-    data: req.body,
-    include: { category: true },
-  })
-
-  res.json({ success: true, data: updated })
+  try {
+    const updated = await prisma.product.update({
+      where: { id: req.params.id as string },
+      data: req.body,
+      include: { category: true },
+    })
+    res.json({ success: true, data: updated })
+  } catch (err: unknown) {
+    const prismaCode = (err as { code?: string })?.code
+    // A nonexistent categoryId arrives as a foreign-key error — make it a 400
+    if (prismaCode === 'P2003') {
+      throw new ApiError('Category not found', 400)
+    }
+    if (prismaCode === 'P2002') {
+      throw new ApiError('A product with that slug already exists — pick a different name or slug', 409)
+    }
+    throw err
+  }
 }
 
 // DELETE /api/products/:id — Admin only
 export const deleteProduct = async (req: AuthRequest, res: Response): Promise<void> => {
-  const product = await prisma.product.findUnique({ where: { id: req.params.id } })
+  const product = await prisma.product.findUnique({ where: { id: req.params.id as string } })
   if (!product) throw new ApiError('Product not found', 404)
 
-  await prisma.product.delete({ where: { id: req.params.id } })
+  try {
+    await prisma.product.delete({ where: { id: req.params.id as string } })
+  } catch (err: unknown) {
+    // Order items preserve the product record (no cascade) — block with a clean
+    // business error instead of a foreign-key 500.
+    if ((err as { code?: string })?.code === 'P2003') {
+      throw new ApiError('This product has order history and cannot be deleted — mark it out of stock instead', 409)
+    }
+    throw err
+  }
 
   res.json({ success: true, message: 'Product deleted successfully' })
 }

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import ProductCard from '../components/ui/ProductCard'
-import { CATEGORIES, PRODUCTS } from '../lib/data'
+import { useCatalogStore } from '../lib/catalog'
 import { Product } from '../types'
 
 const sortOptions = [
@@ -13,6 +13,7 @@ const sortOptions = [
 
 export default function ShopPage() {
   const [searchParams] = useSearchParams()
+  const { products, categories } = useCatalogStore()
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '')
   const [sortBy, setSortBy] = useState('newest')
 
@@ -21,7 +22,7 @@ export default function ShopPage() {
   }, [])
 
   const filtered = useMemo(() => {
-    const result: Product[] = PRODUCTS.filter((product) => (
+    const result: Product[] = products.filter((product) => (
       selectedCategory ? product.category.slug === selectedCategory : true
     ))
 
@@ -35,7 +36,7 @@ export default function ShopPage() {
       default:
         return [...result].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     }
-  }, [selectedCategory, sortBy])
+  }, [products, selectedCategory, sortBy])
 
   return (
     <div className="bg-Mneutral-50 pt-[92px] text-Mneutral-900">
@@ -68,7 +69,7 @@ export default function ShopPage() {
               >
                 All Products
               </button>
-              {CATEGORIES.map((category) => (
+              {categories.map((category) => (
                 <button
                   key={category.id}
                   type="button"

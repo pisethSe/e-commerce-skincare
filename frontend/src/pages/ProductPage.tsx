@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Heart, Share2 } from 'lucide-react'
-import { PRODUCTS } from '../lib/data'
+import { useCatalogStore } from '../lib/catalog'
 import { formatPrice } from '../lib/utils'
 import { useCartStore, useWishlistStore } from '../lib/store'
 import ProductCard from '../components/ui/ProductCard'
@@ -10,7 +10,8 @@ import ImageWithFallback from '../components/ui/ImageWithFallback'
 export default function ProductPage() {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
-  const product = PRODUCTS.find((item) => item.slug === slug)
+  const { products } = useCatalogStore()
+  const product = products.find((item) => item.slug === slug)
   const [selectedImage, setSelectedImage] = useState(0)
   const [quantity, setQuantity] = useState(1)
   const addItem = useCartStore((s) => s.addItem)
@@ -35,7 +36,7 @@ export default function ProductPage() {
     )
   }
 
-  const related = PRODUCTS.filter((item) => item.categoryId === product.categoryId && item.id !== product.id).slice(0, 4)
+  const related = products.filter((item) => item.categoryId === product.categoryId && item.id !== product.id).slice(0, 4)
   const wished = has(product.id)
 
   return (

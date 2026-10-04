@@ -27,7 +27,7 @@ async function main() {
     create: {
       email: 'admin@lumiere.com',
       password: adminPassword,
-      firstName: 'Lumière',
+      firstName: 'Calesta',
       lastName: 'Admin',
       role: 'ADMIN',
       emailVerified: true,

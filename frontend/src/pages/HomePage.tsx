@@ -2,7 +2,8 @@ import React, { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Droplets, Sparkles } from "lucide-react";
 import ProductCard from "../components/ui/ProductCard";
-import { PRODUCTS, TESTIMONIALS } from "../lib/data";
+import { useCatalogStore } from "../lib/catalog";
+import { TESTIMONIALS } from "../lib/data";
 import { gsap, useGSAP } from "../lib/gsap";
 
 const features = [
@@ -35,6 +36,7 @@ const communityShots = [
 
 export default function HomePage() {
   const pageRef = useRef<HTMLDivElement>(null);
+  const { products } = useCatalogStore();
 
   useEffect(() => {
     document.title = "Calesta — Skincare & Beauty";
@@ -327,7 +329,7 @@ export default function HomePage() {
             className="grid grid-cols-1 gap-[20px] xs:grid-cols-2 lg:grid-cols-4"
             data-gsap-stagger
           >
-            {PRODUCTS.slice(0, 4).map((product) => (
+            {products.slice(0, 4).map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>

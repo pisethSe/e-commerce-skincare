@@ -3,10 +3,11 @@ import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import ProductCard from '../ui/ProductCard'
-import { PRODUCTS } from '../../lib/data'
+import { useCatalogStore } from '../../lib/catalog'
 
 export default function FeaturedProducts() {
-  const featured = PRODUCTS.filter((p) => p.isFeatured).slice(0, 4)
+  const { products } = useCatalogStore()
+  const featured = products.filter((p) => p.isFeatured).slice(0, 4)
 
   return (
     <section className="section-padding bg-cream-50">

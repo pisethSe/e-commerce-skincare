@@ -4,6 +4,7 @@ import helmet from 'helmet'
 import morgan from 'morgan'
 import rateLimit from 'express-rate-limit'
 import dotenv from 'dotenv'
+import path from 'path'
 
 import authRoutes from './routes/auth'
 import productRoutes from './routes/products'
@@ -16,6 +17,7 @@ import blogRoutes from './routes/blog'
 import newsletterRoutes from './routes/newsletter'
 import couponRoutes from './routes/coupons'
 import adminRoutes from './routes/admin'
+import uploadRoutes from './routes/uploads'
 import { errorHandler, notFound } from './middleware/errorHandler'
 
 dotenv.config()
@@ -50,10 +52,10 @@ const limiter = rateLimit({
 })
 app.use('/api', limiter)
 
-// Stricter limit for auth
+// Stricter limit for auth (configurable via RATE_LIMIT_AUTH_MAX)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: Number(process.env.RATE_LIMIT_AUTH_MAX) || 10,
   message: { success: false, message: 'Too many auth attempts, please try again in 15 minutes.' },
 })
 
@@ -98,6 +100,10 @@ app.use('/api/blog', blogRoutes)
 app.use('/api/newsletter', newsletterRoutes)
 app.use('/api/coupons', couponRoutes)
 app.use('/api/admin', adminRoutes)
+app.use('/api/uploads', uploadRoutes)
+
+// Serve uploaded images statically (index.ts is in src/ → ../uploads = backend/uploads)
+app.use('/uploads', express.static(path.resolve(__dirname, '../uploads')))
 
 // =============================================
 // ERROR HANDLING
