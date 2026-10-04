@@ -31,7 +31,7 @@ test('POST /api/orders creates an order with correct coupon, shipping, and tax m
   const subtotal = Number(product.price) * 2
   const discount = subtotal * 0.15
   const shipping = subtotal - discount >= 75 ? 0 : 8.95
-  const tax = (subtotal - discount) * 0.08
+  const tax = (subtotal - discount) * 0.10
   const total = subtotal - discount + shipping + tax
 
   assert.ok(Math.abs(Number(order.subtotal) - subtotal) < 0.01, `subtotal ${order.subtotal} vs ${subtotal}`)

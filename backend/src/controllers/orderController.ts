@@ -87,7 +87,8 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
 
   // Standard ships free over $75 (after discount)
   const shipping = subtotal - discount >= 75 ? 0 : 8.95
-  const tax = (subtotal - discount) * 0.08
+  // Cambodia VAT — 10%
+  const tax = (subtotal - discount) * 0.10
   const total = subtotal - discount + shipping + tax
 
   // Create order in transaction

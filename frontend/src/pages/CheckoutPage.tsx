@@ -87,7 +87,8 @@ export default function CheckoutPage() {
   const discount = coupon?.discount ?? 0
   // One shipping method — standard, free over $75 (after discount)
   const shipping = subtotal - discount >= 75 ? 0 : STANDARD_SHIPPING
-  const tax = (subtotal - discount) * 0.08
+  // Cambodia VAT — 10%
+  const tax = (subtotal - discount) * 0.10
   const orderTotal = subtotal - discount + shipping + tax
 
   const setField = (key: keyof CheckoutForm, value: string) =>
