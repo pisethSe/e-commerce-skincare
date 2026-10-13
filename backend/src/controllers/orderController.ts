@@ -41,24 +41,37 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
     where: { id: { in: productIds } },
   })
 
-  const orderItems = items.map((item: { productId: string; quantity: number }) => {
-    const product = products.find((p) => p.id === item.productId)
-    if (!product) throw new ApiError(`Product ${item.productId} not found`, 404)
-    if (!product.inStock || product.stockCount < item.quantity) {
+  // Quantities must be positive whole numbers, aggregated per product so
+  // duplicate rows can't bypass the stock check and oversell inventory.
+  const quantityByProduct = new Map<string, number>()
+  for (const item of items) {
+    const qty = Number(item.quantity)
+    if (!Number.isInteger(qty) || qty <= 0) {
+      throw new ApiError('Each item quantity must be a positive whole number', 400)
+    }
+    if (qty > 99) {
+      throw new ApiError('Maximum 99 units of a product per order', 400)
+    }
+    quantityByProduct.set(item.productId, (quantityByProduct.get(item.productId) ?? 0) + qty)
+  }
+
+  const orderItems = [...quantityByProduct.entries()].map(([productId, quantity]) => {
+    const product = products.find((p) => p.id === productId)
+    if (!product) throw new ApiError(`Product ${productId} not found`, 404)
+    if (!product.inStock || product.stockCount < quantity) {
       throw new ApiError(`${product.name} is out of stock`, 400)
     }
     return {
-      productId: item.productId,
+      productId,
       name: product.name,
       price: product.price,
-      quantity: item.quantity,
+      quantity,
     }
   })
 
-  // Calculate totals
+  // Calculate totals — prices are Prisma Decimals, coerce with Number()
   const subtotal = orderItems.reduce(
-    (sum: number, item: { price: number; quantity: number }) =>
-      sum + Number(item.price) * item.quantity,
+    (sum: number, item) => sum + Number(item.price) * item.quantity,
     0
   )
 
@@ -82,6 +95,9 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
     discount = coupon.type === 'PERCENTAGE'
       ? subtotal * (Number(coupon.value) / 100)
       : Number(coupon.value)
+    // A discount can never exceed the subtotal — a FIXED coupon worth more
+    // than the basket must not produce a negative total
+    discount = Math.min(discount, subtotal)
     couponId = coupon.id
   }
 

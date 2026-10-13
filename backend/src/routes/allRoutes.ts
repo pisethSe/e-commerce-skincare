@@ -181,7 +181,8 @@ couponRoutes.post('/validate', async (req, res) => {
   const discount = coupon.type === 'PERCENTAGE'
     ? orderTotal * (Number(coupon.value) / 100)
     : Number(coupon.value)
-  res.json({ success: true, data: { coupon, discount } })
+  // The quoted discount can never exceed the basket total
+  res.json({ success: true, data: { coupon, discount: Math.min(discount, orderTotal) } })
 })
 
 couponRoutes.get('/', authenticate, requireAdmin, async (_req, res) => {

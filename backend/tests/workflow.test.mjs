@@ -5,7 +5,7 @@
  */
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { isServerUp, call, adminToken, customerToken, makeUser, makeAddress, freshProducts, getCategories, ok } from './helpers.mjs'
+import { isServerUp, call, adminToken, customerToken, makeUser, makeAddress, freshProducts, getCategories, ok, pickStockedProduct } from './helpers.mjs'
 
 const serverUp = await isServerUp()
 
@@ -55,6 +55,79 @@ async function productById(id) {
   const products = await freshProducts()
   return products.find((p) => p.id === id) ?? null
 }
+
+test('order quantities must be positive whole numbers (no negative/zero/fractional)', async () => {
+  if (!serverUp) return
+  const user = await makeUser('qty')
+  const addressId = await makeAddress(user.token)
+  const product = await makeProduct({ stockCount: 10, price: 20 })
+
+  for (const bad of [0, -3, 2.5]) {
+    const { status, body } = await call('POST', '/api/orders', {
+      token: user.token,
+      body: { items: [{ productId: product.id, quantity: bad }], addressId },
+    })
+    assert.equal(status, 400, `quantity ${bad} should be rejected, got ${status}`)
+    assert.match(body.message, /positive whole number/i)
+  }
+
+  // Stock untouched by the rejected orders
+  const fresh = await productById(product.id)
+  assert.equal(fresh.stockCount, 10, 'rejected orders must not change stock')
+})
+
+test('duplicate product rows aggregate before the stock check (no oversell)', async () => {
+  if (!serverUp) return
+  const user = await makeUser('dup')
+  const addressId = await makeAddress(user.token)
+  // Dedicated product with known stock — order MORE than its stock via two rows
+  const product = await makeProduct({ stockCount: 5, price: 20 })
+  const overStock = 10
+
+  const { status, body } = await call('POST', '/api/orders', {
+    token: user.token,
+    body: {
+      items: [
+        { productId: product.id, quantity: overStock },
+        { productId: product.id, quantity: overStock },
+      ],
+      addressId,
+    },
+  })
+  assert.equal(status, 400, `oversell via duplicates must be rejected, got ${status}: ${body.message ?? ''}`)
+  assert.match(body.message, /out of stock/i)
+
+  const fresh = await productById(product.id)
+  assert.equal(fresh.stockCount, 5, 'stock must be untouched after the rejected oversell')
+})
+
+test('a FIXED coupon larger than the basket never produces a negative total', async () => {
+  if (!serverUp) return
+  const coupon = await makeCoupon({ type: 'FIXED', value: 500 })
+  const product = await makeProduct({ stockCount: 10, price: 20 })
+  const user = await makeUser('cap')
+  const addressId = await makeAddress(user.token)
+
+  // /validate quotes a capped discount
+  const validate = await call('POST', '/api/coupons/validate', {
+    body: { code: coupon.code, orderTotal: 20 },
+  })
+  assert.ok(Number(validate.body.data.discount) <= 20, 'quoted discount must be capped at the order total')
+
+  // The order clamps the discount — total stays positive
+  const { status, body } = await call('POST', '/api/orders', {
+    token: user.token,
+    body: { items: [{ productId: product.id, quantity: 1 }], addressId, couponCode: coupon.code },
+  })
+  assert.equal(status, 201)
+  const subtotal = Number(body.data.subtotal)
+  const discount = Number(body.data.discount)
+  const total = Number(body.data.total)
+  assert.ok(discount <= subtotal, `discount ${discount} must not exceed subtotal ${subtotal}`)
+  assert.ok(total >= 0, `total ${total} must never be negative`)
+  assert.ok(Math.abs(total - (subtotal - discount + Number(body.data.shipping) + Number(body.data.tax))) < 0.01,
+    'total math must stay consistent with the capped discount')
+})
 
 /* ── Order cancellation restocks ───────────────── */
 
