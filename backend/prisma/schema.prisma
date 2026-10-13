@@ -130,6 +130,7 @@ model Order {
   discount      Decimal     @default(0) @db.Decimal(10, 2)
   total         Decimal     @db.Decimal(10, 2)
   status        OrderStatus @default(PENDING)
+  paymentStatus String      @default("UNPAID")
   paymentMethod String?
   paymentId     String?
   notes         String?

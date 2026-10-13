@@ -21,6 +21,7 @@ interface AdminOrder {
   id: string
   orderNumber: string
   status: string
+  paymentStatus?: string
   subtotal: number
   shipping: number
   tax: number
@@ -225,6 +226,15 @@ export default function OrdersPage() {
                       <td className="table-td text-center tabular-nums text-[#3f5650]">{order.items.length}</td>
                       <td className="table-td font-semibold tabular-nums text-[#102d26]">
                         {formatMoney(order.total)}
+                        <span
+                          className={`mt-1 block w-fit text-[10px] font-medium uppercase tracking-wide rounded-[4px] px-1.5 py-0.5 ${
+                            order.paymentStatus === 'PAID'
+                              ? 'bg-[#eaf1e3] text-[#4a6132]'
+                              : 'bg-[#f7f1de] text-[#7a6420]'
+                          }`}
+                        >
+                          {order.paymentStatus === 'PAID' ? 'Paid' : 'Unpaid'}
+                        </span>
                       </td>
                       <td className="table-td">
                         <select

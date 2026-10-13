@@ -25,6 +25,12 @@ type Step = (typeof steps)[number]
 
 type PaymentChoice = 'card' | 'aba_payway' | 'bakong'
 
+interface PaymentConfig {
+  stripe: boolean
+  bakong: boolean
+  currency: 'USD' | 'KHR'
+}
+
 interface CheckoutForm {
   firstName: string
   lastName: string
@@ -66,9 +72,23 @@ export default function CheckoutPage() {
   const [card, setCard] = useState({ number: '', expiry: '', cvc: '', name: '' })
   const [paymentChoice, setPaymentChoice] = useState<PaymentChoice>('card')
   const [confirmPlace, setConfirmPlace] = useState(false)
+  const [paymentConfig, setPaymentConfig] = useState<PaymentConfig>({ stripe: false, bakong: false, currency: 'USD' })
+  const [bakongPayment, setBakongPayment] = useState<{ orderId: string; orderNumber: string; total: number } | null>(null)
+  const [bakongQr, setBakongQr] = useState<{ qrImage: string; qr: string; currency: string } | null>(null)
+  const [verifying, setVerifying] = useState(false)
 
   useEffect(() => {
     document.title = 'Calesta — Checkout'
+  }, [])
+
+  // Which gateways are live?
+  useEffect(() => {
+    fetch(getApiUrl('/api/payments/config'))
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success) setPaymentConfig(json.data)
+      })
+      .catch(() => {})
   }, [])
 
   // Prefill contact details for logged-in customers
@@ -190,7 +210,31 @@ export default function CheckoutPage() {
         throw new Error(orderResult.message || 'Could not place the order.')
       }
 
+      const orderId: string = orderResult.data.id
       setOrderNumber(orderResult.data.orderNumber)
+
+      // Card + Stripe configured → hosted Stripe Checkout
+      if (paymentChoice === 'card' && paymentConfig.stripe) {
+        const sessionRes = await apiFetch('/api/payments/stripe/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', token: accessToken },
+          body: JSON.stringify({ orderId }),
+        })
+        const sessionJson = await sessionRes.json()
+        if (sessionJson.success && sessionJson.data?.url) {
+          window.location.href = sessionJson.data.url
+          return
+        }
+        // Stripe unavailable — fall through to the demo confirmation
+      }
+
+      // Bakong → show the KHQR and settle on verify
+      if (paymentChoice === 'bakong') {
+        setBakongPayment({ orderId, orderNumber: orderResult.data.orderNumber, total: orderTotal })
+        setStep('payment')
+        return
+      }
+
       clearCart()
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Could not place the order.'
@@ -203,8 +247,56 @@ export default function CheckoutPage() {
     }
   }
 
+  /* ---------- Bakong KHQR payment ---------- */
+  useEffect(() => {
+    if (!bakongPayment || !accessToken) return
+    let alive = true
+    apiFetch('/api/payments/bakong/qr', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', token: accessToken },
+      body: JSON.stringify({ orderId: bakongPayment.orderId }),
+    })
+      .then((r) => r.json())
+      .then((json) => {
+        if (!alive) return
+        if (json.success && json.data?.qrImage) {
+          setBakongQr({ qrImage: json.data.qrImage, qr: json.data.qr, currency: json.data.currency })
+        } else {
+          // Gateway not configured — the demo flow still completes below
+          setOrderError(json.message ?? null)
+        }
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [bakongPayment, accessToken])
+
+  const verifyBakong = async () => {
+    if (!bakongPayment || !accessToken) return
+    setVerifying(true)
+    setOrderError(null)
+    try {
+      const res = await apiFetch('/api/payments/bakong/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', token: accessToken },
+        body: JSON.stringify({ orderId: bakongPayment.orderId }),
+      })
+      const json = await res.json()
+      if (json.success && json.data?.paymentStatus === 'PAID') {
+        setBakongPayment(null) // the confirmation view takes over
+      } else {
+        setOrderError(json.message ?? 'Payment not found yet — scan the QR and try again.')
+      }
+    } catch {
+      setOrderError('Verification is unavailable right now — try again.')
+    } finally {
+      setVerifying(false)
+    }
+  }
+
   /* ---------- Confirmation ---------- */
-  if (orderNumber) {
+  if (orderNumber && !bakongPayment) {
     return (
       <div className="bg-Mneutral-50 pt-[92px] text-Mneutral-900">
         <div className="container-custom py-16">
@@ -233,6 +325,69 @@ export default function CheckoutPage() {
                 Back Home
               </Link>
             </div>
+          </motion.div>
+        </div>
+      </div>
+    )
+  }
+
+  /* ---------- Bakong QR view ---------- */
+  if (bakongPayment) {
+    return (
+      <div className="bg-Mneutral-50 pt-[92px] text-Mneutral-900">
+        <div className="container-custom py-12">
+          <motion.div
+            className="mx-auto max-w-[560px] rounded-[32px] bg-white px-[20px] py-[48px] text-center xs:px-[40px]"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <p className="text__14 uppercase tracking-[0.28em] text-Mneutral-400">BAKONG KHQR</p>
+            <h1 className="mt-3 text__40 font-medium">Scan to pay</h1>
+            <p className="mt-2 text__18 text-Mneutral-600">
+              Order <span className="font-medium tabular-nums">{bakongPayment.orderNumber}</span> ·{' '}
+              {formatPrice(bakongPayment.total)}
+              {paymentConfig.currency === 'KHR' && ' (KHR)'}
+            </p>
+
+            <div className="mx-auto mt-8 w-fit rounded-[28px] border border-Mneutral-100 p-4">
+              {bakongQr ? (
+                <img src={bakongQr.qrImage} alt="Bakong KHQR payment code" className="h-[280px] w-[280px]" />
+              ) : (
+                <div className="flex h-[280px] w-[280px] items-center justify-center rounded-[20px] bg-Mneutral-50">
+                  <p className="text__14 text-Mneutral-400">Preparing QR…</p>
+                </div>
+              )}
+            </div>
+
+            <p className="mt-5 text__14 text-Mneutral-500">
+              Open any Cambodian bank app, scan the code, and pay{' '}
+              <span className="font-medium text-Mneutral-700">{formatPrice(bakongPayment.total)}</span>.
+            </p>
+
+            {orderError && (
+              <p role="alert" className="mt-4 rounded-[16px] bg-blush-50 px-4 py-3 text__14 text-blush-700">
+                {orderError}
+              </p>
+            )}
+
+            <button
+              type="button"
+              onClick={verifyBakong}
+              disabled={verifying}
+              className="filled-pill-button mt-6 w-full justify-center disabled:opacity-60"
+            >
+              <CheckCircle2 size={16} />
+              {verifying ? 'Checking payment…' : "I've paid — verify payment"}
+            </button>
+            {!paymentConfig.bakong && (
+              <p className="mt-3 text__12 text-Mneutral-400">
+                Demo mode — Bakong auto-verification activates when the store's Bakong account is configured.
+              </p>
+            )}
+            <Link to="/" className="mt-4 inline-block text__14 text-Mneutral-500 underline">
+              Pay later — back home
+            </Link>
           </motion.div>
         </div>
       </div>

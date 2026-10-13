@@ -7,6 +7,7 @@ import dotenv from 'dotenv'
 import path from 'path'
 
 import authRoutes from './routes/auth'
+import paymentRoutes from './routes/payments'
 import productRoutes from './routes/products'
 import categoryRoutes from './routes/categories'
 import orderRoutes from './routes/orders'
@@ -94,6 +95,7 @@ app.use('/api/products', productRoutes)
 app.use('/api/categories', categoryRoutes)
 app.use('/api/orders', orderRoutes)
 app.use('/api/cart', cartRoutes)
+app.use('/api/payments', paymentRoutes)
 app.use('/api/reviews', reviewRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/blog', blogRoutes)
