@@ -175,7 +175,7 @@ export default function CheckoutPage() {
       // no more forced re-login mid-checkout
       const addressRes = await apiFetch('/api/users/addresses', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', token: accessToken },
+        token: accessToken, headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           firstName: form.firstName.trim(),
           lastName: form.lastName.trim(),
@@ -196,7 +196,7 @@ export default function CheckoutPage() {
       // Create the order
       const orderRes = await apiFetch('/api/orders', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', token: accessToken },
+        token: accessToken, headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           items: items.map((i) => ({ productId: i.product.id, quantity: i.quantity })),
           addressId: addressResult.data.id,
@@ -217,7 +217,7 @@ export default function CheckoutPage() {
       if (paymentChoice === 'card' && paymentConfig.stripe) {
         const sessionRes = await apiFetch('/api/payments/stripe/session', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', token: accessToken },
+          token: accessToken, headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ orderId }),
         })
         const sessionJson = await sessionRes.json()
@@ -253,7 +253,7 @@ export default function CheckoutPage() {
     let alive = true
     apiFetch('/api/payments/bakong/qr', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', token: accessToken },
+      token: accessToken, headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ orderId: bakongPayment.orderId }),
     })
       .then((r) => r.json())
@@ -279,7 +279,7 @@ export default function CheckoutPage() {
     try {
       const res = await apiFetch('/api/payments/bakong/verify', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', token: accessToken },
+        token: accessToken, headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId: bakongPayment.orderId }),
       })
       const json = await res.json()

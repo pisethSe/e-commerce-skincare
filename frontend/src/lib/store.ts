@@ -125,11 +125,11 @@ interface UIState {
   isMobileMenuOpen: boolean
   isSearchOpen: boolean
   isAuthModalOpen: boolean
-  authMode: 'login' | 'signup'
+  authMode: 'login' | 'signup' | 'forgot'
   toggleMobileMenu: () => void
   toggleSearch: () => void
   closeMobileMenu: () => void
-  openAuthModal: (mode?: 'login' | 'signup') => void
+  openAuthModal: (mode?: 'login' | 'signup' | 'forgot') => void
   closeAuthModal: () => void
 }
 

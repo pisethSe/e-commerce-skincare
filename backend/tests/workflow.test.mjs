@@ -129,6 +129,54 @@ test('a FIXED coupon larger than the basket never produces a negative total', as
     'total math must stay consistent with the capped discount')
 })
 
+/* ── Order tracking numbers ────────────────────── */
+
+test('admin sets the tracking number; the owner sees it; guards hold', async () => {
+  if (!serverUp) return
+  const user = await makeUser('track')
+  const addressId = await makeAddress(user.token)
+  const product = await pickStockedProduct(5)
+  const { body: orderBody } = await call('POST', '/api/orders', {
+    token: user.token,
+    body: { items: [{ productId: product.id, quantity: 1 }], addressId },
+  })
+  const orderId = orderBody.data.id
+  const admin = await adminToken()
+
+  // Non-admin cannot set tracking
+  const forbidden = await call('PATCH', `/api/orders/${orderId}/tracking`, {
+    token: user.token,
+    body: { trackingNumber: 'KHR999' },
+  })
+  assert.equal(forbidden.status, 403)
+
+  // Unknown order → 404
+  const missing = await call('PATCH', '/api/orders/nope/tracking', {
+    token: admin,
+    body: { trackingNumber: 'KHR999' },
+  })
+  assert.equal(missing.status, 404)
+
+  // Admin sets it → the owner sees it on their order
+  const { status, body } = await call('PATCH', `/api/orders/${orderId}/tracking`, {
+    token: admin,
+    body: { trackingNumber: 'KHR123456789' },
+  })
+  assert.equal(status, 200)
+  assert.equal(body.data.trackingNumber, 'KHR123456789')
+
+  const mine = await call('GET', `/api/orders/${orderId}`, { token: user.token })
+  assert.equal(mine.body.data.trackingNumber, 'KHR123456789')
+
+  // Clearing it works (null)
+  const cleared = await call('PATCH', `/api/orders/${orderId}/tracking`, {
+    token: admin,
+    body: { trackingNumber: null },
+  })
+  assert.equal(cleared.status, 200)
+  assert.equal(cleared.body.data.trackingNumber, null)
+})
+
 /* ── Order cancellation restocks ───────────────── */
 
 test('cancelling an order restores stock and re-lists a depleted product', async () => {

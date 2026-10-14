@@ -4,7 +4,7 @@ import { Eye, EyeOff, X } from 'lucide-react'
 import { getApiUrl } from '../../lib/api'
 import { useAuthStore, useUIStore } from '../../lib/store'
 
-type AuthMode = 'login' | 'signup'
+type AuthMode = 'login' | 'signup' | 'forgot'
 
 const initialForm = {
   firstName: '',
@@ -50,7 +50,7 @@ export default function AuthModal() {
   const [acceptTerms, setAcceptTerms] = useState(false)
 
   const title = useMemo(
-    () => (authMode === 'login' ? 'LOGIN' : 'CREATE AN ACCOUNT'),
+    () => (authMode === 'login' ? 'LOGIN' : authMode === 'forgot' ? 'RESET PASSWORD' : 'CREATE AN ACCOUNT'),
     [authMode]
   )
 
@@ -83,6 +83,28 @@ export default function AuthModal() {
     event.preventDefault()
     setError(null)
     setSuccess(null)
+
+    if (authMode === 'forgot') {
+      if (!form.email) {
+        setError('Please enter your email address.')
+        return
+      }
+      setLoading(true)
+      try {
+        const response = await fetch(getApiUrl('/api/auth/forgot-password'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: form.email }),
+        })
+        const result = await response.json()
+        setSuccess(result.message || 'If that email is registered, a reset link is on its way.')
+      } catch {
+        setError('Unable to send the reset email — try again shortly.')
+      } finally {
+        setLoading(false)
+      }
+      return
+    }
 
     if (!form.email || !form.password) {
       setError('Email and password are required.')
@@ -186,6 +208,15 @@ export default function AuthModal() {
             <div className="grid grid-cols-1 gap-[32px]">
               <h3 className="text__32">{title}</h3>
 
+              {authMode === 'forgot' ? (
+                <button
+                  type="button"
+                  className="-mt-2 w-fit text__14 text-Mneutral-500 underline"
+                  onClick={() => handleModeChange('login')}
+                >
+                  ← Back to sign in
+                </button>
+              ) : (
               <div className="grid grid-cols-2 text-center text__14">
                 <button
                   type="button"
@@ -210,6 +241,7 @@ export default function AuthModal() {
                   I&apos;m new here
                 </button>
               </div>
+              ) }
 
               <form className="grid grid-cols-1 gap-[24px]" onSubmit={handleSubmit}>
                 {authMode === 'signup' && (
@@ -234,6 +266,7 @@ export default function AuthModal() {
                   type="email"
                 />
 
+                {authMode !== 'forgot' && (
                 <PasswordInput
                   value={form.password}
                   onChange={(value) => handleChange('password', value)}
@@ -241,6 +274,7 @@ export default function AuthModal() {
                   visible={showPassword}
                   toggleVisible={() => setShowPassword((current) => !current)}
                 />
+                )}
 
                 {authMode === 'signup' && form.password && (
                   <div className="-mt-4">
@@ -267,6 +301,16 @@ export default function AuthModal() {
                       </p>
                     )}
                   </div>
+                )}
+
+                {authMode === 'login' && (
+                  <button
+                    type="button"
+                    className="-mt-3 w-fit text__14 text-Mneutral-500 underline"
+                    onClick={() => handleModeChange('forgot')}
+                  >
+                    Forgot password?
+                  </button>
                 )}
 
                 {authMode === 'signup' && (
@@ -310,10 +354,10 @@ export default function AuthModal() {
                   disabled={loading}
                   className="inline-flex w-full items-center justify-center rounded-full bg-Mneutral-900 px-[20px] py-[14px] font-medium text__16 text-center text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {loading ? 'Please wait...' : authMode === 'login' ? 'LOGIN' : 'SIGN UP'}
+                  {loading ? 'Please wait...' : authMode === 'login' ? 'LOGIN' : authMode === 'forgot' ? 'SEND RESET LINK' : 'SIGN UP'}
                 </button>
 
-                <div className="flex items-center gap-3">
+                {authMode !== 'forgot' && (<><div className="flex items-center gap-3">
                   <span className="h-px flex-1 bg-Mneutral-200" />
                   <span className="text__12 text-Mneutral-400">or</span>
                   <span className="h-px flex-1 bg-Mneutral-200" />
@@ -329,7 +373,7 @@ export default function AuthModal() {
                 >
                   <GoogleIcon />
                   Continue with Google
-                </button>
+                </button></>)}
               </form>
             </div>
           </motion.div>

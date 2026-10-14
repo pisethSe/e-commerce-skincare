@@ -1,10 +1,11 @@
 import { Request, Response } from 'express'
 import bcrypt from 'bcryptjs'
 import jwt, { type Secret, type SignOptions } from 'jsonwebtoken'
-import { randomUUID } from 'crypto'
+import { randomUUID, randomBytes, createHash } from 'crypto'
 import { prisma } from '../lib/prisma'
 import { ApiError } from '../middleware/errorHandler'
 import { AuthRequest } from '../middleware/auth'
+import { sendMail, passwordResetEmail } from '../lib/email'
 
 const generateTokens = (userId: string, email: string, role: string) => {
   const jwtSecret = process.env.JWT_SECRET as Secret
@@ -294,4 +295,65 @@ export const googleCallback = async (req: Request, res: Response): Promise<void>
   } catch (err) {
     backWithError(err instanceof Error ? err.message : 'Google sign-in failed')
   }
+}
+
+/* ── Password reset (forgot / reset) ───────────── */
+
+// POST /api/auth/forgot-password — always answers the same either way, so the
+// endpoint can't be used to discover which emails are registered
+export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
+  const { email } = req.body
+  if (!email) throw new ApiError('Email is required', 400)
+  const normalized = String(email).trim().toLowerCase()
+  const generic = { success: true, message: 'If that email is registered, a reset link is on its way.' }
+
+  const user = await prisma.user.findUnique({ where: { email: normalized } })
+  if (!user) {
+    res.json(generic); return
+  }
+
+  // One live token per user — a new request invalidates the previous one
+  await prisma.passwordResetToken.deleteMany({ where: { userId: user.id } })
+  const token = randomBytes(32).toString('hex')
+  await prisma.passwordResetToken.create({
+    data: {
+      tokenHash: createHash('sha256').update(token).digest('hex'),
+      userId: user.id,
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+    },
+  })
+
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3003'
+  const resetUrl = `${frontendUrl}/reset-password?token=${token}`
+  void sendMail({
+    to: user.email,
+    subject: 'Reset your Calesta password',
+    html: passwordResetEmail({ customerName: user.firstName || 'there', resetUrl }),
+  })
+  // Without SMTP configured the link is logged so the flow stays testable
+  console.log(`🔗 [password reset] link for ${user.email}: ${resetUrl}`)
+  res.json(generic)
+}
+
+// POST /api/auth/reset-password { token, newPassword }
+export const resetPassword = async (req: Request, res: Response): Promise<void> => {
+  const { token, newPassword } = req.body
+  if (!token || !newPassword) throw new ApiError('Token and new password are required', 400)
+  if (String(newPassword).length < 8) throw new ApiError('Password must be at least 8 characters', 400)
+
+  const tokenHash = createHash('sha256').update(String(token)).digest('hex')
+  const record = await prisma.passwordResetToken.findUnique({ where: { tokenHash } })
+  if (!record || record.expiresAt < new Date()) {
+    throw new ApiError('This reset link is invalid or has expired', 400)
+  }
+
+  const hashed = await bcrypt.hash(String(newPassword), 12)
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: record.userId }, data: { password: hashed } }),
+    prisma.passwordResetToken.delete({ where: { id: record.id } }),
+    // Any signed-in session dies with the password change
+    prisma.refreshToken.deleteMany({ where: { userId: record.userId } }),
+  ])
+
+  res.json({ success: true, message: 'Password updated — you can sign in with your new password.' })
 }

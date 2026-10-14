@@ -313,6 +313,27 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response): Promis
   }
 }
 
+// PATCH /api/orders/:id/tracking — Admin: attach/replace the tracking number
+export const updateTrackingNumber = async (req: AuthRequest, res: Response): Promise<void> => {
+  const { trackingNumber } = req.body
+  if (trackingNumber !== null && typeof trackingNumber !== 'string') {
+    throw new ApiError('trackingNumber must be a string or null', 400)
+  }
+  const trimmed = typeof trackingNumber === 'string' ? trackingNumber.trim() : null
+  if (trimmed && trimmed.length > 60) {
+    throw new ApiError('Tracking number is too long (max 60 characters)', 400)
+  }
+
+  const order = await prisma.order.findUnique({ where: { id: req.params.id as string } })
+  if (!order) throw new ApiError('Order not found', 404)
+
+  const updated = await prisma.order.update({
+    where: { id: order.id },
+    data: { trackingNumber: trimmed || null },
+  })
+  res.json({ success: true, data: updated })
+}
+
 // GET /api/orders — Admin: all orders
 export const getAllOrders = async (req: Request, res: Response): Promise<void> => {
   const { page = '1', limit = '20', status, search } = req.query

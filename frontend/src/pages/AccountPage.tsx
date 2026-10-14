@@ -20,6 +20,7 @@ interface MyOrder {
   id: string
   orderNumber: string
   status: string
+  trackingNumber?: string | null
   subtotal: number
   shipping: number
   tax: number
@@ -37,6 +38,67 @@ const STATUS_STYLES: Record<string, { chip: string; label: string }> = {
   DELIVERED: { chip: 'bg-[#eaf1e3] text-[#4a6132]', label: 'Delivered' },
   CANCELLED: { chip: 'bg-[#fdeeee] text-[#a83636]', label: 'Cancelled' },
   REFUNDED: { chip: 'bg-[#fbe9e0] text-[#9c5530]', label: 'Refunded' },
+}
+
+
+/** Order progress timeline — derived from the order status. */
+const TIMELINE_STEPS = [
+  { key: 'PENDING', label: 'Placed' },
+  { key: 'PROCESSING', label: 'Processing' },
+  { key: 'SHIPPED', label: 'Shipped' },
+  { key: 'DELIVERED', label: 'Delivered' },
+]
+
+function OrderTimeline({ status, trackingNumber }: { status: string; trackingNumber?: string | null }) {
+  if (status === 'CANCELLED') {
+    return (
+      <div className="mt-4 rounded-[20px] bg-[#fdeeee] px-4 py-3 text__14 text-[#a83636]">
+        This order was cancelled{trackingNumber ? ` — tracking reference ${trackingNumber}` : ''}.
+      </div>
+    )
+  }
+  if (status === 'REFUNDED') {
+    return (
+      <div className="mt-4 rounded-[20px] bg-[#fbe9e0] px-4 py-3 text__14 text-[#9c5530]">
+        This order was refunded{trackingNumber ? ` — tracking reference ${trackingNumber}` : ''}.
+      </div>
+    )
+  }
+  const currentIndex = TIMELINE_STEPS.findIndex((s) => s.key === status)
+  return (
+    <div className="mt-4">
+      <div className="flex items-center">
+        {TIMELINE_STEPS.map((step, i) => {
+          const done = i <= currentIndex
+          const last = i === TIMELINE_STEPS.length - 1
+          return (
+            <React.Fragment key={step.key}>
+              <div className="flex flex-col items-center">
+                <div
+                  className={`flex h-6 w-6 items-center justify-center rounded-full border text-[10px] font-medium transition-colors ${
+                    done ? 'border-sage-600 bg-sage-600 text-white' : 'border-Mneutral-300 bg-white text-Mneutral-400'
+                  }`}
+                >
+                  {done ? '✓' : i + 1}
+                </div>
+                <span className={`mt-1 text__12 ${done ? 'font-medium text-Mneutral-700' : 'text-Mneutral-400'}`}>
+                  {step.label}
+                </span>
+              </div>
+              {!last && (
+                <div className={`mx-2 h-[2px] flex-1 rounded-full ${i < currentIndex ? 'bg-sage-600' : 'bg-Mneutral-200'}`} />
+              )}
+            </React.Fragment>
+          )
+        })}
+      </div>
+      {status === 'SHIPPED' && trackingNumber && (
+        <p className="mt-3 text__14 text-Mneutral-600">
+          Tracking number: <span className="font-medium tabular-nums text-Mneutral-900">{trackingNumber}</span>
+        </p>
+      )}
+    </div>
+  )
 }
 
 export default function AccountPage() {
@@ -62,7 +124,7 @@ export default function AccountPage() {
     let alive = true
     setLoading(true)
     apiFetch('/api/orders/my', {
-      headers: { token: accessToken },
+      token: accessToken, headers: { },
     })
       .then((r) => r.json())
       .then((result) => {
@@ -231,6 +293,8 @@ export default function AccountPage() {
                           </span>
                         </div>
                       </div>
+
+                      <OrderTimeline status={order.status} trackingNumber={order.trackingNumber} />
 
                       <div className="mt-4 space-y-2 border-t border-Mneutral-100 pt-4">
                         {order.items.map((item) => (

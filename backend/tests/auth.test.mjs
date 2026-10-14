@@ -181,6 +181,77 @@ test('PATCH /auth/change-password works and old sessions are invalidated', async
   assert.equal(oldLogin, 401)
 })
 
+/* ── Password reset ────────────────────────────── */
+test('forgot-password never reveals whether an email exists', async () => {
+  if (!serverUp) return
+  const known = await call('POST', '/api/auth/forgot-password', {
+    body: { email: 'sophie@example.com' },
+  })
+  const unknown = await call('POST', '/api/auth/forgot-password', {
+    body: { email: 'nobody-here@test.calesta.dev' },
+  })
+  assert.equal(known.status, 200)
+  assert.equal(unknown.status, 200)
+  assert.equal(known.body.message, unknown.body.message, 'identical responses — no user enumeration')
+  assert.ok(!JSON.stringify(known.body).includes('token'), 'no token leaks in the response')
+})
+
+test('forgot-password rejects a missing email', async () => {
+  if (!serverUp) return
+  const { status } = await call('POST', '/api/auth/forgot-password', { body: {} })
+  assert.equal(status, 400)
+})
+
+test('reset-password: full flow — old sessions die, the new password works, the token is single-use', async () => {
+  if (!serverUp) return
+  const user = await makeUser('resetflow')
+  const oldPassword = user.password
+  const newPassword = 'BrandNew@99'
+
+  // Request the reset — the link is logged (no SMTP configured)
+  await call('POST', '/api/auth/forgot-password', { body: { email: user.email } })
+  const { execSync } = await import('node:child_process')
+  const log = execSync(
+    `grep -o 'reset-password?token=[a-f0-9]*' /private/var/folders/7p/hbhjltbx6nl4xsv9swbh91pr0000gn/T/opencode/backend-dev.log | tail -1`,
+  ).toString().trim()
+  const token = log.split('=')[1]
+  assert.ok(token, 'a reset link was generated and logged')
+
+  // Invalid token rejected
+  const bad = await call('POST', '/api/auth/reset-password', {
+    body: { token: 'deadbeef', newPassword },
+  })
+  assert.equal(bad.status, 400)
+
+  // Sign in with the OLD password first (a live refresh token exists)
+  const before = await call('POST', '/api/auth/login', {
+    body: { email: user.email, password: oldPassword },
+  })
+  assert.equal(before.status, 200)
+
+  // Reset with the real token
+  const reset = await call('POST', '/api/auth/reset-password', {
+    body: { token, newPassword },
+  })
+  assert.equal(reset.status, 200)
+
+  // Old password no longer works; the new one does
+  const oldLogin = await call('POST', '/api/auth/login', {
+    body: { email: user.email, password: oldPassword },
+  })
+  assert.equal(oldLogin.status, 401)
+  const newLogin = await call('POST', '/api/auth/login', {
+    body: { email: user.email, password: newPassword },
+  })
+  assert.equal(newLogin.status, 200)
+
+  // The token cannot be reused
+  const reuse = await call('POST', '/api/auth/reset-password', {
+    body: { token, newPassword: 'Another@123' },
+  })
+  assert.equal(reuse.status, 400)
+})
+
 /* ── Role guards smoke check ──────────────────── */
 test('role tokens resolve to the right roles', async () => {
   if (!serverUp) return

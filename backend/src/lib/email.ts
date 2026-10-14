@@ -113,6 +113,29 @@ export function orderStatusEmail(params: {
   </div>`
 }
 
+export function passwordResetEmail(params: {
+  customerName: string
+  resetUrl: string
+}): MailOptions['html'] {
+  return `
+  <div style="font-family: 'Inter Tight', Helvetica, Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 32px; color: #102d26;">
+    <div style="text-align: center; padding-bottom: 24px; border-bottom: 1px solid #e7eae9;">
+      <span style="font-size: 20px; font-weight: 700; letter-spacing: 0.06em;">CALESTA</span>
+    </div>
+    <h1 style="font-size: 22px; font-weight: 600; margin: 24px 0 8px;">Password reset, ${params.customerName}</h1>
+    <p style="font-size: 14px; line-height: 1.6; color: #3f5650;">
+      Click the button below to choose a new password. The link expires in one hour —
+      if you didn't request this, you can safely ignore this email.
+    </p>
+    <a href="${params.resetUrl}" style="display: inline-block; margin-top: 20px; background: #102d26; color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 600; padding: 10px 20px; border-radius: 8px;">
+      Choose a New Password
+    </a>
+    <p style="margin-top: 28px; font-size: 12px; color: #9ca8a5; border-top: 1px solid #e7eae9; padding-top: 16px;">
+      You're receiving this because a password reset was requested for this email at Calesta.
+    </p>
+  </div>`
+}
+
 export function newsletterWelcomeEmail(): MailOptions['html'] {
   return `
   <div style="font-family: 'Inter Tight', Helvetica, Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 32px; color: #102d26;">

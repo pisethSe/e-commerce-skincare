@@ -37,7 +37,7 @@ export default function PaymentSuccessPage() {
       try {
         const res = await apiFetch(
           `/api/payments/stripe/verify?orderId=${encodeURIComponent(orderId)}${sessionId ? `&session_id=${encodeURIComponent(sessionId)}` : ''}`,
-          { headers: { token: accessToken } },
+          { token: accessToken, headers: { } },
         )
         const json = await res.json()
         if (!alive) return

@@ -22,6 +22,7 @@ interface AdminOrder {
   orderNumber: string
   status: string
   paymentStatus?: string
+  trackingNumber?: string | null
   subtotal: number
   shipping: number
   tax: number
@@ -54,6 +55,8 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [detail, setDetail] = useState<AdminOrder | null>(null)
+  const [trackingDraft, setTrackingDraft] = useState('')
+  const [savingTracking, setSavingTracking] = useState(false)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
@@ -93,6 +96,25 @@ export default function OrdersPage() {
       toast.error(e instanceof Error ? e.message : 'Status update failed')
     } finally {
       setUpdatingId(null)
+    }
+  }
+
+  const saveTracking = async () => {
+    if (!detail) return
+    setSavingTracking(true)
+    try {
+      const updated = await apiData<AdminOrder>({
+        method: 'PATCH',
+        url: `/orders/${detail.id}/tracking`,
+        data: { trackingNumber: trackingDraft.trim() || null },
+      })
+      setDetail((d) => (d && d.id === updated.id ? { ...d, trackingNumber: updated.trackingNumber ?? null } : d))
+      setOrders((list) => list.map((o) => (o.id === updated.id ? { ...o, trackingNumber: updated.trackingNumber ?? null } : o)))
+      toast.success(`Tracking updated for ${updated.orderNumber}`)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not save the tracking number')
+    } finally {
+      setSavingTracking(false)
     }
   }
 
@@ -262,7 +284,10 @@ export default function OrdersPage() {
                       <td className="table-td text-right">
                         <button
                           type="button"
-                          onClick={() => setDetail(order)}
+                          onClick={() => {
+                            setDetail(order)
+                            setTrackingDraft(order.trackingNumber ?? '')
+                          }}
                           aria-label={`View ${order.orderNumber}`}
                           className="inline-flex h-8 w-8 items-center justify-center rounded-[7px] text-[#9ca8a5] transition-colors hover:bg-[#f1f3f3] hover:text-[#102d26] active:scale-[0.97]"
                         >
@@ -347,6 +372,29 @@ export default function OrdersPage() {
                 </div>
               </div>
             )}
+
+            <div>
+              <p className="admin-kicker mb-3">Tracking</p>
+              <div className="flex gap-2">
+                <input
+                  value={trackingDraft}
+                  onChange={(e) => setTrackingDraft(e.target.value)}
+                  placeholder="e.g. KHR123456789"
+                  className="h-[40px] w-full rounded-[8px] border border-[#e7eae9] bg-white px-3 text__14 text-[#102d26] outline-none transition-colors placeholder:text-[#9ca8a5] focus:border-[#102d26]"
+                />
+                <button
+                  type="button"
+                  onClick={saveTracking}
+                  disabled={savingTracking}
+                  className="btn-admin-outline h-[40px] flex-shrink-0 whitespace-nowrap px-4 disabled:opacity-60"
+                >
+                  {savingTracking ? 'Saving…' : 'Save'}
+                </button>
+              </div>
+              <p className="mt-2 text__12 text-[#9ca8a5]">
+                Shown to the customer on their account page once the order ships.
+              </p>
+            </div>
 
             <div className="space-y-2 border-t border-[#e7eae9] pt-4 text__14">
               <div className="flex justify-between text-[#6e7f7b]">

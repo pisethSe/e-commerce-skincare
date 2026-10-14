@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { createOrder, getMyOrders, getOrderById, updateOrderStatus, getAllOrders } from '../controllers/orderController'
+import { createOrder, getMyOrders, getOrderById, updateOrderStatus, getAllOrders, updateTrackingNumber } from '../controllers/orderController'
 import { authenticate, requireAdmin } from '../middleware/auth'
 
 const router = Router()
@@ -10,5 +10,6 @@ router.get('/my', getMyOrders)
 router.get('/:id', getOrderById)
 router.get('/', requireAdmin, getAllOrders)
 router.patch('/:id/status', requireAdmin, updateOrderStatus)
+router.patch('/:id/tracking', requireAdmin, updateTrackingNumber)
 
 export default router
