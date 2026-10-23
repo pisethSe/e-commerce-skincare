@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import {
   getProducts, getProductBySlug, getRelatedProducts,
-  createProduct, updateProduct, deleteProduct,
+  createProduct, updateProduct, deleteProduct, suggestProducts,
 } from '../controllers/productController'
 import { authenticate, requireAdmin } from '../middleware/auth'
 import { subscribeToStockNotification } from '../controllers/stockController'
@@ -9,6 +9,7 @@ import { subscribeToStockNotification } from '../controllers/stockController'
 const router = Router()
 
 router.get('/', getProducts)
+router.get('/suggest', suggestProducts)
 router.get('/:slug', getProductBySlug)
 router.get('/:id/related', getRelatedProducts)
 router.post('/:id/stock-notification', subscribeToStockNotification)

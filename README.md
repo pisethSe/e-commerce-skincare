@@ -242,6 +242,10 @@ npm run db:clean
       per customer; verified buyers are marked automatically)
 - ✅ Wishlist — heart products from any product page; saved items persist on the
       device and live on their own /wishlist page, including sold-out saves
+- ✅ Catalog search — typo-tolerant matching across names, taglines, tags,
+      categories, descriptions and ingredients, with relevance ranking,
+      category/price/rating filters, facet counts, and a "did you mean" hint.
+      The header search icon opens a live typeahead overlay
 - ✅ "Email me when it's back" on sold-out products — the customer is emailed
       automatically the moment stock returns
 - ✅ Password reset by emailed link (single-use, 1-hour expiry)
@@ -267,7 +271,9 @@ npm run db:clean
 - ✅ JWT auth (access + refresh token rotation)
 - ✅ Register / Login / Logout / Change password
 - ✅ Google OAuth2 sign-in (`GET /api/auth/google` → consent → `/api/auth/google/callback`)
-- ✅ Products: CRUD, filtering, search, pagination, related
+- ✅ Products: CRUD, filtering, pagination, related
+- ✅ Search: relevance ranking + typo tolerance (Levenshtein), facet counts
+      (category, price, rating), and `GET /api/products/suggest?q=` typeahead
 - ✅ Categories: CRUD
 - ✅ Orders: create, list, detail, status update (cancel restocks stock)
 - ✅ Cart: server-side sync for authenticated users
@@ -316,7 +322,8 @@ POST   /api/auth/refresh
 POST   /api/auth/logout
 GET    /api/auth/me
 
-GET    /api/products?page&limit&category&sortBy&search&featured
+GET    /api/products?page&limit&category&minPrice&maxPrice&rating&sortBy&search
+GET    /api/products/suggest?q=          (typeahead + "did you mean")
 GET    /api/products/:slug
 GET    /api/products/:id/related
 POST   /api/products/:id/stock-notification   (notify me when back in stock)

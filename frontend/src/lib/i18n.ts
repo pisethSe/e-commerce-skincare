@@ -22,6 +22,16 @@ export const dictionary = {
   'nav.openCart': { en: 'Open cart', km: 'បើកកន្ត្រក' },
   'nav.wishlist': { en: 'Wishlist', km: 'បញ្ជីចង់បាន' },
   'nav.openWishlist': { en: 'Open wishlist', km: 'បើកបញ្ជីចង់បាន' },
+  'nav.search': { en: 'Search', km: 'ស្វែងរក' },
+  'search.placeholder': {
+    en: 'Search products, concerns, ingredients…',
+    km: 'ស្វែងរកផលិតផល បញ្ហាស្បែក គ្រឿងផ្សំ…',
+  },
+  'search.hint': { en: 'Start typing to see products.', km: 'ចាប់ផ្តើមវាយដើម្បីមើលផលិតផល។' },
+  'search.noResults': { en: 'No products match “{query}”.', km: 'គ្មានផលិតផលត្រូវនឹង “{query}” ទេ។' },
+  'search.didYouMean': { en: 'Did you mean “{term}”?', km: 'តើអ្នកចង់មានន័យថា “{term}” មែនទេ?' },
+  'search.viewAll': { en: 'See all results', km: 'មើលលទ្ធផលទាំងអស់' },
+  'search.close': { en: 'Close search', km: 'បិទការស្វែងរក' },
   'nav.toggleMenu': { en: 'Toggle navigation', km: 'បើកម៉ឺនុយ' },
   'nav.logoutConfirmTitle': { en: 'LOGOUT', km: 'ចាកចេញ' },
   'nav.logoutConfirm': {
@@ -69,6 +79,7 @@ export const dictionary = {
   },
   'common.itemsCount': { en: '{count} items', km: '{count} មុខ' },
   'common.productsCount': { en: '{count} products', km: '{count} ផលិតផល' },
+  'common.oneProduct': { en: '1 product', km: '១ ផលិតផល' },
 
   // Cart sidebar + page
   'cart.title': { en: 'Your Bag', km: 'កន្ត្រករបស់អ្នក' },
@@ -239,6 +250,36 @@ export const dictionary = {
   'shop.sortBestsellers': { en: 'Bestsellers', km: 'លក់ដាច់បំផុត' },
   'shop.sortPriceAsc': { en: 'Price: Low to High', km: 'តម្លៃ៖ ទាបទៅខ្ពស់' },
   'shop.sortPriceDesc': { en: 'Price: High to Low', km: 'តម្លៃ៖ ខ្ពស់ទៅទាប' },
+  'shop.sortRelevance': { en: 'Best match', km: 'ត្រូវនឹងការស្វែងរក' },
+  'shop.sortRating': { en: 'Top rated', km: 'វាយតម្លៃខ្ពស់' },
+  'shop.searchPlaceholder': {
+    en: 'Search products, concerns, ingredients…',
+    km: 'ស្វែងរកផលិតផល បញ្ហាស្បែក គ្រឿងផ្សំ…',
+  },
+  'shop.searchLabel': { en: 'Search products', km: 'ស្វែងរកផលិតផល' },
+  'shop.clearSearch': { en: 'Clear search', km: 'សម្អាតការស្វែងរក' },
+  'shop.resultsFor': { en: 'Results for “{query}”', km: 'លទ្ធផលសម្រាប់ “{query}”' },
+  'shop.filters': { en: 'Filters', km: 'តម្រង' },
+  'shop.clearFilters': { en: 'Clear all', km: 'សម្អាតទាំងអស់' },
+  'shop.price': { en: 'Price', km: 'តម្លៃ' },
+  'shop.priceUnder': { en: 'Under {amount}', km: 'ក្រោម {amount}' },
+  'shop.priceBetween': { en: '{min} – {max}', km: '{min} – {max}' },
+  'shop.priceOver': { en: '{amount} +', km: '{amount} +' },
+  'shop.rating': { en: 'Rating', km: 'ការវាយតម្លៃ' },
+  'shop.rating4': { en: '4 stars & up', km: '៤ ផ្កាយឡើង' },
+  'shop.rating3': { en: '3 stars & up', km: '៣ ផ្កាយឡើង' },
+  'shop.noResults': { en: 'No products found', km: 'រកមិនឃើញផលិតផល' },
+  'shop.noResultsHint': {
+    en: 'Try a different spelling, a broader term, or remove a filter.',
+    km: 'សូមព្យាយាមសរសេរខុសគ្នា ប្រើពាក្យទូលំទូលាយជាង ឬដកតម្រងចេញ។',
+  },
+  'shop.didYouMean': { en: 'Did you mean “{term}”?', km: 'តើអ្នកចង់មានន័យថា “{term}” មែនទេ?' },
+  'shop.loadMore': { en: 'Load more products', km: 'មើលផលិតផលបន្ថែម' },
+  'shop.searching': { en: 'Searching…', km: 'កំពុងស្វែងរក…' },
+  'shop.searchError': {
+    en: 'Search is unavailable right now. Please try again.',
+    km: 'ការស្វែងរកមិនអាចប្រើបានទេឥឡូវនេះ។ សូមព្យាយាមម្តងទៀត។',
+  },
 
   // Back in stock
   'product.soldOut': { en: 'Sold out', km: 'អស់ស្តុក' },

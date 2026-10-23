@@ -3,6 +3,12 @@ import { prisma } from '../lib/prisma'
 import { ApiError } from '../middleware/errorHandler'
 import { AuthRequest } from '../middleware/auth'
 import { notifyBackInStock } from '../lib/stock'
+import {
+  SEARCH_CANDIDATE_CAP,
+  buildSuggestion,
+  scoreProduct,
+  tokenizeQuery,
+} from '../lib/search'
 
 // GET /api/products
 export const getProducts = async (req: Request, res: Response): Promise<void> => {
@@ -20,7 +26,16 @@ export const getProducts = async (req: Request, res: Response): Promise<void> =>
     isNew,
   } = req.query
 
-  const skip = (Number(page) - 1) * Number(limit)
+  const currentPage = Math.max(1, Number(page) || 1)
+  const pageSize = Math.min(100, Math.max(1, Number(limit) || 12))
+
+  // Free-text search has its own pipeline (relevance, typo tolerance, facets).
+  if (typeof search === 'string' && search.trim()) {
+    await searchCatalog(req, res, currentPage, pageSize)
+    return
+  }
+
+  const skip = (currentPage - 1) * pageSize
 
   // Build where clause — admins can pass ?all=1 to include out-of-stock products
   const where: Record<string, unknown> = req.query.all === '1' ? {} : { inStock: true }
@@ -36,13 +51,6 @@ export const getProducts = async (req: Request, res: Response): Promise<void> =>
   }
   if (rating) {
     where.rating = { gte: Number(rating) }
-  }
-  if (search) {
-    where.OR = [
-      { name: { contains: search as string, mode: 'insensitive' } },
-      { description: { contains: search as string, mode: 'insensitive' } },
-      { tags: { has: search as string } },
-    ]
   }
   if (featured === 'true') where.isFeatured = true
   if (bestseller === 'true') where.isBestseller = true
@@ -64,7 +72,7 @@ export const getProducts = async (req: Request, res: Response): Promise<void> =>
       include: { category: { select: { id: true, name: true, slug: true } } },
       orderBy,
       skip,
-      take: Number(limit),
+      take: pageSize,
     }),
     prisma.product.count({ where }),
   ])
@@ -73,11 +81,195 @@ export const getProducts = async (req: Request, res: Response): Promise<void> =>
     success: true,
     data: products,
     pagination: {
-      page: Number(page),
-      limit: Number(limit),
+      page: currentPage,
+      limit: pageSize,
       total,
-      totalPages: Math.ceil(total / Number(limit)),
+      totalPages: Math.ceil(total / pageSize),
     },
+  })
+}
+
+type SearchProduct = {
+  id: string
+  name: string
+  slug: string
+  tagline: string | null
+  description: string
+  price: unknown
+  rating: unknown
+  reviewCount: number
+  createdAt: Date
+  isBestseller: boolean
+  tags: string[]
+  ingredients: string[]
+  category: { id: string; name: string; slug: string } | null
+}
+
+function buildSearchFacets(products: SearchProduct[]) {
+  const categoryMap = new Map<string, { slug: string; name: string; count: number }>()
+  let min = Infinity
+  let max = 0
+  let fourStars = 0
+  let threeStars = 0
+
+  for (const product of products) {
+    const price = Number(product.price)
+    if (Number.isFinite(price)) {
+      min = Math.min(min, price)
+      max = Math.max(max, price)
+    }
+    const stars = Number(product.rating)
+    if (stars >= 4) fourStars++
+    if (stars >= 3) threeStars++
+
+    if (product.category) {
+      const entry = categoryMap.get(product.category.slug) ?? {
+        slug: product.category.slug,
+        name: product.category.name,
+        count: 0,
+      }
+      entry.count++
+      categoryMap.set(product.category.slug, entry)
+    }
+  }
+
+  return {
+    categories: [...categoryMap.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)),
+    price: { min: Number.isFinite(min) ? Math.floor(min) : 0, max: Math.ceil(max) },
+    ratings: { '4': fourStars, '3': threeStars },
+  }
+}
+
+/**
+ * Ranked catalog search.
+ * - every token must match somewhere (name, tags, tagline, category, description, ingredients)
+ * - typos up to 1–2 edits are tolerated via Levenshtein
+ * - if nothing matches, fall back to partial matches and offer a "did you mean"
+ * - facets are computed from the search result *before* category/price/rating filters,
+ *   so filtering never empties the choices
+ */
+async function searchCatalog(req: Request, res: Response, page: number, limit: number): Promise<void> {
+  const rawQuery = String(req.query.search ?? '').trim().slice(0, 80)
+  const tokens = tokenizeQuery(rawQuery)
+
+  if (tokens.length === 0) {
+    res.json({
+      success: true,
+      data: [],
+      pagination: { page, limit, total: 0, totalPages: 0 },
+      search: { query: rawQuery, total: 0, suggestion: null },
+      facets: { categories: [], price: { min: 0, max: 0 }, ratings: { '4': 0, '3': 0 } },
+    })
+    return
+  }
+
+  const includeOutOfStock = req.query.all === '1'
+  const catalogue = (await prisma.product.findMany({
+    where: includeOutOfStock ? {} : { inStock: true },
+    include: { category: { select: { id: true, name: true, slug: true } } },
+    take: SEARCH_CANDIDATE_CAP,
+  })) as unknown as SearchProduct[]
+
+  const scored = catalogue.map((product) => ({ product, ...scoreProduct(product, tokens) }))
+  const fullMatches = scored.filter((entry) => entry.matched === tokens.length)
+  // Partial matches keep the page useful when one word is off ("vitamin c serum").
+  const matches = fullMatches.length > 0 ? fullMatches : scored.filter((entry) => entry.matched > 0)
+
+  const facets = buildSearchFacets(matches.map((entry) => entry.product))
+
+  const category = typeof req.query.category === 'string' ? req.query.category : ''
+  const minPrice = req.query.minPrice !== undefined && req.query.minPrice !== '' ? Number(req.query.minPrice) : null
+  const maxPrice = req.query.maxPrice !== undefined && req.query.maxPrice !== '' ? Number(req.query.maxPrice) : null
+  const minRating = req.query.rating !== undefined && req.query.rating !== '' ? Number(req.query.rating) : null
+
+  let results = matches
+  if (category) results = results.filter((entry) => entry.product.category?.slug === category)
+  if (minPrice !== null && Number.isFinite(minPrice)) {
+    results = results.filter((entry) => Number(entry.product.price) >= minPrice)
+  }
+  if (maxPrice !== null && Number.isFinite(maxPrice)) {
+    results = results.filter((entry) => Number(entry.product.price) <= maxPrice)
+  }
+  if (minRating !== null && Number.isFinite(minRating)) {
+    results = results.filter((entry) => Number(entry.product.rating) >= minRating)
+  }
+
+  const sortBy = String(req.query.sortBy ?? 'relevance')
+  results = [...results].sort((a, b) => {
+    switch (sortBy) {
+      case 'price_asc':
+        return Number(a.product.price) - Number(b.product.price)
+      case 'price_desc':
+        return Number(b.product.price) - Number(a.product.price)
+      case 'rating':
+        return Number(b.product.rating) - Number(a.product.rating) || b.product.reviewCount - a.product.reviewCount
+      case 'bestseller':
+        return Number(b.product.isBestseller) - Number(a.product.isBestseller) || b.score - a.score
+      case 'newest':
+        return new Date(b.product.createdAt).getTime() - new Date(a.product.createdAt).getTime()
+      default:
+        return (
+          b.score - a.score ||
+          Number(b.product.rating) - Number(a.product.rating) ||
+          a.product.name.localeCompare(b.product.name)
+        )
+    }
+  })
+
+  const total = results.length
+  const start = (page - 1) * limit
+  const data = results.slice(start, start + limit).map((entry) => entry.product)
+  const suggestion = matches.length === 0 ? buildSuggestion(catalogue, tokens) : null
+
+  res.json({
+    success: true,
+    data,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    search: { query: rawQuery, total, suggestion },
+    facets,
+  })
+}
+
+// GET /api/products/suggest?q= — typeahead for the navbar search overlay
+export const suggestProducts = async (req: Request, res: Response): Promise<void> => {
+  const rawQuery = String(req.query.q ?? req.query.search ?? '').trim().slice(0, 80)
+  const tokens = tokenizeQuery(rawQuery)
+
+  if (tokens.length === 0) {
+    res.json({ success: true, data: [], suggestion: null })
+    return
+  }
+
+  const catalogue = (await prisma.product.findMany({
+    where: { inStock: true },
+    include: { category: { select: { id: true, name: true, slug: true } } },
+    take: SEARCH_CANDIDATE_CAP,
+  })) as unknown as SearchProduct[]
+
+  const matches = catalogue
+    .map((product) => ({ product, ...scoreProduct(product, tokens) }))
+    .filter((entry) => entry.matched === tokens.length)
+    .sort(
+      (a, b) =>
+        b.score - a.score ||
+        Number(b.product.rating) - Number(a.product.rating) ||
+        a.product.name.localeCompare(b.product.name)
+    )
+    .slice(0, 6)
+
+  const suggestion = matches.length === 0 ? buildSuggestion(catalogue, tokens) : null
+
+  res.json({
+    success: true,
+    data: matches.map(({ product }) => ({
+      id: product.id,
+      name: product.name,
+      slug: product.slug,
+      price: product.price,
+      images: (product as unknown as { images: string[] }).images?.slice(0, 1) ?? [],
+      category: product.category,
+    })),
+    suggestion,
   })
 }
 
