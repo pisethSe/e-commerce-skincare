@@ -1,0 +1,147 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend · typecheck & API tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: lumiere
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      NODE_ENV: test
+      PORT: 5001
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/lumiere?schema=public
+      JWT_SECRET: ci-only-jwt-secret
+      JWT_REFRESH_SECRET: ci-only-refresh-secret
+      JWT_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      FRONTEND_URL: http://localhost:3000
+      ADMIN_URL: http://localhost:3001
+      # The full suite registers many users; keep the in-memory limiters out of the way.
+      RATE_LIMIT_MAX: '100000'
+      RATE_LIMIT_AUTH_MAX: '100000'
+      # The reset-password test reads the emailed link from the server log.
+      BACKEND_LOG: /tmp/api.log
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Create schema
+        run: npx prisma db push --skip-generate
+
+      - name: Seed demo data
+        run: npm run db:seed
+
+      - name: Typecheck
+        run: npm run build
+
+      - name: Run API end-to-end tests
+        run: |
+          mkdir -p uploads
+          node dist/index.js > /tmp/api.log 2>&1 &
+          for _ in $(seq 1 30); do
+            curl -sf http://localhost:5001/health > /dev/null && break
+            sleep 1
+          done
+          if ! curl -sf http://localhost:5001/health > /dev/null; then
+            echo "API failed to start"
+            cat /tmp/api.log
+            exit 1
+          fi
+          npm test
+
+      - name: Upload API log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-api-log
+          path: /tmp/api.log
+          if-no-files-found: ignore
+
+  frontend:
+    name: Storefront · unit tests & build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Unit & component tests
+        run: npm test
+
+      - name: Typecheck & production build
+        run: npm run build
+
+  admin:
+    name: Admin · typecheck & build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: admin
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck & production build
+        run: npm run build

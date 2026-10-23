@@ -18,6 +18,9 @@ A full-stack, production-ready e-commerce platform for premium skincare, built w
 - **React Router v6** — client-side routing
 - **Swiper** — product/testimonial carousels
 - **Lucide React** — icon system
+- **Vitest + Testing Library** — unit and component tests (jsdom)
+- **Route-level code splitting** — pages load on demand; vendor chunks
+      (React, Motion, GSAP, Recharts) are cached across deploys
 
 ### Admin Dashboard (`/admin`, port 3001)
 - **JWT-protected admin login gate** (admin role required)
@@ -186,24 +189,50 @@ npm run dev:admin      # Admin on :3001 (console at /admin)
 
 ## 🧪 Testing
 
+### Backend — 170 end-to-end tests
 ```bash
-# With the backend running on :5001
+# Start the API and seed the database first (see Getting Started)
 cd backend
 npm test
 ```
 
-The suite (116 tests) covers every feature end-to-end against the local database:
-auth & token rotation, products/categories CRUD, orders with coupon math, shipping
-methods, and stock handling, cart, reviews with approval flow, wishlist, addresses,
-blog drafts, newsletter, coupons, uploads, role guards, and the business-workflow
-rules (order cancellation restocks, coupon usage limits, slug/category guards).
+The suite exercises every feature against a real PostgreSQL database and running
+API: auth & token rotation, password reset, products/categories/blog CRUD, search
+ranking and typo tolerance, orders with coupon math, shipping and stock handling,
+cart, reviews with moderation, wishlist, addresses, newsletter, coupons, uploads,
+role guards, payments config, and the business-workflow rules (order cancellation
+restocks, coupon usage limits, slug/category guards).
 
-Test runs create throwaway fixtures (test users/products). Clean them afterwards:
+One test is skipped when Google OAuth credentials are absent; everything else
+runs offline. Test runs create throwaway fixtures — clean them afterwards:
 
 ```bash
 cd backend
 npm run db:clean
 ```
+
+### Storefront — 23 unit & component tests
+```bash
+cd frontend
+npm test          # single run (CI)
+npm run test:watch
+```
+Vitest + Testing Library run in jsdom and cover currency conversion, the Khmer/
+English dictionary, catalog normalisation, cart/wishlist state & persistence, and
+the review section (summary, verified badges, validation, moderation state).
+
+### Continuous integration
+`.github/workflows/ci.yml` runs on every push to `main` and every pull request:
+
+| Job | What it does |
+| --- | --- |
+| **Backend** | Postgres 17 service → `prisma db push` → seed → `tsc` → boots the API → full test suite |
+| **Storefront** | `npm ci` → Vitest → `tsc` + production build |
+| **Admin** | `npm ci` → `tsc` + production build |
+
+The backend job uploads the API log as an artifact when tests fail. The same
+steps can be reproduced locally with a scratch database, e.g.
+`createdb lumiere_ci` + `DATABASE_URL=… npm run db:push && npm run db:seed`.
 
 ---
 

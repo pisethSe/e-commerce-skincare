@@ -1,20 +1,23 @@
-import React, { useEffect, useState } from 'react'
+import React, { lazy, Suspense, useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import AdminLayout from './components/layout/AdminLayout'
 import LoginPage from './pages/LoginPage'
-import DashboardPage from './pages/DashboardPage'
-import ProductsPage from './pages/ProductsPage'
-import InventoryPage from './pages/InventoryPage'
-import OrdersPage from './pages/OrdersPage'
-import CustomersPage from './pages/CustomersPage'
-import AnalyticsPage from './pages/AnalyticsPage'
-import ReviewsPage from './pages/ReviewsPage'
-import JournalPage from './pages/JournalPage'
-import CouponsPage from './pages/CouponsPage'
-import SettingsPage from './pages/SettingsPage'
 import { getStoredToken } from './lib/api'
 import { useAuthStore } from './lib/authStore'
+
+// Each console page is its own chunk. Analytics is the main win: Recharts is
+// only downloaded when an admin opens the analytics view.
+const DashboardPage = lazy(() => import('./pages/DashboardPage'))
+const ProductsPage = lazy(() => import('./pages/ProductsPage'))
+const InventoryPage = lazy(() => import('./pages/InventoryPage'))
+const OrdersPage = lazy(() => import('./pages/OrdersPage'))
+const CustomersPage = lazy(() => import('./pages/CustomersPage'))
+const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'))
+const ReviewsPage = lazy(() => import('./pages/ReviewsPage'))
+const JournalPage = lazy(() => import('./pages/JournalPage'))
+const CouponsPage = lazy(() => import('./pages/CouponsPage'))
+const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 
 /**
  * Admin entry — Calesta-branded console.
@@ -53,21 +56,35 @@ export default function AdminApp() {
         <LoginPage />
       ) : (
         <AdminLayout>
-          <Routes>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/products" element={<ProductsPage />} />
-            <Route path="/inventory" element={<InventoryPage />} />
-            <Route path="/orders" element={<OrdersPage />} />
-            <Route path="/customers" element={<CustomersPage />} />
-            <Route path="/analytics" element={<AnalyticsPage />} />
-            <Route path="/reviews" element={<ReviewsPage />} />
-            <Route path="/journal" element={<JournalPage />} />
-            <Route path="/coupons" element={<CouponsPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <Suspense fallback={<PageFallback />}>
+            <Routes>
+              <Route path="/" element={<DashboardPage />} />
+              <Route path="/products" element={<ProductsPage />} />
+              <Route path="/inventory" element={<InventoryPage />} />
+              <Route path="/orders" element={<OrdersPage />} />
+              <Route path="/customers" element={<CustomersPage />} />
+              <Route path="/analytics" element={<AnalyticsPage />} />
+              <Route path="/reviews" element={<ReviewsPage />} />
+              <Route path="/journal" element={<JournalPage />} />
+              <Route path="/coupons" element={<CouponsPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
         </AdminLayout>
       )}
     </BrowserRouter>
+  )
+}
+
+function PageFallback() {
+  return (
+    <div className="flex min-h-[60vh] items-center justify-center">
+      <span
+        role="status"
+        aria-label="Loading page"
+        className="h-8 w-8 animate-spin rounded-full border-2 border-[#e7eae9] border-t-[#102d26]"
+      />
+    </div>
   )
 }

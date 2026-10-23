@@ -1,19 +1,23 @@
-import React, { useEffect } from 'react'
+import React, { lazy, Suspense, useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Layout from './components/layout/Layout'
-import HomePage from './pages/HomePage'
-import ShopPage from './pages/ShopPage'
-import ProductPage from './pages/ProductPage'
-import CartPage from './pages/CartPage'
-import CheckoutPage from './pages/CheckoutPage'
-import AboutPage from './pages/AboutPage'
-import JournalPage from './pages/JournalPage'
-import AccountPage from './pages/AccountPage'
-import WishlistPage from './pages/WishlistPage'
-import AuthCallbackPage from './pages/AuthCallbackPage'
-import PaymentSuccessPage from './pages/PaymentSuccessPage'
-import ResetPasswordPage from './pages/ResetPasswordPage'
 import { useCatalogStore } from './lib/catalog'
+
+// Route-level code splitting keeps the first paint light: the shell, cart and
+// navigation load eagerly; each page (and its heavy dependencies) loads on
+// demand. ShopPage bundles search; Checkout bundles payment UI, etc.
+const HomePage = lazy(() => import('./pages/HomePage'))
+const ShopPage = lazy(() => import('./pages/ShopPage'))
+const ProductPage = lazy(() => import('./pages/ProductPage'))
+const CartPage = lazy(() => import('./pages/CartPage'))
+const CheckoutPage = lazy(() => import('./pages/CheckoutPage'))
+const AboutPage = lazy(() => import('./pages/AboutPage'))
+const JournalPage = lazy(() => import('./pages/JournalPage'))
+const AccountPage = lazy(() => import('./pages/AccountPage'))
+const WishlistPage = lazy(() => import('./pages/WishlistPage'))
+const AuthCallbackPage = lazy(() => import('./pages/AuthCallbackPage'))
+const PaymentSuccessPage = lazy(() => import('./pages/PaymentSuccessPage'))
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'))
 
 // AOS init
 declare global {
@@ -41,23 +45,37 @@ export default function App() {
   return (
     <BrowserRouter>
       <Layout>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/shop" element={<ShopPage />} />
-          <Route path="/products/:slug" element={<ProductPage />} />
-          <Route path="/cart" element={<CartPage />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/journal" element={<JournalPage />} />
-          <Route path="/account" element={<AccountPage />} />
-          <Route path="/wishlist" element={<WishlistPage />} />
-          <Route path="/auth/callback" element={<AuthCallbackPage />} />
-          <Route path="/payment/success" element={<PaymentSuccessPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <Suspense fallback={<RouteFallback />}>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/shop" element={<ShopPage />} />
+            <Route path="/products/:slug" element={<ProductPage />} />
+            <Route path="/cart" element={<CartPage />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/journal" element={<JournalPage />} />
+            <Route path="/account" element={<AccountPage />} />
+            <Route path="/wishlist" element={<WishlistPage />} />
+            <Route path="/auth/callback" element={<AuthCallbackPage />} />
+            <Route path="/payment/success" element={<PaymentSuccessPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
       </Layout>
     </BrowserRouter>
+  )
+}
+
+function RouteFallback() {
+  return (
+    <div className="flex min-h-[60vh] items-center justify-center bg-Mneutral-50">
+      <span
+        role="status"
+        aria-label="Loading page"
+        className="h-9 w-9 animate-spin rounded-full border-2 border-Mneutral-200 border-t-Mneutral-900"
+      />
+    </div>
   )
 }
 

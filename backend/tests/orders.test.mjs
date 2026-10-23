@@ -161,9 +161,20 @@ test('POST /api/orders rejects unauthenticated requests', async () => {
 test('GET /api/orders/my lists the customer\'s own orders', async () => {
   if (!serverUp) return
   const token = await customerToken()
+
+  // Make the test self-sufficient: a freshly seeded database has no orders yet.
+  const addressId = await makeAddress(token)
+  const product = await pickStockedProduct(1)
+  const created = await call('POST', '/api/orders', {
+    token,
+    body: { items: [{ productId: product.id, quantity: 1 }], addressId },
+  })
+  assert.equal(created.status, 201)
+
   const { status, body } = await call('GET', '/api/orders/my', { token })
   assert.equal(status, 200)
   assert.ok(Array.isArray(body.data))
+  assert.ok(body.data.some((order) => order.id === created.body.data.id))
   assert.ok(body.pagination.total >= 1)
 })
 
