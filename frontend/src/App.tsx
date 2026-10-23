@@ -15,6 +15,7 @@ const AboutPage = lazy(() => import('./pages/AboutPage'))
 const JournalPage = lazy(() => import('./pages/JournalPage'))
 const AccountPage = lazy(() => import('./pages/AccountPage'))
 const WishlistPage = lazy(() => import('./pages/WishlistPage'))
+const TrackOrderPage = lazy(() => import('./pages/TrackOrderPage'))
 const AuthCallbackPage = lazy(() => import('./pages/AuthCallbackPage'))
 const PaymentSuccessPage = lazy(() => import('./pages/PaymentSuccessPage'))
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'))
@@ -56,6 +57,7 @@ export default function App() {
             <Route path="/journal" element={<JournalPage />} />
             <Route path="/account" element={<AccountPage />} />
             <Route path="/wishlist" element={<WishlistPage />} />
+            <Route path="/track" element={<TrackOrderPage />} />
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
             <Route path="/payment/success" element={<PaymentSuccessPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />

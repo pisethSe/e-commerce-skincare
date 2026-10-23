@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowRight, Heart, Loader2, Menu, Search, ShoppingBag, X } from 'lucide-react'
+import { ArrowRight, Heart, Loader2, Menu, Package, Search, ShoppingBag, X } from 'lucide-react'
 import { NAV_LINKS } from '../../lib/data'
 import { useAuthStore, useCartStore, usePrefsStore, useUIStore, useWishlistStore } from '../../lib/store'
 import { useT } from '../../lib/i18n'
@@ -132,12 +132,12 @@ export default function Navbar() {
           transition={{ duration: 0.5 }}
         >
           <div className="container-custom">
-            <div className="relative flex items-center justify-between py-3">
-              <Link to="/" className="text__24 relative z-[2] inline-block font-medium text-Mneutral-900">
+            <div className="flex items-center justify-between gap-4 py-3">
+              <Link to="/" className="text__24 relative z-[2] inline-block shrink-0 font-medium text-Mneutral-900">
                 Calesta
               </Link>
 
-              <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-[40px] text__16 text-Mneutral-900 md:flex">
+              <nav className="hidden min-w-0 flex-1 items-center justify-center gap-6 text__16 text-Mneutral-900 lg:flex xl:gap-10">
                 {NAV_LINKS.map((link) => (
                   <Link
                     key={link.label}
@@ -151,7 +151,7 @@ export default function Navbar() {
                 ))}
               </nav>
 
-              <div className="flex items-center gap-2">
+              <div className="flex shrink-0 items-center gap-2">
                 {user ? (
                   <div className="hidden items-center gap-2 md:flex">
                     <Link
@@ -243,7 +243,7 @@ export default function Navbar() {
                 <button
                   type="button"
                   onClick={toggleMobileMenu}
-                  className="flex h-[40px] w-[40px] items-center justify-center rounded-full bg-Mneutral-900 text-white md:hidden"
+                  className="flex h-[40px] w-[40px] items-center justify-center rounded-full bg-Mneutral-900 text-white lg:hidden"
                   aria-label={t('nav.toggleMenu')}
                 >
                   {isMobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
@@ -285,6 +285,12 @@ export default function Navbar() {
               >
                 <Heart size={15} /> {t('nav.wishlist')}
                 {wishlistCount > 0 && <span className="text-Mneutral-900">({wishlistCount})</span>}
+              </Link>
+              <Link
+                to="/track"
+                className="inline-flex w-fit items-center gap-2 rounded-full border border-Mneutral-200 px-[12px] py-[10px] text__14 text-Mneutral-600"
+              >
+                <Package size={15} /> {t('footer.track')}
               </Link>
               {user ? (
                 <div className="mt-4 flex flex-col gap-3">

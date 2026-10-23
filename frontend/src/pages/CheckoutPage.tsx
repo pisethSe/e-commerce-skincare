@@ -324,8 +324,11 @@ export default function CheckoutPage() {
               <Link to="/shop" className="filled-pill-button">
                 Continue Shopping
               </Link>
-              <Link to="/" className="outline-pill-button">
-                Back Home
+              <Link
+                to={`/track?order=${encodeURIComponent(orderNumber)}`}
+                className="outline-pill-button"
+              >
+                {t('track.submit')}
               </Link>
             </div>
           </motion.div>

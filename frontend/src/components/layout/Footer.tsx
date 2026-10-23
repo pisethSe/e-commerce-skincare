@@ -18,6 +18,7 @@ const footerGroups: { title: TKey; links: { key: TKey; href: string; external?: 
       { key: 'nav.about', href: '/about' },
       { key: 'nav.journal', href: '/journal' },
       { key: 'nav.checkout', href: '/checkout' },
+      { key: 'footer.track', href: '/track' },
     ],
   },
   {

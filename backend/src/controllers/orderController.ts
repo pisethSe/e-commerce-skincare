@@ -171,6 +171,7 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
     select: { email: true, firstName: true, lastName: true },
   }))
   if (userEmail) {
+    const storeUrl = process.env.FRONTEND_URL || 'http://localhost:3003'
     void sendMail({
       to: userEmail.email,
       subject: `Order ${order.orderNumber} confirmed · Calesta`,
@@ -179,7 +180,8 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
         orderNumber: order.orderNumber,
         total: `$${Number(order.total).toFixed(2)}`,
         itemCount: order.items.length,
-        storeUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
+        storeUrl,
+        trackUrl: `${storeUrl}/track?order=${encodeURIComponent(order.orderNumber)}`,
       }),
     })
   }
@@ -232,6 +234,84 @@ export const getOrderById = async (req: AuthRequest, res: Response): Promise<voi
   if (!order) throw new ApiError('Order not found', 404)
 
   res.json({ success: true, data: order })
+}
+
+// POST /api/orders/track — public: order number + email, no session required
+export const trackOrder = async (req: Request, res: Response): Promise<void> => {
+  const { orderNumber, email } = req.body ?? {}
+  if (
+    typeof orderNumber !== 'string' ||
+    typeof email !== 'string' ||
+    !orderNumber.trim() ||
+    !email.trim()
+  ) {
+    throw new ApiError('Order number and email are required', 400)
+  }
+
+  // Numbers are stored uppercase; emails are compared case-insensitively so
+  // shoppers can type their address however their keyboard capitalises it.
+  const normalizedNumber = orderNumber.trim().toUpperCase()
+  const normalizedEmail = email.trim().toLowerCase()
+
+  const order = await prisma.order.findFirst({
+    where: {
+      orderNumber: normalizedNumber,
+      user: { email: { equals: normalizedEmail, mode: 'insensitive' } },
+    },
+    select: {
+      orderNumber: true,
+      status: true,
+      paymentStatus: true,
+      paymentMethod: true,
+      trackingNumber: true,
+      subtotal: true,
+      shipping: true,
+      tax: true,
+      discount: true,
+      total: true,
+      createdAt: true,
+      updatedAt: true,
+      items: {
+        select: {
+          name: true,
+          quantity: true,
+          price: true,
+          product: { select: { slug: true, images: true } },
+        },
+      },
+      address: { select: { firstName: true, lastName: true, city: true, country: true } },
+    },
+  })
+
+  // One generic message for both "no such order" and "wrong email" — a
+  // mismatch must never confirm that an order number exists.
+  if (!order) throw new ApiError('No order matches that number and email', 404)
+
+  res.json({
+    success: true,
+    data: {
+      orderNumber: order.orderNumber,
+      status: order.status,
+      paymentStatus: order.paymentStatus,
+      paymentMethod: order.paymentMethod,
+      trackingNumber: order.trackingNumber,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+      subtotal: Number(order.subtotal),
+      shipping: Number(order.shipping),
+      tax: Number(order.tax),
+      discount: Number(order.discount),
+      total: Number(order.total),
+      itemCount: order.items.reduce((count, item) => count + item.quantity, 0),
+      items: order.items.map((item) => ({
+        name: item.name,
+        quantity: item.quantity,
+        price: Number(item.price),
+        product: item.product,
+      })),
+      shippingTo: order.address,
+    },
+  })
 }
 
 // PATCH /api/orders/:id/status — Admin only
@@ -300,6 +380,7 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response): Promis
     select: { email: true, firstName: true },
   })
   if (customer && order.status !== status) {
+    const storeUrl = process.env.FRONTEND_URL || 'http://localhost:3003'
     void sendMail({
       to: customer.email,
       subject: `Order ${order.orderNumber} ${status.charAt(0)}${status.slice(1).toLowerCase()} · Calesta`,
@@ -307,7 +388,8 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response): Promis
         customerName: customer.firstName || 'there',
         orderNumber: order.orderNumber,
         status,
-        storeUrl: process.env.FRONTEND_URL || 'http://localhost:3003',
+        storeUrl,
+        trackUrl: `${storeUrl}/track?order=${encodeURIComponent(order.orderNumber)}`,
       }),
     })
   }

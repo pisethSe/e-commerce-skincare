@@ -58,6 +58,7 @@ export function orderConfirmationEmail(params: {
   total: string
   itemCount: number
   storeUrl: string
+  trackUrl: string
 }): MailOptions['html'] {
   return `
   <div style="font-family: 'Inter Tight', Helvetica, Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 32px; color: #102d26;">
@@ -70,7 +71,10 @@ export function orderConfirmationEmail(params: {
       (${params.itemCount} item${params.itemCount === 1 ? '' : 's'}, ${params.total}) is confirmed
       and will ship soon.
     </p>
-    <a href="${params.storeUrl}" style="display: inline-block; margin-top: 20px; background: #102d26; color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 600; padding: 10px 20px; border-radius: 8px;">
+    <a href="${params.trackUrl}" style="display: inline-block; margin-top: 20px; background: #102d26; color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 600; padding: 10px 20px; border-radius: 8px;">
+      Track Your Order
+    </a>
+    <a href="${params.storeUrl}" style="display: inline-block; margin-top: 20px; margin-left: 8px; color: #102d26; text-decoration: none; font-size: 13px; font-weight: 600; padding: 10px 20px; border: 1px solid #102d26; border-radius: 8px;">
       Continue Shopping
     </a>
     <p style="margin-top: 28px; font-size: 12px; color: #9ca8a5; border-top: 1px solid #e7eae9; padding-top: 16px;">
@@ -84,6 +88,7 @@ export function orderStatusEmail(params: {
   orderNumber: string
   status: string
   storeUrl: string
+  trackUrl: string
 }): MailOptions['html'] {
   const copy: Record<string, string> = {
     PENDING: 'Your order is received and queued for processing.',
@@ -104,7 +109,10 @@ export function orderStatusEmail(params: {
       <strong>${params.status.charAt(0)}${params.status.slice(1).toLowerCase()}</strong>.
       ${copy[params.status] ?? ''}
     </p>
-    <a href="${params.storeUrl}" style="display: inline-block; margin-top: 20px; background: #102d26; color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 600; padding: 10px 20px; border-radius: 8px;">
+    <a href="${params.trackUrl}" style="display: inline-block; margin-top: 20px; background: #102d26; color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 600; padding: 10px 20px; border-radius: 8px;">
+      Track Your Order
+    </a>
+    <a href="${params.storeUrl}" style="display: inline-block; margin-top: 20px; margin-left: 8px; color: #102d26; text-decoration: none; font-size: 13px; font-weight: 600; padding: 10px 20px; border: 1px solid #102d26; border-radius: 8px;">
       View Your Orders
     </a>
     <p style="margin-top: 28px; font-size: 12px; color: #9ca8a5; border-top: 1px solid #e7eae9; padding-top: 16px;">

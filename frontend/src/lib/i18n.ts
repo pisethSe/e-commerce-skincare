@@ -554,6 +554,52 @@ export const dictionary = {
     km: 'ចូលគណនីដើម្បីមើលការបញ្ជាទិញរបស់អ្នក',
   },
 
+  // Public order tracking
+  'track.eyebrow': { en: 'ORDER TRACKING', km: 'ការតាមដានការបញ្ជាទិញ' },
+  'track.title': { en: 'Where is my order?', km: 'ការបញ្ជាទិញរបស់ខ្ញុំនៅឯណា?' },
+  'track.subtitle': {
+    en: 'Enter your order number and the email you used at checkout. We’ll show the latest status and tracking details.',
+    km: 'បញ្ចូលលេខការបញ្ជាទិញ និងអ៊ីមែលដែលអ្នកបានប្រើពេលទូទាត់។ យើងនឹងបង្ហាញស្ថានភាពចុងក្រោយ និងព័ត៌មានតាមដាន។',
+  },
+  'track.orderNumber': { en: 'Order number', km: 'លេខការបញ្ជាទិញ' },
+  'track.orderPlaceholder': { en: 'LUM-XXXXXX-XXXX', km: 'LUM-XXXXXX-XXXX' },
+  'track.email': { en: 'Email', km: 'អ៊ីមែល' },
+  'track.emailPlaceholder': { en: 'you@example.com', km: 'you@example.com' },
+  'track.submit': { en: 'Track order', km: 'តាមដានការបញ្ជាទិញ' },
+  'track.searching': { en: 'Looking up your order…', km: 'កំពុងស្វែងរកការបញ្ជាទិញរបស់អ្នក…' },
+  'track.privacy': {
+    en: 'Your email is only used to find this order.',
+    km: 'អ៊ីមែលរបស់អ្នកត្រូវបានប្រើសម្រាប់តែការស្វែងរកការបញ្ជាទិញនេះប៉ុណ្ណោះ។',
+  },
+  'track.required': {
+    en: 'Enter your order number and email.',
+    km: 'បញ្ចូលលេខការបញ្ជាទិញ និងអ៊ីមែលរបស់អ្នក។',
+  },
+  'track.notFound': {
+    en: 'We couldn’t find an order with that number and email. Check both and try again.',
+    km: 'យើងរកមិនឃើញការបញ្ជាទិញដែលមានលេខ និងអ៊ីមែលនេះទេ។ សូមពិនិត្យឡើងវិញ ហើយព្យាយាមម្តងទៀត។',
+  },
+  'track.error': {
+    en: 'We couldn’t look up your order right now. Please try again.',
+    km: 'យើងមិនអាចពិនិត្យការបញ្ជាទិញរបស់អ្នកបានទេឥឡូវនេះ។ សូមព្យាយាមម្តងទៀត។',
+  },
+  'track.rateLimited': {
+    en: 'Too many attempts. Please wait a few minutes and try again.',
+    km: 'ព្យាយាមច្រើនដងពេក។ សូមរង់ចាំបន្តិច ហើយព្យាយាមម្តងទៀត។',
+  },
+  'track.resultEyebrow': { en: 'ORDER {number}', km: 'ការបញ្ជាទិញ {number}' },
+  'track.placedOn': { en: 'Placed {date}', km: 'បានបញ្ជាទិញ {date}' },
+  'track.items': { en: 'Items', km: 'ទំនិញ' },
+  'track.summary': { en: 'Order summary', km: 'សេចក្តីសង្ខេបការបញ្ជាទិញ' },
+  'track.shippingTo': { en: 'Shipping to', km: 'ដឹកជញ្ជូនទៅ' },
+  'track.payment': { en: 'Payment', km: 'ការទូទាត់' },
+  'track.paid': { en: 'Paid', km: 'បានបង់ប្រាក់' },
+  'track.unpaid': { en: 'Unpaid', km: 'មិនទាន់បង់ប្រាក់' },
+  'track.paymentRefunded': { en: 'Refunded', km: 'បានសងប្រាក់វិញ' },
+  'track.trackAnother': { en: 'Track another order', km: 'តាមដានការបញ្ជាទិញផ្សេងទៀត' },
+  'track.viewOrders': { en: 'View my orders', km: 'មើលការបញ្ជាទិញរបស់ខ្ញុំ' },
+  'track.help': { en: 'Need help?', km: 'ត្រូវការជំនួយ?' },
+
   // Auth
   'auth.login': { en: 'LOGIN', km: 'ចូលគណនី' },
   'auth.createAccount': { en: 'CREATE AN ACCOUNT', km: 'បង្កើតគណនី' },
@@ -707,6 +753,7 @@ export const dictionary = {
   'footer.backToTop': { en: 'BACK TO TOP', km: 'ត្រឡប់ទៅកំពូល' },
   'footer.rights': { en: '©2026 Calesta. All rights reserved.', km: '©2026 Calesta។ រក្សាសិទ្ធិគ្រប់យ៉ាង។' },
   'footer.about': { en: 'About', km: 'អំពី' },
+  'footer.track': { en: 'Track Order', km: 'តាមដានការបញ្ជាទិញ' },
 
   // Category labels (DB slugs)
   'category.cleansers': { en: 'Cleansers', km: 'ផលិតផលសម្អាត' },

@@ -189,7 +189,7 @@ npm run dev:admin      # Admin on :3001 (console at /admin)
 
 ## 🧪 Testing
 
-### Backend — 170 end-to-end tests
+### Backend — 174 end-to-end tests
 ```bash
 # Start the API and seed the database first (see Getting Started)
 cd backend
@@ -211,15 +211,16 @@ cd backend
 npm run db:clean
 ```
 
-### Storefront — 23 unit & component tests
+### Storefront — 27 unit & component tests
 ```bash
 cd frontend
 npm test          # single run (CI)
 npm run test:watch
 ```
 Vitest + Testing Library run in jsdom and cover currency conversion, the Khmer/
-English dictionary, catalog normalisation, cart/wishlist state & persistence, and
-the review section (summary, verified badges, validation, moderation state).
+English dictionary, catalog normalisation, cart/wishlist state & persistence, the
+review section (summary, verified badges, validation, moderation state), and the
+public tracking page (shared-link prefill, lookup payload, error/retry, reset).
 
 ### Continuous integration
 `.github/workflows/ci.yml` runs on every push to `main` and every pull request:
@@ -265,6 +266,10 @@ steps can be reproduced locally with a scratch database, e.g.
       show the secondary amount. Rate configurable via `VITE_USD_TO_KHR`
       (default 4,100 riel per dollar)
 - ✅ Account page (/account): profile, order history, spending stats
+- ✅ Public order tracking (/track) — look up any order with its number and the
+      email used at checkout; shows the status timeline, items, totals, payment
+      state, destination, and tracking number. Order confirmation and status
+      emails deep-link straight to it with the number prefilled
 - ✅ Order tracking timeline with tracking number once an order ships
 - ✅ Product reviews — rating summary with 5-star distribution, approved review
       list with verified-purchase badges, and a moderated write form (one review
@@ -304,7 +309,8 @@ steps can be reproduced locally with a scratch database, e.g.
 - ✅ Search: relevance ranking + typo tolerance (Levenshtein), facet counts
       (category, price, rating), and `GET /api/products/suggest?q=` typeahead
 - ✅ Categories: CRUD
-- ✅ Orders: create, list, detail, status update (cancel restocks stock)
+- ✅ Orders: create, list, detail, status update (cancel restocks stock),
+      public tracking by order number + email (rate-limited, no account needed)
 - ✅ Cart: server-side sync for authenticated users
 - ✅ Reviews: create, list, verified purchase badge
 - ✅ Wishlist: add/remove per user
@@ -363,11 +369,13 @@ DELETE /api/products/:id      (admin)
 GET    /api/categories
 POST   /api/categories        (admin)
 
+POST   /api/orders/track                (public: order number + email)
 GET    /api/orders/my
 GET    /api/orders/:id
 POST   /api/orders
 GET    /api/orders            (admin)
 PATCH  /api/orders/:id/status (admin)
+PATCH  /api/orders/:id/tracking (admin)
 
 GET    /api/cart
 POST   /api/cart

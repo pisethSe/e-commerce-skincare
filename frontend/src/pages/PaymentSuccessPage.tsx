@@ -77,6 +77,14 @@ export default function PaymentSuccessPage() {
             )}
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
               <Link to="/account" className="filled-pill-button">{t('pay.viewOrders')}</Link>
+              {orderNumber && (
+                <Link
+                  to={`/track?order=${encodeURIComponent(orderNumber)}`}
+                  className="outline-pill-button"
+                >
+                  {t('track.submit')}
+                </Link>
+              )}
               <Link to="/shop" className="outline-pill-button">{t('common.continueShopping')}</Link>
             </div>
           </>
