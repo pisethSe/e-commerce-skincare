@@ -189,7 +189,7 @@ npm run dev:admin      # Admin on :3001 (console at /admin)
 
 ## 🧪 Testing
 
-### Backend — 174 end-to-end tests
+### Backend — 176 end-to-end tests
 ```bash
 # Start the API and seed the database first (see Getting Started)
 cd backend
@@ -211,7 +211,7 @@ cd backend
 npm run db:clean
 ```
 
-### Storefront — 27 unit & component tests
+### Storefront — 33 unit & component tests
 ```bash
 cd frontend
 npm test          # single run (CI)
@@ -219,8 +219,10 @@ npm run test:watch
 ```
 Vitest + Testing Library run in jsdom and cover currency conversion, the Khmer/
 English dictionary, catalog normalisation, cart/wishlist state & persistence, the
-review section (summary, verified badges, validation, moderation state), and the
-public tracking page (shared-link prefill, lookup payload, error/retry, reset).
+review section (summary, verified badges, validation, moderation state), the
+public tracking page (shared-link prefill, lookup payload, error/retry, reset),
+and Cambodian delivery areas (khan/province mapping, postal-code rules, phone
+validation).
 
 ### Continuous integration
 `.github/workflows/ci.yml` runs on every push to `main` and every pull request:
@@ -256,9 +258,11 @@ steps can be reproduced locally with a scratch database, e.g.
 - ✅ Shop page with filters, sort, category pills
 - ✅ Product detail with image gallery, accordion, related products
 - ✅ Cart page with coupon input
-- ✅ Multi-step checkout: Cambodia-only shipping with province picker and
-      validation, one standard delivery method (free over $75), payment via
-      Credit/Debit Card, ABA PayWay, or Bakong (KHQR), order confirmation step
+- ✅ Multi-step checkout: Cambodia-only delivery with a **Phnom Penh / province**
+      choice, khan or province picker, house number & street, phone validation,
+      one standard delivery method (free over $75), and payment via **cash on
+      delivery**, ABA PayWay, Bakong (KHQR), or Credit/Debit Card, with an order
+      confirmation step
 - ✅ Sign in with Google (OAuth2) + password strength meter on signup
 - ✅ English / ខ្មែរ toggle — storefront chrome, dates, and category labels
       localized; the choice is persisted per browser

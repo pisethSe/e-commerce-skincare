@@ -64,7 +64,7 @@ test('POST /api/orders decrements product stock', async () => {
   }
 })
 
-test('POST /api/orders has one shipping method and accepts card/aba_payway/bakong', async () => {
+test('POST /api/orders has one shipping method and accepts card/aba_payway/bakong/cod', async () => {
   if (!serverUp) return
   const user = await makeUser('ship')
   const addressId = await makeAddress(user.token)
@@ -85,14 +85,17 @@ test('POST /api/orders has one shipping method and accepts card/aba_payway/bakon
     )
   }
 
-  // Payment methods — all three accepted
-  for (const paymentMethod of ['card', 'aba_payway', 'bakong']) {
+  // Payment methods — cash on delivery included
+  for (const paymentMethod of ['card', 'aba_payway', 'bakong', 'cod']) {
     const { status: statusOk, body: payOrder } = await call('POST', '/api/orders', {
       token: user.token,
       body: { items: [{ productId: product.id, quantity: 1 }], addressId, paymentMethod },
     })
     assert.equal(statusOk, 201, `paymentMethod ${paymentMethod} should be accepted`)
     assert.equal(payOrder.data.paymentMethod, paymentMethod, 'payment method should be recorded')
+    if (paymentMethod === 'cod') {
+      assert.equal(payOrder.data.paymentStatus, 'UNPAID', 'cash on delivery starts unpaid')
+    }
   }
 
   // Unknown payment method rejected
@@ -101,7 +104,7 @@ test('POST /api/orders has one shipping method and accepts card/aba_payway/bakon
     body: { items: [{ productId: product.id, quantity: 1 }], addressId, paymentMethod: 'paypal' },
   })
   assert.equal(badPay, 400)
-  assert.match(badPayBody.message, /card, aba_payway, or bakong/i)
+  assert.match(badPayBody.message, /card, aba_payway, bakong, or cod/i)
 })
 
 /* ── Create order — validation ─────────────────── */

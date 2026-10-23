@@ -41,7 +41,13 @@ const tracked = {
       product: { slug: 'silk-barrier-moisturizer', images: [] },
     },
   ],
-  shippingTo: { firstName: 'Sophie', lastName: 'M', city: 'Phnom Penh', country: 'Cambodia' },
+  shippingTo: {
+    firstName: 'Sophie',
+    lastName: 'M',
+    city: 'Phnom Penh',
+    state: 'Chamkarmon',
+    country: 'Cambodia',
+  },
 }
 
 function LocationProbe() {
@@ -92,7 +98,7 @@ describe('TrackOrderPage', () => {
     expect(await screen.findByText(`ORDER ${tracked.orderNumber}`)).toBeInTheDocument()
     expect(screen.getAllByText('Shipped').length).toBeGreaterThanOrEqual(2)
     expect(screen.getByText('KH-987654321')).toBeInTheDocument()
-    expect(screen.getByText('Phnom Penh, Cambodia')).toBeInTheDocument()
+    expect(screen.getByText('Chamkarmon, Phnom Penh, Cambodia')).toBeInTheDocument()
     expect(screen.getByText('Paid · ABA PayWay')).toBeInTheDocument()
     expect(screen.getByText('$79.35')).toBeInTheDocument()
     expect(screen.getByText('$6.40')).toBeInTheDocument()

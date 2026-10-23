@@ -23,10 +23,10 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
   void shippingMethod
 
   // Payment methods accepted at checkout
-  const PAYMENT_METHODS = ['card', 'aba_payway', 'bakong']
-  const method = (typeof paymentMethod === 'string' ? paymentMethod : 'card').toLowerCase()
+  const PAYMENT_METHODS = ['card', 'aba_payway', 'bakong', 'cod']
+  const method = (typeof paymentMethod === 'string' ? paymentMethod : 'cod').toLowerCase()
   if (!PAYMENT_METHODS.includes(method)) {
-    throw new ApiError('Payment method must be card, aba_payway, or bakong', 400)
+    throw new ApiError('Payment method must be card, aba_payway, bakong, or cod', 400)
   }
 
   // Verify address belongs to user
@@ -279,7 +279,7 @@ export const trackOrder = async (req: Request, res: Response): Promise<void> => 
           product: { select: { slug: true, images: true } },
         },
       },
-      address: { select: { firstName: true, lastName: true, city: true, country: true } },
+      address: { select: { firstName: true, lastName: true, city: true, state: true, country: true } },
     },
   })
 

@@ -29,9 +29,37 @@ export const CAMBODIA_PROVINCES = [
   'Tbong Khmum',
 ] as const
 
-/** Returns an error message when the address is not a valid Cambodian address. */
+/** Phnom Penh's khans (districts). */
+export const PHNOM_PENH_KHANS = [
+  'Boeung Keng Kang',
+  'Chamkarmon',
+  'Chbar Ampov',
+  'Chroy Changvar',
+  'Daun Penh',
+  'Dangkao',
+  'Kamboul',
+  'Mean Chey',
+  '7 Makara',
+  'Por Sen Chey',
+  'Prek Pnov',
+  'Russey Keo',
+  'Sen Sok',
+  'Toul Kork',
+] as const
+
+const equalsAny = (value: string, options: readonly string[]): boolean =>
+  options.some((option) => option.toLowerCase() === value.toLowerCase())
+
+/**
+ * Returns an error message when the address is not a valid Cambodian address.
+ *
+ * `state` carries the delivery area: the khan for Phnom Penh, or the province
+ * elsewhere. `city` is "Phnom Penh" or the province name. Postal codes are
+ * optional — most Cambodian addresses do not use one.
+ */
 export function validateCambodianAddress(body: {
   country?: string
+  city?: string
   state?: string
   zip?: string
   phone?: string
@@ -41,19 +69,16 @@ export function validateCambodianAddress(body: {
     return 'We currently ship within Cambodia only'
   }
 
-  const province = (body.state ?? '').trim()
-  if (!province) {
-    return 'Province is required'
+  const area = (body.state ?? '').trim()
+  if (!area) {
+    return 'Please choose a province or a Phnom Penh district'
   }
-  const knownProvince = CAMBODIA_PROVINCES.some(
-    (p) => p.toLowerCase() === province.toLowerCase(),
-  )
-  if (!knownProvince) {
-    return `Unknown province "${province}" — please choose one of Cambodia's 25 provinces`
+  if (!equalsAny(area, CAMBODIA_PROVINCES) && !equalsAny(area, PHNOM_PENH_KHANS)) {
+    return `Unknown province or district "${area}" — please choose from the list`
   }
 
   const zip = (body.zip ?? '').trim()
-  if (!/^\d{5}$/.test(zip)) {
+  if (zip && !/^\d{5}$/.test(zip)) {
     return 'Postal code must be 5 digits (e.g. 12000 for Phnom Penh)'
   }
 

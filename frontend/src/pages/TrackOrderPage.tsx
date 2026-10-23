@@ -30,7 +30,7 @@ interface TrackedOrder {
   total: number
   itemCount: number
   items: TrackedItem[]
-  shippingTo: { firstName: string; lastName: string; city: string; country: string }
+  shippingTo: { firstName: string; lastName: string; city: string; state: string; country: string }
 }
 
 const PAYMENT_STATUS: Record<string, TKey> = {
@@ -214,7 +214,9 @@ export default function TrackOrderPage() {
                       {order.shippingTo.firstName} {order.shippingTo.lastName}
                     </p>
                     <p className="text__14 text-Mneutral-500">
-                      {order.shippingTo.city}, {order.shippingTo.country}
+                      {`${[order.shippingTo.state, order.shippingTo.city]
+                        .filter((value, index, all) => value && all.indexOf(value) === index)
+                        .join(', ')}, ${order.shippingTo.country}`}
                     </p>
                   </div>
                   <div>

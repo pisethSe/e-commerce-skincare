@@ -158,6 +158,38 @@ test('address without province is rejected', async () => {
   assert.match(body.message, /province/i)
 })
 
+test('Phnom Penh khan is a valid area and a postal code is optional', async () => {
+  if (!serverUp) return
+  const user = await makeUser('kh-khan')
+  const { status, body } = await call('POST', '/api/users/addresses', {
+    token: user.token,
+    body: {
+      firstName: 'Dara', lastName: 'Sok',
+      street: 'House 12, Street 215', city: 'Phnom Penh', state: 'Chamkarmon',
+      zip: '', country: 'Cambodia', phone: '012345678',
+    },
+  })
+  assert.equal(status, 201)
+  assert.equal(body.data.city, 'Phnom Penh')
+  assert.equal(body.data.state, 'Chamkarmon')
+  assert.equal(body.data.zip, '')
+})
+
+test('unknown Phnom Penh district is rejected', async () => {
+  if (!serverUp) return
+  const user = await makeUser('kh-badkhan')
+  const { status, body } = await call('POST', '/api/users/addresses', {
+    token: user.token,
+    body: {
+      firstName: 'Dara', lastName: 'Sok',
+      street: 'House 1', city: 'Phnom Penh', state: 'Atlantis',
+      zip: '', country: 'Cambodia', phone: '012345678',
+    },
+  })
+  assert.equal(status, 400)
+  assert.match(body.message, /province or district/i)
+})
+
 /* ── Users ────────────────────────────────────── */
 test('GET /api/users/me returns profile; PATCH updates it', async () => {
   if (!serverUp) return

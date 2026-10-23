@@ -46,6 +46,15 @@ interface AdminOrder {
 
 const TABS: Array<'All' | (typeof ORDER_STATUSES)[number]> = ['All', ...ORDER_STATUSES]
 
+const PAYMENT_LABELS: Record<string, string> = {
+  card: 'Card',
+  aba_payway: 'ABA PayWay',
+  bakong: 'Bakong',
+  cod: 'Cash on delivery',
+}
+const paymentLabel = (method: string | null): string =>
+  method ? PAYMENT_LABELS[method] ?? method : '—'
+
 export default function OrdersPage() {
   const [orders, setOrders] = useState<AdminOrder[]>([])
   const [pagination, setPagination] = useState<PaginationMeta | null>(null)
@@ -133,7 +142,7 @@ export default function OrdersPage() {
         o.tax,
         o.total,
         o.status,
-        o.paymentMethod ?? '—',
+        paymentLabel(o.paymentMethod),
       ]),
     ]
     const csv = rows
@@ -324,7 +333,7 @@ export default function OrdersPage() {
               <StatusBadge status={detail.status} />
               <span className="text__14 text-[#9ca8a5]">{formatDate(detail.createdAt)}</span>
               {detail.paymentMethod && (
-                <span className="admin-chip capitalize">{detail.paymentMethod}</span>
+                <span className="admin-chip">{paymentLabel(detail.paymentMethod)}</span>
               )}
             </div>
 
@@ -365,7 +374,10 @@ export default function OrdersPage() {
                   </p>
                   <p>{detail.address.street}</p>
                   <p>
-                    {detail.address.city}, {detail.address.state} {detail.address.zip}
+                    {Array.from(
+                      new Set([detail.address.state, detail.address.city].filter(Boolean)),
+                    ).join(', ')}
+                    {detail.address.zip ? ` ${detail.address.zip}` : ''}
                   </p>
                   <p>{detail.address.country}</p>
                   {detail.address.phone && <p className="mt-1 text-[#9ca8a5]">{detail.address.phone}</p>}

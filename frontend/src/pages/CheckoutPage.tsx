@@ -5,10 +5,12 @@ import {
   ArrowLeft,
   ArrowRight,
   BadgeCheck,
+  Banknote,
   CheckCircle2,
   CreditCard,
   Lock,
   ChevronDown,
+  MapPin,
   ShoppingBag,
   QrCode,
   Wallet,
@@ -17,14 +19,22 @@ import { useCartStore, useAuthStore, useUIStore } from '../lib/store'
 import { useMoney } from '../lib/currency'
 import { useT } from '../lib/i18n'
 import { getApiUrl, apiFetch } from '../lib/api'
-import { CAMBODIA_PROVINCES, isValidProvince, isValidZip, isValidKhPhone } from '../lib/cambodia'
+import {
+  CAMBODIA_PROVINCES,
+  PHNOM_PENH_KHANS,
+  isValidProvince,
+  isValidKhan,
+  isValidKhPhone,
+  buildCambodiaAddress,
+  type LocationType,
+} from '../lib/cambodia'
 import ImageWithFallback from '../components/ui/ImageWithFallback'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
 
 const steps = ['info', 'shipping', 'payment'] as const
 type Step = (typeof steps)[number]
 
-type PaymentChoice = 'card' | 'aba_payway' | 'bakong'
+type PaymentChoice = 'card' | 'aba_payway' | 'bakong' | 'cod'
 
 interface PaymentConfig {
   stripe: boolean
@@ -37,11 +47,12 @@ interface CheckoutForm {
   lastName: string
   email: string
   phone: string
+  /** Phnom Penh or a province — chosen explicitly so nobody picks the wrong list. */
+  locationType: LocationType | ''
+  /** Khan when in Phnom Penh, province name otherwise. */
+  area: string
+  /** House number and street, e.g. "House 12, Street 215". */
   street: string
-  city: string
-  state: string
-  zip: string
-  country: string
 }
 
 const INITIAL_FORM: CheckoutForm = {
@@ -49,11 +60,9 @@ const INITIAL_FORM: CheckoutForm = {
   lastName: '',
   email: '',
   phone: '',
+  locationType: '',
+  area: '',
   street: '',
-  city: '',
-  state: '',
-  zip: '',
-  country: 'Cambodia',
 }
 
 const STANDARD_SHIPPING = 8.95
@@ -73,7 +82,8 @@ export default function CheckoutPage() {
   const [orderNumber, setOrderNumber] = useState<string | null>(null)
   const [orderError, setOrderError] = useState<string | null>(null)
   const [card, setCard] = useState({ number: '', expiry: '', cvc: '', name: '' })
-  const [paymentChoice, setPaymentChoice] = useState<PaymentChoice>('card')
+  // Cash on delivery is the default in Cambodia — no app or card required.
+  const [paymentChoice, setPaymentChoice] = useState<PaymentChoice>('cod')
   const [confirmPlace, setConfirmPlace] = useState(false)
   const [paymentConfig, setPaymentConfig] = useState<PaymentConfig>({ stripe: false, bakong: false, currency: 'USD' })
   const [bakongPayment, setBakongPayment] = useState<{ orderId: string; orderNumber: string; total: number } | null>(null)
@@ -114,6 +124,13 @@ export default function CheckoutPage() {
   const tax = (subtotal - discount) * 0.10
   const orderTotal = subtotal - discount + shipping + tax
 
+  // Only warn about simulated gateways when the selected one is not live.
+  const gatewayDemo =
+    paymentChoice !== 'cod' &&
+    ((paymentChoice === 'card' && !paymentConfig.stripe) ||
+      paymentChoice === 'aba_payway' ||
+      (paymentChoice === 'bakong' && !paymentConfig.bakong))
+
   const setField = (key: keyof CheckoutForm, value: string) =>
     setForm((f) => ({ ...f, [key]: value }))
 
@@ -127,30 +144,34 @@ export default function CheckoutPage() {
         setStepError(t('checkout.errEmail'))
         return false
       }
+      if (!form.phone.trim()) {
+        setStepError(t('checkout.errPhoneRequired'))
+        return false
+      }
+      if (!isValidKhPhone(form.phone)) {
+        setStepError(t('checkout.errPhone'))
+        return false
+      }
     }
     if (target === 'payment') {
-      if (!form.street.trim()) {
-        setStepError(t('checkout.errStreet'))
+      if (!form.locationType) {
+        setStepError(t('checkout.errLocation'))
         return false
       }
-      if (!form.city.trim()) {
-        setStepError(t('checkout.errCity'))
+      if (!form.area.trim()) {
+        setStepError(t('checkout.errArea'))
         return false
       }
-      if (!form.state.trim()) {
+      if (form.locationType === 'phnom_penh' && !isValidKhan(form.area)) {
+        setStepError(t('checkout.errKhan'))
+        return false
+      }
+      if (form.locationType === 'province' && !isValidProvince(form.area)) {
         setStepError(t('checkout.errProvince'))
         return false
       }
-      if (!isValidProvince(form.state)) {
-        setStepError(t('checkout.errProvinceInvalid'))
-        return false
-      }
-      if (!isValidZip(form.zip)) {
-        setStepError(t('checkout.errZip'))
-        return false
-      }
-      if (form.phone.trim() && !isValidKhPhone(form.phone)) {
-        setStepError(t('checkout.errPhone'))
+      if (!form.street.trim()) {
+        setStepError(t('checkout.errStreet'))
         return false
       }
     }
@@ -176,6 +197,8 @@ export default function CheckoutPage() {
     try {
       // apiFetch retries once after silently refreshing an expired access token —
       // no more forced re-login mid-checkout
+      const location = form.locationType || 'province'
+      const { city, state, zip, country } = buildCambodiaAddress(location, form.area)
       const addressRes = await apiFetch('/api/users/addresses', {
         method: 'POST',
         token: accessToken, headers: { 'Content-Type': 'application/json' },
@@ -183,10 +206,10 @@ export default function CheckoutPage() {
           firstName: form.firstName.trim(),
           lastName: form.lastName.trim(),
           street: form.street.trim(),
-          city: form.city.trim(),
-          state: form.state.trim(),
-          zip: form.zip.trim(),
-          country: 'Cambodia',
+          city,
+          state,
+          zip,
+          country,
           phone: form.phone.trim() || null,
           isDefault: false,
         }),
@@ -481,35 +504,80 @@ export default function CheckoutPage() {
             {step === 'shipping' && (
               <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
                 <h2 className="mb-6 text__32 font-medium">{t('checkout.shippingAddress')}</h2>
-                <CheckoutInput label={t('checkout.street')} placeholder="Street 215, House 12" value={form.street} onChange={(v) => setField('street', v)} />
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <CheckoutInput label={t('checkout.city')} placeholder="Phnom Penh" value={form.city} onChange={(v) => setField('city', v)} />
-                  <div>
-                    <label className="mb-2 block text__14 text-Mneutral-500">{t('checkout.province')}</label>
-                    <div className="relative">
-                      <select
-                        value={form.state}
-                        onChange={(e) => setField('state', e.target.value)}
-                        className="w-full appearance-none rounded-full border border-Mneutral-100 bg-white px-4 py-3 text__16 outline-none transition-colors focus:border-Mneutral-900"
-                      >
-                        <option value="">{t('checkout.chooseProvince')}</option>
-                        {CAMBODIA_PROVINCES.map((province) => (
-                          <option key={province} value={province}>{province}</option>
-                        ))}
-                      </select>
-                      <ChevronDown size={14} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-Mneutral-400" />
-                    </div>
+                <div>
+                  <p className="mb-2 block text__14 text-Mneutral-500">{t('checkout.livingNow')}</p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {[
+                      { value: 'phnom_penh' as const, label: t('checkout.phnomPenh'), desc: t('checkout.phnomPenhDesc') },
+                      { value: 'province' as const, label: t('checkout.province'), desc: t('checkout.provinceDesc') },
+                    ].map((option) => {
+                      const selected = form.locationType === option.value
+                      return (
+                        <label
+                          key={option.value}
+                          className={`flex cursor-pointer items-center gap-3 rounded-[20px] border p-4 transition-colors ${
+                            selected ? 'border-Mneutral-900 bg-Mneutral-50' : 'border-Mneutral-100'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="locationType"
+                            checked={selected}
+                            onChange={() => setForm((f) => ({ ...f, locationType: option.value, area: '' }))}
+                            className="accent-[#102d26]"
+                          />
+                          <MapPin size={16} className="flex-shrink-0 text-Mneutral-500" />
+                          <span>
+                            <span className="block text__16 font-medium">{option.label}</span>
+                            <span className="block text__12 text-Mneutral-500">{option.desc}</span>
+                          </span>
+                        </label>
+                      )
+                    })}
                   </div>
                 </div>
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <CheckoutInput label={t('checkout.postalCode')} placeholder="12000" inputMode="numeric" value={form.zip} onChange={(v) => setField('zip', v.replace(/[^\d]/g, '').slice(0, 5))} />
-                  <div>
-                    <label className="mb-2 block text__14 text-Mneutral-500">{t('checkout.country')}</label>
-                    <div className="flex items-center gap-2 rounded-full border border-Mneutral-100 bg-Mneutral-50 px-4 py-3">
-                      <span className="text__16 text-Mneutral-700">🇰🇭 {t('checkout.cambodia')}</span>
-                      <span className="ml-auto text__12 text-Mneutral-400">{t('checkout.shipCambodiaOnly')}</span>
-                    </div>
+
+                <div>
+                  <label htmlFor="checkout-area" className="mb-2 block text__14 text-Mneutral-500">
+                    {form.locationType === 'phnom_penh'
+                      ? t('checkout.khan')
+                      : form.locationType === 'province'
+                        ? t('checkout.province')
+                        : t('checkout.area')}
+                  </label>
+                  <div className="relative">
+                    <select
+                      id="checkout-area"
+                      value={form.area}
+                      disabled={!form.locationType}
+                      onChange={(e) => setField('area', e.target.value)}
+                      className="w-full appearance-none rounded-full border border-Mneutral-100 bg-white px-4 py-3 text__16 outline-none transition-colors focus:border-Mneutral-900 disabled:bg-Mneutral-50 disabled:text-Mneutral-400"
+                    >
+                      <option value="">
+                        {form.locationType === 'phnom_penh'
+                          ? t('checkout.chooseKhan')
+                          : form.locationType === 'province'
+                            ? t('checkout.chooseProvince')
+                            : t('checkout.chooseArea')}
+                      </option>
+                      {(form.locationType === 'phnom_penh' ? PHNOM_PENH_KHANS : CAMBODIA_PROVINCES).map((area) => (
+                        <option key={area} value={area}>{area}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={14} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-Mneutral-400" />
                   </div>
+                </div>
+
+                <CheckoutInput
+                  label={t('checkout.houseStreet')}
+                  placeholder={t('checkout.houseStreetPlaceholder')}
+                  value={form.street}
+                  onChange={(v) => setField('street', v)}
+                />
+
+                <div className="flex items-center gap-2 rounded-full border border-Mneutral-100 bg-Mneutral-50 px-4 py-3">
+                  <span className="text__16 text-Mneutral-700">🇰🇭 {t('checkout.cambodia')}</span>
+                  <span className="ml-auto text__12 text-Mneutral-400">{t('checkout.shipCambodiaOnly')}</span>
                 </div>
 
                 <h2 className="mb-2 mt-8 text__32 font-medium">{t('checkout.shippingMethod')}</h2>
@@ -549,9 +617,10 @@ export default function CheckoutPage() {
                 </h2>
 
                 {[
-                  { value: 'card' as const, label: t('checkout.card'), desc: t('checkout.cardDesc'), icon: CreditCard },
+                  { value: 'cod' as const, label: t('checkout.cod'), desc: t('checkout.codDesc'), icon: Banknote },
                   { value: 'aba_payway' as const, label: t('checkout.aba'), desc: t('checkout.abaDesc'), icon: Wallet },
                   { value: 'bakong' as const, label: t('checkout.bakong'), desc: t('checkout.bakongDesc'), icon: QrCode },
+                  { value: 'card' as const, label: t('checkout.card'), desc: t('checkout.cardDesc'), icon: CreditCard },
                 ].map((option) => {
                   const Icon = option.icon
                   return (
@@ -602,10 +671,19 @@ export default function CheckoutPage() {
                   </p>
                 )}
 
-                <p className="flex items-center gap-2 rounded-[20px] bg-cream-100/50 px-4 py-3 text__12 text-Mneutral-600">
-                  <BadgeCheck size={14} className="flex-shrink-0 text-sage-600" />
-                  {t('checkout.demoNote')}
-                </p>
+                {paymentChoice === 'cod' && (
+                  <p className="flex items-start gap-2 rounded-[20px] bg-cream-100/50 px-4 py-3 text__12 text-Mneutral-600">
+                    <Banknote size={14} className="mt-0.5 flex-shrink-0 text-sage-600" />
+                    {t('checkout.codNote')}
+                  </p>
+                )}
+
+                {gatewayDemo && (
+                  <p className="flex items-center gap-2 rounded-[20px] bg-cream-100/50 px-4 py-3 text__12 text-Mneutral-600">
+                    <BadgeCheck size={14} className="flex-shrink-0 text-sage-600" />
+                    {t('checkout.demoNote')}
+                  </p>
+                )}
 
                 {orderError && (
                   <p role="alert" className="rounded-[16px] bg-blush-50 px-4 py-3 text__14 text-blush-700">
@@ -623,7 +701,13 @@ export default function CheckoutPage() {
                     disabled={placing}
                     className="filled-pill-button flex-1 justify-center disabled:opacity-60"
                   >
-                    <CreditCard size={16} />
+                    {paymentChoice === 'cod' ? (
+                      <Banknote size={16} />
+                    ) : paymentChoice === 'bakong' ? (
+                      <QrCode size={16} />
+                    ) : (
+                      <CreditCard size={16} />
+                    )}
                     {placing ? t('checkout.placing') : t('checkout.placeOrder', { amount: money(orderTotal) })}
                   </button>
                 </div>
