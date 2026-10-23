@@ -111,14 +111,19 @@ interface WishlistState {
   has: (id: string) => boolean
 }
 
-export const useWishlistStore = create<WishlistState>((set, get) => ({
-  ids: [],
-  toggle: (id: string) =>
-    set((state) => ({
-      ids: state.ids.includes(id) ? state.ids.filter((i) => i !== id) : [...state.ids, id],
-    })),
-  has: (id: string) => get().ids.includes(id),
-}))
+export const useWishlistStore = create<WishlistState>()(
+  persist(
+    (set, get) => ({
+      ids: [],
+      toggle: (id: string) =>
+        set((state) => ({
+          ids: state.ids.includes(id) ? state.ids.filter((i) => i !== id) : [...state.ids, id],
+        })),
+      has: (id: string) => get().ids.includes(id),
+    }),
+    { name: 'calesta-wishlist', partialize: (state) => ({ ids: state.ids }) }
+  )
+)
 
 // UI store
 interface UIState {

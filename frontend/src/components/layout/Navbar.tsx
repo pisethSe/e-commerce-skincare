@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ShoppingBag, Menu, X } from 'lucide-react'
+import { Heart, ShoppingBag, Menu, X } from 'lucide-react'
 import { NAV_LINKS } from '../../lib/data'
-import { useAuthStore, useCartStore, usePrefsStore, useUIStore } from '../../lib/store'
+import { useAuthStore, useCartStore, usePrefsStore, useUIStore, useWishlistStore } from '../../lib/store'
 import { useT } from '../../lib/i18n'
 import ConfirmDialog from '../ui/ConfirmDialog'
 
@@ -13,6 +13,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [confirmLogout, setConfirmLogout] = useState(false)
   const itemCount = useCartStore((s) => s.itemCount)
+  const wishlistCount = useWishlistStore((s) => s.ids.length)
   const toggleCart = useCartStore((s) => s.toggleCart)
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
@@ -92,6 +93,22 @@ export default function Navbar() {
                   </button>
                 )}
 
+                <Link
+                  to="/wishlist"
+                  className={`relative hidden h-[40px] w-[40px] items-center justify-center rounded-full border text-Mneutral-900 transition-colors md:inline-flex md:h-[44px] md:w-[44px] ${
+                    location.pathname === '/wishlist' ? 'border-Mneutral-900 bg-Mneutral-900 text-white' : 'border-Mneutral-200 hover:border-Mneutral-900'
+                  }`}
+                  aria-label={t('nav.openWishlist')}
+                  title={t('nav.openWishlist')}
+                >
+                  <Heart size={18} strokeWidth={1.75} className={wishlistCount > 0 ? 'fill-current' : ''} />
+                  {wishlistCount > 0 && (
+                    <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-Mneutral-900 px-1 text-[10px] font-semibold text-white">
+                      {wishlistCount}
+                    </span>
+                  )}
+                </Link>
+
                 <button
                   type="button"
                   onClick={() => setLang(lang === 'en' ? 'km' : 'en')}
@@ -165,6 +182,13 @@ export default function Navbar() {
                   </Link>
                 </motion.div>
               ))}
+              <Link
+                to="/wishlist"
+                className="mt-2 inline-flex w-fit items-center gap-2 rounded-full border border-Mneutral-200 px-[12px] py-[10px] text__14 text-Mneutral-600"
+              >
+                <Heart size={15} /> {t('nav.wishlist')}
+                {wishlistCount > 0 && <span className="text-Mneutral-900">({wishlistCount})</span>}
+              </Link>
               {user ? (
                 <div className="mt-4 flex flex-col gap-3">
                   <Link

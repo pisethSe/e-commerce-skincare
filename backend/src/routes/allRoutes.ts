@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { createReview, getProductReviews, subscribeNewsletter, unsubscribeNewsletter } from '../controllers/miscControllers'
+import { createReview, getProductReviews, getMyReview, subscribeNewsletter, unsubscribeNewsletter } from '../controllers/miscControllers'
 import { authenticate, requireAdmin, optionalAuth } from '../middleware/auth'
 import { validateCambodianAddress } from '../lib/validation'
 import { prisma } from '../lib/prisma'
@@ -11,6 +11,7 @@ import { getRangeAnalytics, exportCsv } from '../controllers/analyticsController
 export const reviewRoutes = Router()
 
 reviewRoutes.get('/product/:productId', getProductReviews)
+reviewRoutes.get('/product/:productId/mine', optionalAuth, getMyReview)
 reviewRoutes.post('/', authenticate, createReview)
 
 // Admin: list all reviews

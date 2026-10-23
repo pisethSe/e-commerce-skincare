@@ -20,6 +20,8 @@ export const dictionary = {
   'nav.account': { en: 'My Account', km: 'គណនីរបស់ខ្ញុំ' },
   'nav.hi': { en: 'HI, {name}', km: 'សួស្តី {name}' },
   'nav.openCart': { en: 'Open cart', km: 'បើកកន្ត្រក' },
+  'nav.wishlist': { en: 'Wishlist', km: 'បញ្ជីចង់បាន' },
+  'nav.openWishlist': { en: 'Open wishlist', km: 'បើកបញ្ជីចង់បាន' },
   'nav.toggleMenu': { en: 'Toggle navigation', km: 'បើកម៉ឺនុយ' },
   'nav.logoutConfirmTitle': { en: 'LOGOUT', km: 'ចាកចេញ' },
   'nav.logoutConfirm': {
@@ -288,6 +290,85 @@ export const dictionary = {
     km: 'ព្រោះស្បែករបស់អ្នកសមនឹងទទួលបានការថែទាំដ៏មានប្រសិទ្ធភាពជារៀងរាល់ថ្ងៃ។',
   },
   'product.moreToExplore': { en: 'More to Explore', km: 'ស្វែងយល់បន្ថែម' },
+
+  // Wishlist
+  'wishlist.title': { en: 'Wishlist', km: 'បញ្ជីចង់បាន' },
+  'wishlist.sub': {
+    en: 'The rituals you have saved for later. They stay here on this device until you remove them.',
+    km: 'ផលិតផលដែលអ្នកបានរក្សាទុកសម្រាប់ពេលក្រោយ។ វានឹងនៅទីនេះលើឧបករណ៍នេះរហូតដល់អ្នកដកវាចេញ។',
+  },
+  'wishlist.saved': { en: '{count} saved', km: 'បានរក្សាទុក {count}' },
+  'wishlist.empty': { en: 'Nothing saved yet', km: 'មិនទាន់មានអ្វីរក្សាទុក' },
+  'wishlist.emptyHint': {
+    en: 'Tap the heart on any product to keep it here for later.',
+    km: 'ចុចសញ្ញាបេះដូងលើផលិតផលណាមួយ ដើម្បីរក្សាទុកវាទុកនៅទីនេះ។',
+  },
+  'wishlist.shop': { en: 'Explore products', km: 'រកមើលផលិតផល' },
+  'wishlist.remove': { en: 'Remove from wishlist', km: 'ដកចេញពីបញ្ជីចង់បាន' },
+  'wishlist.soldOut': { en: 'Sold out', km: 'អស់ស្តុក' },
+
+  // Reviews
+  'reviews.title': { en: 'Reviews', km: 'មតិយោបល់' },
+  'reviews.average': { en: '{average} out of 5', km: '{average} ក្នុង 5' },
+  'reviews.basedOn': {
+    en: 'Based on {count} review',
+    km: 'ផ្អែកលើមតិ {count}',
+  },
+  'reviews.basedOnPlural': {
+    en: 'Based on {count} reviews',
+    km: 'ផ្អែកលើមតិ {count}',
+  },
+  'reviews.none': {
+    en: 'No reviews yet — be the first to share your experience.',
+    km: 'មិនទាន់មានមតិ — ចែករំលែកបទពិសោធន៍របស់អ្នកមុនគេ។',
+  },
+  'reviews.write': { en: 'Write a review', km: 'សរសេរមតិ' },
+  'reviews.signInPrompt': {
+    en: 'Sign in to share how this product worked for your skin.',
+    km: 'ចូលគណនីដើម្បីចែករំលែកពីប្រសិទ្ធភាពផលិតផលនេះលើស្បែករបស់អ្នក។',
+  },
+  'reviews.signIn': { en: 'Sign in to write a review', km: 'ចូលគណនីដើម្បីសរសេរមតិ' },
+  'reviews.rating': { en: 'Your rating', km: 'ការវាយតម្លៃរបស់អ្នក' },
+  'reviews.ratingRequired': {
+    en: 'Choose a rating from 1 to 5 stars.',
+    km: 'សូមជ្រើសរើសផ្កាយពី ១ ដល់ ៥។',
+  },
+  'reviews.titleLabel': { en: 'Review title (optional)', km: 'ចំណងជើងមតិ (ស្រេចចិត្ត)' },
+  'reviews.titlePlaceholder': { en: 'Sum it up in a few words', km: 'សង្ខេបក្នុងពាក្យខ្លីៗ' },
+  'reviews.bodyLabel': { en: 'Your review', km: 'មតិរបស់អ្នក' },
+  'reviews.bodyPlaceholder': {
+    en: 'What did you notice? Texture, scent, results…',
+    km: 'តើអ្នកកត់សម្គាល់អ្វី? វាយនភាព ក្លិន លទ្ធផល…',
+  },
+  'reviews.bodyTooShort': {
+    en: 'Please write at least 10 characters.',
+    km: 'សូមសរសេរយ៉ាងតិច ១០ តួអក្សរ។',
+  },
+  'reviews.submit': { en: 'Submit review', km: 'ដាក់ស្នើមតិ' },
+  'reviews.submitting': { en: 'Submitting…', km: 'កំពុងដាក់ស្នើ…' },
+  'reviews.pending': {
+    en: 'Thank you — your review is awaiting moderation and will appear shortly.',
+    km: 'អរគុណ — មតិរបស់អ្នកកំពុងរង់ចាំការត្រួតពិនិត្យ ហើយនឹងបង្ហាញក្នុងពេលឆាប់ៗ។',
+  },
+  'reviews.pendingShort': { en: 'Awaiting approval', km: 'រង់ចាំការអនុម័ត' },
+  'reviews.published': { en: 'Published', km: 'បានផ្សាយ' },
+  'reviews.yourReview': { en: 'Your review', km: 'មតិរបស់អ្នក' },
+  'reviews.verified': { en: 'Verified purchase', km: 'ការទិញដែលបានផ្ទៀងផ្ទាត់' },
+  'reviews.sortNewest': { en: 'Newest', km: 'ថ្មីបំផុត' },
+  'reviews.sortHighest': { en: 'Highest rated', km: 'វាយតម្លៃខ្ពស់បំផុត' },
+  'reviews.sortLowest': { en: 'Lowest rated', km: 'វាយតម្លៃទាបបំផុត' },
+  'reviews.loadMore': { en: 'Load more reviews', km: 'មើលមតិបន្ថែម' },
+  'reviews.loading': { en: 'Loading reviews…', km: 'កំពុងផ្ទុកមតិ…' },
+  'reviews.error': { en: 'Could not load reviews.', km: 'មិនអាចផ្ទុកមតិបានទេ។' },
+  'reviews.submitError': {
+    en: 'Could not submit your review. Please try again.',
+    km: 'មិនអាចដាក់ស្នើមតិរបស់អ្នកបានទេ។ សូមព្យាយាមម្តងទៀត។',
+  },
+  'reviews.moderationNote': {
+    en: 'Reviews are moderated before publishing. Verified buyers are marked.',
+    km: 'មតិត្រូវបានត្រួតពិនិត្យមុនពេលផ្សាយ។ អ្នកទិញដែលបានផ្ទៀងផ្ទាត់នឹងមានសញ្ញាសម្គាល់។',
+  },
+  'reviews.starsLabel': { en: '{count} out of 5 stars', km: '{count} ក្នុង 5 ផ្កាយ' },
 
   // Checkout
   'checkout.stepInfo': { en: 'info', km: 'ព័ត៌មាន' },

@@ -1,5 +1,6 @@
 import React, { useRef } from 'react'
 import { Link } from 'react-router-dom'
+import { Star } from 'lucide-react'
 import { Product } from '../../types'
 import { useCartStore } from '../../lib/store'
 import { useMoney } from '../../lib/currency'
@@ -100,10 +101,21 @@ export default function ProductCard({ product, className = '' }: ProductCardProp
             {categoryName(product.category.slug, product.category.name)} · {product.tagline || product.name}
           </h4>
           <div className="flex items-center justify-center gap-1">
-            {Array.from({ length: 5 }).map((_, index) => (
-              <img key={index} src="/images/Star (1).svg" alt="" className="h-3.5 w-3.5" />
+            {[1, 2, 3, 4, 5].map((star) => (
+              <Star
+                key={star}
+                size={13}
+                strokeWidth={1.5}
+                className={
+                  star <= Math.round(Number(product.rating) || 0)
+                    ? 'fill-current text-Mneutral-900'
+                    : 'text-Mneutral-300'
+                }
+              />
             ))}
-            <p className="text__14 text-Mneutral-900 opacity-50">({product.reviewCount})</p>
+            {product.reviewCount > 0 && (
+              <p className="text__14 text-Mneutral-900 opacity-50">({product.reviewCount})</p>
+            )}
           </div>
         </div>
       </Link>

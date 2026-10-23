@@ -189,3 +189,116 @@ test('admin can delete a review', async () => {
   })
   assert.equal(gone, 404)
 })
+
+/* ── Storefront review summary + own review ───── */
+test('GET /api/reviews/product/:id returns a rating summary with a 5-star distribution', async () => {
+  if (!serverUp) return
+  const product = await seededProduct()
+
+  const { status, body } = await call('GET', `/api/reviews/product/${product.id}?limit=2`)
+  assert.equal(status, 200)
+  assert.ok(body.summary, 'summary is present')
+  assert.equal(body.summary.total, body.pagination.total)
+  assert.deepEqual(Object.keys(body.summary.distribution).sort(), ['1', '2', '3', '4', '5'])
+
+  const bucketTotal = Object.values(body.summary.distribution).reduce((sum, count) => sum + count, 0)
+  assert.equal(bucketTotal, body.summary.total, 'distribution adds up to the total')
+
+  if (body.summary.total > 0) {
+    assert.ok(body.summary.average > 0 && body.summary.average <= 5)
+  } else {
+    assert.equal(body.summary.average, 0)
+  }
+})
+
+test('GET /api/reviews/product/:id/mine reports anonymous and signed-in states', async () => {
+  if (!serverUp) return
+  const product = await seededProduct()
+
+  const anonymous = await call('GET', `/api/reviews/product/${product.id}/mine`)
+  assert.equal(anonymous.status, 200)
+  assert.equal(anonymous.body.data.signedIn, false)
+  assert.equal(anonymous.body.data.review, null)
+  assert.equal(anonymous.body.data.canReview, false)
+
+  const user = await makeUser('mine')
+  const before = await call('GET', `/api/reviews/product/${product.id}/mine`, { token: user.token })
+  assert.equal(before.body.data.signedIn, true)
+  assert.equal(before.body.data.canReview, true)
+  assert.equal(before.body.data.review, null)
+
+  const { body: created } = await call('POST', '/api/reviews', {
+    token: user.token,
+    body: { productId: product.id, rating: 4, body: 'A thoughtful review for the mine endpoint.' },
+  })
+  assert.equal(created.success, true)
+
+  const after = await call('GET', `/api/reviews/product/${product.id}/mine`, { token: user.token })
+  assert.equal(after.body.data.canReview, false)
+  assert.equal(after.body.data.review.id, created.data.id)
+  assert.equal(after.body.data.review.approved, false, 'pending reviews are still returned to their author')
+})
+
+test('pending reviews do not affect the public summary until approved', async () => {
+  if (!serverUp) return
+  const user = await makeUser('summary')
+  const product = await seededProduct()
+
+  const { body: before } = await call('GET', `/api/reviews/product/${product.id}`)
+  const totalBefore = before.summary.total
+
+  const { body: created } = await call('POST', '/api/reviews', {
+    token: user.token,
+    body: { productId: product.id, rating: 5, body: 'Five stars, pending moderation.' },
+  })
+
+  const { body: pending } = await call('GET', `/api/reviews/product/${product.id}`)
+  assert.equal(pending.summary.total, totalBefore, 'unapproved reviews stay out of the summary')
+
+  const admin = await adminToken()
+  await call('PATCH', `/api/reviews/${created.data.id}/approved`, { token: admin, body: { approved: true } })
+
+  const { body: approved } = await call('GET', `/api/reviews/product/${product.id}`)
+  assert.equal(approved.summary.total, totalBefore + 1)
+  assert.ok(approved.data.some((review) => review.id === created.data.id))
+})
+
+test('POST /api/reviews validates integer ratings and review length, and trims input', async () => {
+  if (!serverUp) return
+  const product = await seededProduct()
+
+  const fractional = await makeUser('val1')
+  const fractionalRes = await call('POST', '/api/reviews', {
+    token: fractional.token,
+    body: { productId: product.id, rating: 4.5, body: 'Half a star is not a rating.' },
+  })
+  assert.equal(fractionalRes.status, 400)
+
+  const short = await makeUser('val2')
+  const shortRes = await call('POST', '/api/reviews', {
+    token: short.token,
+    body: { productId: product.id, rating: 5, body: 'Too short' },
+  })
+  assert.equal(shortRes.status, 400, 'bodies under 10 characters are rejected')
+
+  const long = await makeUser('val3')
+  const longRes = await call('POST', '/api/reviews', {
+    token: long.token,
+    body: { productId: product.id, rating: 5, body: 'x'.repeat(2001) },
+  })
+  assert.equal(longRes.status, 400, 'bodies over 2,000 characters are rejected')
+
+  const valid = await makeUser('val4')
+  const created = await call('POST', '/api/reviews', {
+    token: valid.token,
+    body: {
+      productId: product.id,
+      rating: 5,
+      title: `  ${'T'.repeat(150)}  `,
+      body: '   A perfectly valid review with surrounding whitespace.   ',
+    },
+  })
+  assert.equal(created.status, 201)
+  assert.equal(created.body.data.body, 'A perfectly valid review with surrounding whitespace.')
+  assert.equal(created.body.data.title.length, 120, 'long titles are truncated, not rejected')
+})

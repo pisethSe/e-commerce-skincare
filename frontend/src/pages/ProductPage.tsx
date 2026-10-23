@@ -9,6 +9,7 @@ import { useMoney } from '../lib/currency'
 import { useCategoryName, useT } from '../lib/i18n'
 import { useCartStore, useWishlistStore } from '../lib/store'
 import ProductCard from '../components/ui/ProductCard'
+import ProductReviews from '../components/product/ProductReviews'
 import ImageWithFallback from '../components/ui/ImageWithFallback'
 
 export default function ProductPage() {
@@ -133,6 +134,18 @@ export default function ProductPage() {
           <h2 className="text__48">
             {product.description}
           </h2>
+          {product.reviewCount > 0 && (
+            <a
+              href="#reviews"
+              className="mt-4 inline-flex items-center gap-2 rounded-full border border-Mneutral-200 px-4 py-2 text__14 text-Mneutral-900 transition-colors hover:border-Mneutral-900"
+            >
+              <span aria-hidden>★</span>
+              <span className="font-medium">{Number(product.rating).toFixed(1)}</span>
+              <span className="text-Mneutral-500">
+                {t(product.reviewCount === 1 ? 'reviews.basedOn' : 'reviews.basedOnPlural', { count: product.reviewCount })}
+              </span>
+            </a>
+          )}
         </div>
       </section>
 
@@ -295,6 +308,12 @@ export default function ProductPage() {
           )}
         </div>
       </section>
+
+      <ProductReviews
+        productId={product.id}
+        fallbackRating={Number(product.rating) || 0}
+        fallbackCount={product.reviewCount || 0}
+      />
 
       {related.length > 0 && (
         <section className="section-template">

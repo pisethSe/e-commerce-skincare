@@ -12,10 +12,18 @@ import { sendMail, newsletterWelcomeEmail } from '../lib/email'
 export const createReview = async (req: AuthRequest, res: Response): Promise<void> => {
   const { productId, rating, title, body } = req.body
 
-  if (!productId || !rating || !body) {
+  const stars = Number(rating)
+  const text = typeof body === 'string' ? body.trim() : ''
+
+  if (!productId || !rating || !text) {
     throw new ApiError('Product, rating, and review body are required', 400)
   }
-  if (rating < 1 || rating > 5) throw new ApiError('Rating must be between 1 and 5', 400)
+  if (!Number.isInteger(stars) || stars < 1 || stars > 5) {
+    throw new ApiError('Rating must be a whole number between 1 and 5', 400)
+  }
+  if (text.length < 10) throw new ApiError('Review must be at least 10 characters', 400)
+  if (text.length > 2000) throw new ApiError('Review must be 2,000 characters or fewer', 400)
+  const cleanTitle = typeof title === 'string' && title.trim() ? title.trim().slice(0, 120) : null
 
   const product = await prisma.product.findUnique({ where: { id: productId } })
   if (!product) throw new ApiError('Product not found', 404)
@@ -38,9 +46,9 @@ export const createReview = async (req: AuthRequest, res: Response): Promise<voi
     data: {
       userId: req.user!.id,
       productId,
-      rating,
-      title,
-      body,
+      rating: stars,
+      title: cleanTitle,
+      body: text,
       verified: !!purchased,
     },
     include: {
@@ -48,18 +56,20 @@ export const createReview = async (req: AuthRequest, res: Response): Promise<voi
     },
   })
 
-  // Recalculate product rating
-  const allReviews = await prisma.review.findMany({
+  // New reviews await moderation, so this normally leaves the aggregate unchanged —
+  // but recalculating keeps it correct if the store ever auto-approves.
+  const agg = await prisma.review.aggregate({
     where: { productId, approved: true },
-    select: { rating: true },
+    _avg: { rating: true },
+    _count: { id: true },
   })
-  if (allReviews.length > 0) {
-    const avgRating = allReviews.reduce((s, r) => s + r.rating, 0) / allReviews.length
-    await prisma.product.update({
-      where: { id: productId },
-      data: { rating: avgRating, reviewCount: allReviews.length },
-    })
-  }
+  await prisma.product.update({
+    where: { id: productId },
+    data: {
+      rating: agg._avg.rating ? Number(agg._avg.rating.toFixed(2)) : 0,
+      reviewCount: agg._count.id,
+    },
+  })
 
   res.status(201).json({ success: true, data: review })
 }
@@ -74,9 +84,12 @@ export const getProductReviews = async (req: Request, res: Response): Promise<vo
     sort === 'lowest'  ? { rating: 'asc' as const } :
                          { createdAt: 'desc' as const }
 
-  const [reviews, total] = await Promise.all([
+  const productId = req.params.productId as string
+  const where = { productId, approved: true }
+
+  const [reviews, total, distributionRows] = await Promise.all([
     prisma.review.findMany({
-      where: { productId: req.params.productId as string, approved: true },
+      where,
       include: {
         user: { select: { firstName: true, lastName: true, avatar: true } },
       },
@@ -84,13 +97,65 @@ export const getProductReviews = async (req: Request, res: Response): Promise<vo
       skip,
       take: Number(limit),
     }),
-    prisma.review.count({ where: { productId: req.params.productId as string, approved: true } }),
+    prisma.review.count({ where }),
+    prisma.review.groupBy({
+      by: ['rating'],
+      where,
+      _count: { id: true },
+      orderBy: { rating: 'desc' },
+    }),
   ])
+
+  const distribution: Record<string, number> = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 }
+  let ratingSum = 0
+  for (const row of distributionRows) {
+    distribution[String(row.rating)] = row._count.id
+    ratingSum += row.rating * row._count.id
+  }
 
   res.json({
     success: true,
     data: reviews,
+    summary: {
+      average: total > 0 ? Number((ratingSum / total).toFixed(2)) : 0,
+      total,
+      distribution,
+    },
     pagination: { page: Number(page), limit: Number(limit), total, totalPages: Math.ceil(total / Number(limit)) },
+  })
+}
+
+// GET /api/reviews/product/:productId/mine — the signed-in customer's own review
+export const getMyReview = async (req: AuthRequest, res: Response): Promise<void> => {
+  const productId = req.params.productId as string
+
+  if (!req.user) {
+    res.json({ success: true, data: { signedIn: false, review: null, canReview: false, purchased: false } })
+    return
+  }
+
+  const [review, purchase] = await Promise.all([
+    prisma.review.findUnique({
+      where: { userId_productId: { userId: req.user.id, productId } },
+    }),
+    prisma.orderItem.findFirst({
+      where: {
+        productId,
+        order: { userId: req.user.id, status: { in: ['SHIPPED', 'DELIVERED'] } },
+      },
+      select: { id: true },
+    }),
+  ])
+
+  res.json({
+    success: true,
+    data: {
+      signedIn: true,
+      review,
+      canReview: !review,
+      canReviewPurchased: Boolean(purchase),
+      purchased: Boolean(purchase),
+    },
   })
 }
 

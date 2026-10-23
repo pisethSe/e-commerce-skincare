@@ -9,6 +9,7 @@ import CheckoutPage from './pages/CheckoutPage'
 import AboutPage from './pages/AboutPage'
 import JournalPage from './pages/JournalPage'
 import AccountPage from './pages/AccountPage'
+import WishlistPage from './pages/WishlistPage'
 import AuthCallbackPage from './pages/AuthCallbackPage'
 import PaymentSuccessPage from './pages/PaymentSuccessPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
@@ -49,6 +50,7 @@ export default function App() {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/journal" element={<JournalPage />} />
           <Route path="/account" element={<AccountPage />} />
+          <Route path="/wishlist" element={<WishlistPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/payment/success" element={<PaymentSuccessPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />

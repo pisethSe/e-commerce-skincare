@@ -237,6 +237,11 @@ npm run db:clean
       (default 4,100 riel per dollar)
 - ✅ Account page (/account): profile, order history, spending stats
 - ✅ Order tracking timeline with tracking number once an order ships
+- ✅ Product reviews — rating summary with 5-star distribution, approved review
+      list with verified-purchase badges, and a moderated write form (one review
+      per customer; verified buyers are marked automatically)
+- ✅ Wishlist — heart products from any product page; saved items persist on the
+      device and live on their own /wishlist page, including sold-out saves
 - ✅ "Email me when it's back" on sold-out products — the customer is emailed
       automatically the moment stock returns
 - ✅ Password reset by emailed link (single-use, 1-hour expiry)
@@ -335,7 +340,8 @@ DELETE /api/cart/:productId
 DELETE /api/cart
 
 POST   /api/reviews
-GET    /api/reviews/product/:productId
+GET    /api/reviews/product/:productId        (approved list + rating summary)
+GET    /api/reviews/product/:productId/mine   (the signed-in customer's review)
 
 GET    /api/blog
 GET    /api/blog/:slug
