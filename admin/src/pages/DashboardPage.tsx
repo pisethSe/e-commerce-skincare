@@ -125,11 +125,15 @@ export default function DashboardPage() {
   const topProductUnits = stats.topProducts[0]?._sum.quantity ?? 0
   const topProductRevenue = topProductUnits * Number(stats.topProducts[0]?.product?.price ?? 0)
 
-  const glance: Array<[string, string]> = [
-    ['Pending fulfillments', `${stats.orders.pending} order${stats.orders.pending === 1 ? '' : 's'}`],
-    ['Low stock alerts', `${stats.lowStockProducts} product${stats.lowStockProducts === 1 ? '' : 's'}`],
-    ['Reviews awaiting approval', reviewsWaiting === null ? '—' : `${reviewsWaiting}`],
-    ['Newsletter subscribers', subscribers === null ? '—' : `${subscribers}`],
+  const glance: Array<{ label: string; value: string; href?: string }> = [
+    { label: 'Pending fulfillments', value: `${stats.orders.pending} order${stats.orders.pending === 1 ? '' : 's'}` },
+    {
+      label: 'Low stock alerts',
+      value: `${stats.lowStockProducts} product${stats.lowStockProducts === 1 ? '' : 's'}`,
+      href: '/inventory',
+    },
+    { label: 'Reviews awaiting approval', value: reviewsWaiting === null ? '—' : `${reviewsWaiting}` },
+    { label: 'Newsletter subscribers', value: subscribers === null ? '—' : `${subscribers}` },
   ]
 
   const kpis = [
@@ -269,15 +273,30 @@ export default function DashboardPage() {
           </div>
 
           <div className="mt-6 space-y-3">
-            {glance.map(([label, value]) => (
-              <div
-                key={label}
-                className="flex items-center justify-between rounded-[10px] border border-[#e7eae9] bg-white px-4 py-4"
-              >
-                <span className="text__14 text-[#6e7f7b]">{label}</span>
-                <span className="text__16 font-medium tabular-nums text-[#102d26]">{value}</span>
-              </div>
-            ))}
+            {glance.map((item) => {
+              const body = (
+                <>
+                  <span className="text__14 text-[#6e7f7b]">{item.label}</span>
+                  <span className="text__16 font-medium tabular-nums text-[#102d26]">{item.value}</span>
+                </>
+              )
+              return item.href ? (
+                <Link
+                  key={item.label}
+                  to={item.href}
+                  className="flex items-center justify-between rounded-[10px] border border-[#e7eae9] bg-white px-4 py-4 transition-colors hover:border-[#102d26]"
+                >
+                  {body}
+                </Link>
+              ) : (
+                <div
+                  key={item.label}
+                  className="flex items-center justify-between rounded-[10px] border border-[#e7eae9] bg-white px-4 py-4"
+                >
+                  {body}
+                </div>
+              )
+            })}
           </div>
         </motion.div>
       </section>

@@ -149,3 +149,27 @@ export function newsletterWelcomeEmail(): MailOptions['html'] {
     </p>
   </div>`
 }
+
+export function backInStockEmail(params: {
+  productName: string
+  productUrl: string
+  price: string
+}): MailOptions['html'] {
+  return `
+  <div style="font-family: 'Inter Tight', Helvetica, Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 32px; color: #102d26;">
+    <div style="text-align: center; padding-bottom: 24px; border-bottom: 1px solid #e7eae9;">
+      <span style="font-size: 20px; font-weight: 700; letter-spacing: 0.06em;">CALESTA</span>
+    </div>
+    <h1 style="font-size: 22px; font-weight: 600; margin: 24px 0 8px;">Back in stock</h1>
+    <p style="font-size: 14px; line-height: 1.6; color: #3f5650;">
+      <strong>${params.productName}</strong> (${params.price}) is available again.
+      You asked us to let you know — it tends to sell out quickly.
+    </p>
+    <a href="${params.productUrl}" style="display: inline-block; margin-top: 20px; background: #102d26; color: #ffffff; text-decoration: none; font-size: 13px; font-weight: 600; padding: 10px 20px; border-radius: 8px;">
+      Shop it now
+    </a>
+    <p style="margin-top: 28px; font-size: 12px; color: #9ca8a5; border-top: 1px solid #e7eae9; padding-top: 16px;">
+      You're receiving this because you asked to be notified about this product at Calesta.
+    </p>
+  </div>`
+}

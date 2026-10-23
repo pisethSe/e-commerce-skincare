@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import {
+  Boxes,
   FileText,
   LayoutDashboard,
   Leaf,
@@ -19,6 +20,7 @@ import { useAuthStore, adminInitials } from '../../lib/authStore'
 const PRIMARY_NAV = [
   { label: 'Dashboard', href: '/', icon: LayoutDashboard },
   { label: 'Products', href: '/products', icon: Package },
+  { label: 'Inventory', href: '/inventory', icon: Boxes },
   { label: 'Orders', href: '/orders', icon: ShoppingBag },
   { label: 'Customers', href: '/customers', icon: Users },
   { label: 'Analytics', href: '/analytics', icon: TrendingUp },

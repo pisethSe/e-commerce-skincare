@@ -238,6 +238,26 @@ export const dictionary = {
   'shop.sortPriceAsc': { en: 'Price: Low to High', km: 'តម្លៃ៖ ទាបទៅខ្ពស់' },
   'shop.sortPriceDesc': { en: 'Price: High to Low', km: 'តម្លៃ៖ ខ្ពស់ទៅទាប' },
 
+  // Back in stock
+  'product.soldOut': { en: 'Sold out', km: 'អស់ស្តុក' },
+  'product.outOfStockHint': {
+    en: 'This ritual is currently sold out. Leave your email and we will let you know the moment it returns.',
+    km: 'ផលិតផលនេះអស់ស្តុកបណ្តោះអាសន្ន។ ទុកអ៊ីមែលរបស់អ្នក ហើយយើងនឹងជូនដំណឹងភ្លាមៗពេលមានស្តុកវិញ។',
+  },
+  'product.notifyTitle': { en: 'Email me when it is back', km: 'ផ្ញើអ៊ីមែលមកខ្ញុំពេលមានស្តុកវិញ' },
+  'product.notifyPlaceholder': { en: 'Your email', km: 'អ៊ីមែលរបស់អ្នក' },
+  'product.notifyButton': { en: 'Notify me', km: 'ជូនដំណឹងខ្ញុំ' },
+  'product.notifying': { en: 'Sending…', km: 'កំពុងផ្ញើ…' },
+  'product.notifySuccess': {
+    en: "You're on the list — we'll email you the moment it is back.",
+    km: 'អ្នកបានចុះក្នុងបញ្ជី — យើងនឹងផ្ញើអ៊ីមែលភ្លាមៗពេលមានស្តុកវិញ។',
+  },
+  'product.notifyError': {
+    en: 'Could not save your request. Please try again.',
+    km: 'មិនអាចរក្សាទុកសំណើរបស់អ្នកបានទេ។ សូមព្យាយាមម្តងទៀត។',
+  },
+  'product.addedToBag': { en: 'Added to bag', km: 'បានដាក់ក្នុងកន្ត្រក' },
+
   // Product detail
   'product.notFound': { en: 'Product not found', km: 'រកមិនឃើញផលិតផល' },
   'product.backToShop': { en: 'Back to Shop', km: 'ត្រឡប់ទៅហាង' },

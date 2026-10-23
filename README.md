@@ -29,9 +29,16 @@ A full-stack, production-ready e-commerce platform for premium skincare, built w
 - Recent orders feed with live statuses
 - **Products CRUD** — search, category filter, pagination, add/edit drawer with image previews and **file upload**, delete
 - Cart is **persisted across page reloads** (localStorage)
+- **Inventory** — stock levels with per-product low-stock thresholds, one-click
+  restock, out-of-stock + low-stock KPIs, and the number of customers waiting
+  for each product
 - **Orders** — server-side status filter tabs, search, inline status update (persists), order detail drawer, CSV export
 - **Customers** — live customer list with verification status
-- **Analytics** — honest snapshots: AOV, orders by status, top products, catalog mix
+- **Analytics** — 7/30/90-day, this-month, last-month and custom date ranges;
+  revenue trend, status mix, top products and collection revenue, each compared
+  with the previous period
+- **CSV exports** — orders, products, customers, and reviews as UTF-8
+  attachments (BOM for Excel, proper quoting) straight from the API
 - **Reviews** — approve / unpublish / delete, verified purchase badges, rating recalculation
 - **Journal** — create, edit, publish/draft, delete posts
 - **Coupons** — create percentage/fixed codes, activate/deactivate, usage tracking
@@ -230,6 +237,8 @@ npm run db:clean
       (default 4,100 riel per dollar)
 - ✅ Account page (/account): profile, order history, spending stats
 - ✅ Order tracking timeline with tracking number once an order ships
+- ✅ "Email me when it's back" on sold-out products — the customer is emailed
+      automatically the moment stock returns
 - ✅ Password reset by emailed link (single-use, 1-hour expiry)
 - ✅ Silent token refresh — expired sessions recover without re-login
 - ✅ About page with timeline
@@ -305,6 +314,7 @@ GET    /api/auth/me
 GET    /api/products?page&limit&category&sortBy&search&featured
 GET    /api/products/:slug
 GET    /api/products/:id/related
+POST   /api/products/:id/stock-notification   (notify me when back in stock)
 POST   /api/products          (admin)
 PUT    /api/products/:id      (admin)
 DELETE /api/products/:id      (admin)
@@ -340,6 +350,10 @@ PATCH  /api/coupons/:id       (admin)
 POST   /api/uploads           (admin, image upload)
 
 GET    /api/admin/stats       (admin)
+GET    /api/admin/inventory?lowStock=1        (admin)
+PATCH  /api/admin/inventory/:id               (admin — stock, threshold, inStock)
+GET    /api/admin/analytics?from&to           (admin)
+GET    /api/admin/export/:type?from&to        (admin — orders|products|customers|reviews CSV)
 
 GET    /api/users/me
 PATCH  /api/users/me

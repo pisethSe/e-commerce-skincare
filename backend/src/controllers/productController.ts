@@ -2,6 +2,7 @@ import { Request, Response } from 'express'
 import { prisma } from '../lib/prisma'
 import { ApiError } from '../middleware/errorHandler'
 import { AuthRequest } from '../middleware/auth'
+import { notifyBackInStock } from '../lib/stock'
 
 // GET /api/products
 export const getProducts = async (req: Request, res: Response): Promise<void> => {
@@ -180,12 +181,30 @@ export const updateProduct = async (req: AuthRequest, res: Response): Promise<vo
   const product = await prisma.product.findUnique({ where: { id: req.params.id as string } })
   if (!product) throw new ApiError('Product not found', 404)
 
+  if (req.body.stockCount !== undefined) {
+    const stockCount = Number(req.body.stockCount)
+    if (!Number.isInteger(stockCount) || stockCount < 0) {
+      throw new ApiError('Stock count must be a whole number of 0 or more.', 400)
+    }
+    req.body.stockCount = stockCount
+    // Keep the storefront flag honest: zero units means sold out.
+    if (stockCount === 0) req.body.inStock = false
+    else if (req.body.inStock === undefined) req.body.inStock = true
+  }
+
+  const wasOut = !product.inStock || product.stockCount <= 0
+
   try {
     const updated = await prisma.product.update({
       where: { id: req.params.id as string },
       data: req.body,
       include: { category: true },
     })
+
+    if (wasOut && updated.inStock && updated.stockCount > 0) {
+      await notifyBackInStock(updated.id)
+    }
+
     res.json({ success: true, data: updated })
   } catch (err: unknown) {
     const prismaCode = (err as { code?: string })?.code

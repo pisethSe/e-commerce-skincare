@@ -5,6 +5,7 @@ import AdminLayout from './components/layout/AdminLayout'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import ProductsPage from './pages/ProductsPage'
+import InventoryPage from './pages/InventoryPage'
 import OrdersPage from './pages/OrdersPage'
 import CustomersPage from './pages/CustomersPage'
 import AnalyticsPage from './pages/AnalyticsPage'
@@ -55,6 +56,7 @@ export default function AdminApp() {
           <Routes>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/products" element={<ProductsPage />} />
+            <Route path="/inventory" element={<InventoryPage />} />
             <Route path="/orders" element={<OrdersPage />} />
             <Route path="/customers" element={<CustomersPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />

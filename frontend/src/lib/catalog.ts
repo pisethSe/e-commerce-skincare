@@ -25,7 +25,7 @@ function normalizeCategory(c: any): Category {
   }
 }
 
-function normalizeProduct(p: any, categories: Category[]): Product {
+export function normalizeProduct(p: any, categories: Category[]): Product {
   return {
     ...p,
     tagline: p.tagline ?? '',

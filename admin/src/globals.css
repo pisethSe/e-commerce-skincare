@@ -101,6 +101,10 @@
     @apply rounded-[12px] border border-[#e7eae9] bg-white;
   }
 
+  .admin-metric-card {
+    @apply rounded-[12px] border border-[#e7eae9] bg-white p-5;
+  }
+
   .admin-soft-card {
     @apply rounded-[10px] border border-[#eef1ef] bg-[#f8f9f8];
   }

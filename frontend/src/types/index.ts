@@ -24,6 +24,8 @@ export interface Product {
   isBestseller?: boolean
   isFeatured?: boolean
   inStock: boolean
+  stockCount?: number
+  lowStockThreshold?: number
   variants?: ProductVariant[]
   reviews?: Review[]
   createdAt: string

@@ -4,6 +4,8 @@ import { authenticate, requireAdmin, optionalAuth } from '../middleware/auth'
 import { validateCambodianAddress } from '../lib/validation'
 import { prisma } from '../lib/prisma'
 import { getDashboardStats } from '../controllers/adminController'
+import { listInventory, updateInventory } from '../controllers/stockController'
+import { getRangeAnalytics, exportCsv } from '../controllers/analyticsController'
 
 // ── Reviews ─────────────────────────────────
 export const reviewRoutes = Router()
@@ -250,6 +252,10 @@ export const adminRoutes = Router()
 
 adminRoutes.use(authenticate, requireAdmin)
 adminRoutes.get('/stats', getDashboardStats)
+adminRoutes.get('/inventory', listInventory)
+adminRoutes.patch('/inventory/:id', updateInventory)
+adminRoutes.get('/analytics', getRangeAnalytics)
+adminRoutes.get('/export/:type', exportCsv)
 adminRoutes.get('/newsletter', async (_req, res) => {
   const subs = await prisma.newsletter.findMany({ where: { active: true }, orderBy: { createdAt: 'desc' } })
   res.json({ success: true, data: subs, total: subs.length })
