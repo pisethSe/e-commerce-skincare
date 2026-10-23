@@ -3,16 +3,19 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowUpRight } from 'lucide-react'
 import { useCatalogStore } from '../../lib/catalog'
+import { useCategoryName, useT } from '../../lib/i18n'
 
 export default function CategoriesSection() {
   const { categories } = useCatalogStore()
+  const t = useT()
+  const categoryName = useCategoryName()
 
   return (
     <section className="section-padding bg-white">
       <div className="container-custom">
         <div className="text-center mb-14" data-aos="fade-up">
-          <p className="font-accent italic text-[#c9a96e] text-lg mb-2">Shop by Concern</p>
-          <h2 className="heading-xl">Find your<br /><span className="font-accent italic">perfect ritual</span></h2>
+          <p className="font-accent italic text-[#c9a96e] text-lg mb-2">{t('categories.kicker')}</p>
+          <h2 className="heading-xl">{t('categories.title1')}<br /><span className="font-accent italic">{t('categories.title2')}</span></h2>
           <div className="gold-divider" />
         </div>
 
@@ -45,13 +48,13 @@ export default function CategoriesSection() {
                   {/* Content */}
                   <div className="absolute inset-0 flex flex-col justify-end p-5">
                     <h3 className="font-display text-xl text-white font-medium mb-0.5">
-                      {cat.name}
+                      {categoryName(cat.slug, cat.name)}
                     </h3>
-                    <p className="text-xs text-cream-300 mb-3">{cat.productCount} products</p>
+                    <p className="text-xs text-cream-300 mb-3">{t('common.productsCount', { count: cat.productCount ?? 0 })}</p>
                     <motion.div
                       className="flex items-center gap-1 text-xs text-cream-200 font-medium tracking-wider uppercase opacity-0 group-hover:opacity-100 -translate-y-2 group-hover:translate-y-0 transition-all duration-300"
                     >
-                      Shop now <ArrowUpRight size={12} />
+                      {t('categories.shopNow')} <ArrowUpRight size={12} />
                     </motion.div>
                   </div>
                 </div>

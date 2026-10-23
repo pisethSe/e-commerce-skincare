@@ -1,5 +1,6 @@
 import React from 'react'
 import { motion } from 'framer-motion'
+import { useT } from '../../lib/i18n'
 import { Instagram } from 'lucide-react'
 
 const IG_IMAGES = [
@@ -12,6 +13,7 @@ const IG_IMAGES = [
 ]
 
 export default function InstagramSection() {
+  const t = useT()
   return (
     <section className="py-16 bg-cream-50">
       <div className="text-center mb-8" data-aos="fade-up">
@@ -19,8 +21,8 @@ export default function InstagramSection() {
           <Instagram size={18} className="text-[#c9a96e]" />
           <p className="font-accent italic text-[#c9a96e] text-lg">@lumiereskin</p>
         </div>
-        <h2 className="heading-md">Share your glow</h2>
-        <p className="text-charcoal-500 text-sm mt-2">Tag us to be featured</p>
+        <h2 className="heading-md">{t('instagram.title')}</h2>
+        <p className="text-charcoal-500 text-sm mt-2">{t('instagram.sub')}</p>
       </div>
 
       {/* Scrollable row */}

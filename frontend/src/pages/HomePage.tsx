@@ -5,27 +5,13 @@ import ProductCard from "../components/ui/ProductCard";
 import { useCatalogStore } from "../lib/catalog";
 import { TESTIMONIALS } from "../lib/data";
 import { gsap, useGSAP } from "../lib/gsap";
+import { useT } from "../lib/i18n";
 
 const features = [
-  {
-    icon: "/images/Sun.svg",
-    title: "Clean Beauty",
-    description:
-      "All our products are cruelty-free, vegan, and free from parabens, sulfates, and synthetic fragrances.",
-  },
-  {
-    icon: "/images/Microscope 2.svg",
-    title: "Dermatologist Tested",
-    description:
-      "Our formulas are created and tested for all skin types, including sensitive skin.",
-  },
-  {
-    icon: "/images/Leaf 2.svg",
-    title: "Sustainably Sourced",
-    description:
-      "We prioritize ethically sourced ingredients and eco-conscious packaging in every collection.",
-  },
-];
+  { icon: "/images/Sun.svg", titleKey: "feature.cleanBeauty", descKey: "feature.cleanBeautyDesc" },
+  { icon: "/images/Microscope 2.svg", titleKey: "feature.dermTested", descKey: "feature.dermTestedDesc" },
+  { icon: "/images/Leaf 2.svg", titleKey: "feature.sustainable", descKey: "feature.sustainableDesc" },
+] as const;
 
 const communityShots = [
   "/images/cs3.png",
@@ -37,6 +23,7 @@ const communityShots = [
 export default function HomePage() {
   const pageRef = useRef<HTMLDivElement>(null);
   const { products } = useCatalogStore();
+  const t = useT();
 
   useEffect(() => {
     document.title = "Calesta — Skincare & Beauty";
@@ -156,21 +143,19 @@ export default function HomePage() {
           <div className="container-custom relative z-[1]">
             <div className="md:text-center">
               <p className="hero-kicker font-medium text__18 text-Mneutral-900 opacity-60">
-                BEAUTY CARE
+                {t("home.kicker")}
               </p>
               <h1 className="mt-4 text__64 font-medium leading-[1.02]">
-                <span className="hero-title-line block">Your Best Skin</span>
-                <span className="hero-title-line block">Starts Here</span>
+                <span className="hero-title-line block">{t("home.title1")}</span>
+                <span className="hero-title-line block">{t("home.title2")}</span>
               </h1>
 
               <div className="mb-[7rem] mt-3 lg:hidden">
                 <p className="hero-copy mb-[32px] text__16 text-Mneutral-700">
-                  Science-backed formulas. Nature-inspired ingredients.
-                  <br className="hidden md:block" /> Glow with skincare
-                  that&apos;s made to love and made to last.
+                  {t("home.sub")}
                 </p>
                 <Link to="/shop" className="hero-copy filled-pill-button">
-                  <span>SHOP NOW</span>
+                  <span>{t("common.shopNow")}</span>
                   <img
                     src="/images/carbon_arrow-up-right.svg"
                     alt=""
@@ -190,10 +175,8 @@ export default function HomePage() {
                         <Droplets size={18} strokeWidth={1.8} className="text-Mneutral-900" />
                       </div>
                       <div className="mt-[12px] text-left">
-                        <h5 className="text__14 font-medium">All Skin Type</h5>
-                        <p className="mt-[2px] text-[10px] opacity-50">
-                          Skin type
-                        </p>
+                        <h5 className="text__14 font-medium">{t("home.allSkinType")}</h5>
+                        <p className="mt-[2px] text-[10px] opacity-50">{t("home.skinType")}</p>
                       </div>
                     </div>
                   </div>
@@ -207,10 +190,8 @@ export default function HomePage() {
                         <Sparkles size={18} strokeWidth={1.8} className="text-Mneutral-900" />
                       </div>
                       <div className="mt-[12px] text-left">
-                        <h5 className="text__14 font-medium">Smooth Texture</h5>
-                        <p className="mt-[2px] text-[10px] opacity-50">
-                          Texture
-                        </p>
+                        <h5 className="text__14 font-medium">{t("home.smoothTexture")}</h5>
+                        <p className="mt-[2px] text-[10px] opacity-50">{t("home.texture")}</p>
                       </div>
                     </div>
                   </div>
@@ -218,12 +199,10 @@ export default function HomePage() {
 
                 <div className="hero-copy absolute bottom-[20%] hidden text-left lg:block xl:-left-[42%] xl:w-[320px]">
                   <p className="mb-[40px] text__16 text-Mneutral-700">
-                    Science-backed formulas. Nature-inspired ingredients.
-                    <br /> Glow with skincare that&apos;s made to love and made
-                    to last.
+                    {t("home.sub")}
                   </p>
                   <Link to="/shop" className="filled-pill-button">
-                    <span>SHOP NOW</span>
+                    <span>{t("common.shopNow")}</span>
                     <img
                       src="/images/carbon_arrow-up-right.svg"
                       alt=""
@@ -289,42 +268,21 @@ export default function HomePage() {
               <img src="/images/Microscope 3.svg" alt="" />
             </div>
             <div className="mt-[12px] text-left">
-              <h5 className="text__14 font-medium">Proven Results</h5>
-              <p className="mt-[2px] text-[10px] opacity-50">Committed</p>
+              <h5 className="text__14 font-medium">{t("home.provenResults")}</h5>
+              <p className="mt-[2px] text-[10px] opacity-50">{t("home.committed")}</p>
             </div>
           </div>
 
-          <p className="font-medium text__18 text-Mneutral-400">
-            OUR PHILOSOPHY
-          </p>
+          <p className="font-medium text__18 text-Mneutral-400">{t("home.philosophy")}</p>
           <h2 className="mt-[32px] text__48 leading-relaxed text-Mneutral-900/80">
-            Every product{" "}
-            <span className="relative inline-block w-[90px] lg:w-[100px] align-middle">
-              <span className="pointer-events-none opacity-0">A</span>
-              <img
-                src="/images/Rectangle 1.png"
-                className="absolute left-1/2 top-1/2 h-[48px] w-[80px] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white xl:h-[64px] xl:w-[100px]"
-                alt=""
-              />
-            </span>{" "}
-            is formulated with plant-based ingredients that are gentle yet
-            powerful,
-            <span className="relative inline-block w-[90px] lg:w-[100px] align-middle">
-              <span className="pointer-events-none opacity-0">A</span>
-              <img
-                src="/images/Rectangle 1-1.png"
-                className="absolute left-1/2 top-1/2 h-[48px] w-[80px] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white xl:h-[64px] xl:w-[100px]"
-                alt=""
-              />
-            </span>{" "}
-            free from harmful chemicals.
+            {t("home.philosophyBody")}
           </h2>
         </div>
       </section>
 
       <section className="section-template" data-gsap-reveal>
         <div className="container-custom">
-          <h2 className="mb-[2.5rem] text__48">Our Products</h2>
+          <h2 className="mb-[2.5rem] text__48">{t("home.ourProducts")}</h2>
           <div
             className="grid grid-cols-1 gap-[20px] xs:grid-cols-2 lg:grid-cols-4"
             data-gsap-stagger
@@ -347,22 +305,20 @@ export default function HomePage() {
           </div>
           <div className="h-full w-full rounded-[32px] bg-white px-[20px] py-[20px] xs:px-[40px] xs:py-[40px] xl:px-[80px] xl:py-[80px]">
             <p className="mb-4 font-medium text__18 text-Mneutral-400">
-              WHY CHOOSE US?
+              {t("home.whyChooseUs")}
             </p>
-            <h2 className="text__48">The Difference is in the Details</h2>
+            <h2 className="text__48">{t("home.difference")}</h2>
 
             <div className="mt-[56px] grid grid-cols-1 gap-[24px]">
               {features.map((feature, index) => (
-                <React.Fragment key={feature.title}>
+                <React.Fragment key={feature.titleKey}>
                   <div className="flex items-start gap-4">
                     <div className="flex h-[48px] w-[48px] flex-shrink-0 items-center justify-center rounded-full border border-Mneutral-100">
                       <img src={feature.icon} alt="" />
                     </div>
                     <div>
-                      <h4 className="mb-[10px] text__20">{feature.title}</h4>
-                      <p className="text__16 text-Mneutral-600">
-                        {feature.description}
-                      </p>
+                      <h4 className="mb-[10px] text__20">{t(feature.titleKey)}</h4>
+                      <p className="text__16 text-Mneutral-600">{t(feature.descKey)}</p>
                     </div>
                   </div>
                   {index < features.length - 1 && (
@@ -379,27 +335,22 @@ export default function HomePage() {
         <div className="container-custom grid grid-cols-1 gap-[12px] md:grid-cols-2">
           <div className="order-2 h-full w-full rounded-[32px] bg-white px-[20px] py-[20px] xs:px-[40px] xs:py-[40px] xl:px-[80px] xl:py-[80px] md:order-1">
             <p className="mb-4 font-medium text__18 text-Mneutral-400">
-              INGREDIENTS
+              {t("home.ingredients")}
             </p>
-            <h2 className="text__48">Powered by Nature&apos;s Best</h2>
+            <h2 className="text__48">{t("home.natureTitle")}</h2>
 
             <div className="my-[56px] grid grid-cols-1 gap-[24px]">
-              <p className="text__18">
-                We source ingredients from the earth&apos;s purest and most
-                potent botanicals. From nourishing oils to antioxidant-rich
-                herbs, our formulas are packed with the good stuff to give your
-                skin the care it deserves.
-              </p>
+              <p className="text__18">{t("home.ingredientsBody")}</p>
 
               <ul className="list-disc pl-4 text__18">
-                <li>No fillers.</li>
-                <li>No chemicals.</li>
-                <li>Just nature&apos;s finest.</li>
+                <li>{t("home.noFillers")}</li>
+                <li>{t("home.noChemicals")}</li>
+                <li>{t("home.naturesFinest")}</li>
               </ul>
             </div>
 
             <Link to="/shop" className="pill-button">
-              <span>SHOP NOW</span>
+              <span>{t("common.shopNow")}</span>
               <img
                 src="/images/carbon_arrow-up-right (2).svg"
                 alt=""
@@ -419,11 +370,7 @@ export default function HomePage() {
 
       <section className="section-template" data-gsap-reveal>
         <div className="container-custom">
-          <h2 className="mb-[2.5rem] text-center text__48">
-            What Our Customers
-            <br />
-            Are Saying
-          </h2>
+          <h2 className="mb-[2.5rem] text-center text__48">{t("home.testimonialsTitle")}</h2>
 
           <div className="grid gap-[20px] lg:grid-cols-3" data-gsap-stagger>
             {TESTIMONIALS.slice(0, 3).map((item) => (
@@ -475,26 +422,22 @@ export default function HomePage() {
             />
             <div className="relative z-[1] px-[1rem] py-[50px] text-center xx:px-[2rem] xs:px-0 xs:py-[80px] lg:py-[160px]">
               <div className="mb-[32px] grid grid-cols-1 gap-[12px] ss:mb-[56px]">
-                <p className="font-medium text__18">GET STARTED</p>
-                <h3 className="text__56">Join the Calesta Community</h3>
-                <p className="text__18">
-                  Sign up for exclusive offers, skincare tips, and new product
-                  <br className="hidden xs:block" /> launches directly in your
-                  inbox.
-                </p>
+                <p className="font-medium text__18">{t("home.getStarted")}</p>
+                <h3 className="text__56">{t("home.communityTitle")}</h3>
+                <p className="text__18">{t("home.communityBody")}</p>
               </div>
               <div className="flex items-center justify-center">
                 <div className="flex w-full items-center gap-2 rounded-full bg-white p-[4px] pl-4 xs:w-[390px]">
                   <input
                     type="text"
-                    placeholder="Enter email..."
+                    placeholder={t("home.enterEmail")}
                     className="w-full border-none bg-transparent text__16 text-Mneutral-900 placeholder:text-Mneutral-500 outline-none"
                   />
                   <button
                     type="button"
                     className="rounded-full bg-Mneutral-900 px-[20px] py-[14px] font-medium text__18 text-white"
                   >
-                    SUBSCRIBE
+                    {t("home.subscribe")}
                   </button>
                 </div>
               </div>
@@ -505,7 +448,7 @@ export default function HomePage() {
 
       <section className="section-template" data-gsap-reveal>
         <div className="container-custom">
-          <h2 className="mb-[24px] text__48 xs:mb-[56px]">Our Community</h2>
+          <h2 className="mb-[24px] text__48 xs:mb-[56px]">{t("home.ourCommunity")}</h2>
           <div
             className="grid grid-cols-1 gap-[20px] xs:grid-cols-2 lg:grid-cols-4"
             data-gsap-stagger

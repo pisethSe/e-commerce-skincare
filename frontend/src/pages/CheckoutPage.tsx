@@ -14,7 +14,8 @@ import {
   Wallet,
 } from 'lucide-react'
 import { useCartStore, useAuthStore, useUIStore } from '../lib/store'
-import { formatPrice } from '../lib/utils'
+import { useMoney } from '../lib/currency'
+import { useT } from '../lib/i18n'
 import { getApiUrl, apiFetch } from '../lib/api'
 import { CAMBODIA_PROVINCES, isValidProvince, isValidZip, isValidKhPhone } from '../lib/cambodia'
 import ImageWithFallback from '../components/ui/ImageWithFallback'
@@ -62,6 +63,8 @@ export default function CheckoutPage() {
   const user = useAuthStore((s) => s.user)
   const accessToken = useAuthStore((s) => s.accessToken)
   const openAuthModal = useUIStore((s) => s.openAuthModal)
+  const t = useT()
+  const { money, alt } = useMoney()
 
   const [step, setStep] = useState<Step>('info')
   const [form, setForm] = useState<CheckoutForm>(INITIAL_FORM)
@@ -117,37 +120,37 @@ export default function CheckoutPage() {
   const validateStep = (target: Step): boolean => {
     if (target === 'shipping') {
       if (!form.firstName.trim() || !form.lastName.trim()) {
-        setStepError('Please enter your first and last name.')
+        setStepError(t('checkout.errName'))
         return false
       }
       if (!form.email.trim() || !form.email.includes('@')) {
-        setStepError('Please enter a valid email address.')
+        setStepError(t('checkout.errEmail'))
         return false
       }
     }
     if (target === 'payment') {
       if (!form.street.trim()) {
-        setStepError('Please enter your street address.')
+        setStepError(t('checkout.errStreet'))
         return false
       }
       if (!form.city.trim()) {
-        setStepError('Please enter your city or district.')
+        setStepError(t('checkout.errCity'))
         return false
       }
       if (!form.state.trim()) {
-        setStepError('Please choose your province.')
+        setStepError(t('checkout.errProvince'))
         return false
       }
       if (!isValidProvince(form.state)) {
-        setStepError("Please choose a valid Cambodian province from the list.")
+        setStepError(t('checkout.errProvinceInvalid'))
         return false
       }
       if (!isValidZip(form.zip)) {
-        setStepError('Please enter a valid 5-digit postal code (e.g. 12000 for Phnom Penh).')
+        setStepError(t('checkout.errZip'))
         return false
       }
       if (form.phone.trim() && !isValidKhPhone(form.phone)) {
-        setStepError('Please enter a valid Cambodian phone number (e.g. 012 345 678).')
+        setStepError(t('checkout.errPhone'))
         return false
       }
     }
@@ -346,7 +349,7 @@ export default function CheckoutPage() {
             <h1 className="mt-3 text__40 font-medium">Scan to pay</h1>
             <p className="mt-2 text__18 text-Mneutral-600">
               Order <span className="font-medium tabular-nums">{bakongPayment.orderNumber}</span> ·{' '}
-              {formatPrice(bakongPayment.total)}
+              {money(bakongPayment.total)}
               {paymentConfig.currency === 'KHR' && ' (KHR)'}
             </p>
 
@@ -362,7 +365,7 @@ export default function CheckoutPage() {
 
             <p className="mt-5 text__14 text-Mneutral-500">
               Open any Cambodian bank app, scan the code, and pay{' '}
-              <span className="font-medium text-Mneutral-700">{formatPrice(bakongPayment.total)}</span>.
+              <span className="font-medium text-Mneutral-700">{money(bakongPayment.total)}</span>.
             </p>
 
             {orderError && (
@@ -378,15 +381,15 @@ export default function CheckoutPage() {
               className="filled-pill-button mt-6 w-full justify-center disabled:opacity-60"
             >
               <CheckCircle2 size={16} />
-              {verifying ? 'Checking payment…' : "I've paid — verify payment"}
+              {verifying ? t('checkout.checkingPayment') : t('checkout.verifyPayment')}
             </button>
             {!paymentConfig.bakong && (
               <p className="mt-3 text__12 text-Mneutral-400">
-                Demo mode — Bakong auto-verification activates when the store's Bakong account is configured.
+                {t('checkout.bakongDemo')}
               </p>
             )}
             <Link to="/" className="mt-4 inline-block text__14 text-Mneutral-500 underline">
-              Pay later — back home
+              {t('checkout.payLater')}
             </Link>
           </motion.div>
         </div>
@@ -400,10 +403,10 @@ export default function CheckoutPage() {
       <div className="bg-Mneutral-50 pt-[140px]">
         <div className="container-custom rounded-[32px] bg-white px-[20px] py-[80px] text-center xs:px-[40px]">
           <ShoppingBag size={64} strokeWidth={1} className="mx-auto mb-6 text-Mneutral-300" />
-          <h1 className="mb-3 text__40 font-medium text-Mneutral-900">Nothing to check out</h1>
-          <p className="mb-8 text__18 text-Mneutral-600">Your bag is empty — add a ritual first</p>
+          <h1 className="mb-3 text__40 font-medium text-Mneutral-900">{t('checkout.nothing')}</h1>
+          <p className="mb-8 text__18 text-Mneutral-600">{t('checkout.nothingHint')}</p>
           <Link to="/shop" className="filled-pill-button">
-            Start Shopping
+            {t('common.startShopping')}
           </Link>
         </div>
       </div>
@@ -430,7 +433,7 @@ export default function CheckoutPage() {
                       step === current ? 'font-medium text-Mneutral-900' : 'text-Mneutral-400 hover:text-Mneutral-600'
                     }`}
                   >
-                    {current}
+                    {current === 'info' ? t('checkout.stepInfo') : current === 'shipping' ? t('checkout.stepShipping') : t('checkout.stepPayment')}
                   </button>
                   {index < steps.length - 1 && <ChevronDown className="rotate-[-90deg] text-Mneutral-300" size={12} />}
                 </React.Fragment>
@@ -440,53 +443,53 @@ export default function CheckoutPage() {
             {!user && (
               <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-[20px] bg-cream-100/60 px-5 py-4">
                 <p className="text__14 text-Mneutral-700">
-                  Have an account? Sign in to check out faster.
+                  {t('checkout.haveAccount')}
                 </p>
                 <button
                   type="button"
                   onClick={() => openAuthModal('login')}
                   className="outline-pill-button px-5 py-2.5 text__14"
                 >
-                  Sign in
+                  {t('checkout.signIn')}
                 </button>
               </div>
             )}
 
             {step === 'info' && (
               <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} className="space-y-5">
-                <h2 className="mb-6 text__32 font-medium">Contact Information</h2>
+                <h2 className="mb-6 text__32 font-medium">{t('checkout.contactInfo')}</h2>
                 <div className="grid gap-5 sm:grid-cols-2">
-                  <CheckoutInput label="First Name" placeholder="Sophie" value={form.firstName} onChange={(v) => setField('firstName', v)} />
-                  <CheckoutInput label="Last Name" placeholder="Martin" value={form.lastName} onChange={(v) => setField('lastName', v)} />
+                  <CheckoutInput label={t('checkout.firstName')} placeholder="Sophie" value={form.firstName} onChange={(v) => setField('firstName', v)} />
+                  <CheckoutInput label={t('checkout.lastName')} placeholder="Martin" value={form.lastName} onChange={(v) => setField('lastName', v)} />
                 </div>
-                <CheckoutInput label="Email" placeholder="sophie@example.com" type="email" value={form.email} onChange={(v) => setField('email', v)} />
-                <CheckoutInput label="Phone" placeholder="012 345 678" type="tel" value={form.phone} onChange={(v) => setField('phone', v)} />
+                <CheckoutInput label={t('checkout.email')} placeholder="sophie@example.com" type="email" value={form.email} onChange={(v) => setField('email', v)} />
+                <CheckoutInput label={t('checkout.phone')} placeholder="012 345 678" type="tel" value={form.phone} onChange={(v) => setField('phone', v)} />
                 {stepError && (
                   <p role="alert" className="rounded-[16px] bg-blush-50 px-4 py-3 text__14 text-blush-700">
                     {stepError}
                   </p>
                 )}
                 <button type="button" onClick={() => goTo('shipping')} className="filled-pill-button mt-4">
-                  Continue to Shipping <ArrowRight size={15} />
+                  {t('checkout.continueShipping')} <ArrowRight size={15} />
                 </button>
               </motion.div>
             )}
 
             {step === 'shipping' && (
               <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
-                <h2 className="mb-6 text__32 font-medium">Shipping Address</h2>
-                <CheckoutInput label="Street Address" placeholder="Street 215, House 12" value={form.street} onChange={(v) => setField('street', v)} />
+                <h2 className="mb-6 text__32 font-medium">{t('checkout.shippingAddress')}</h2>
+                <CheckoutInput label={t('checkout.street')} placeholder="Street 215, House 12" value={form.street} onChange={(v) => setField('street', v)} />
                 <div className="grid gap-5 sm:grid-cols-2">
-                  <CheckoutInput label="City / District" placeholder="Phnom Penh" value={form.city} onChange={(v) => setField('city', v)} />
+                  <CheckoutInput label={t('checkout.city')} placeholder="Phnom Penh" value={form.city} onChange={(v) => setField('city', v)} />
                   <div>
-                    <label className="mb-2 block text__14 text-Mneutral-500">Province</label>
+                    <label className="mb-2 block text__14 text-Mneutral-500">{t('checkout.province')}</label>
                     <div className="relative">
                       <select
                         value={form.state}
                         onChange={(e) => setField('state', e.target.value)}
                         className="w-full appearance-none rounded-full border border-Mneutral-100 bg-white px-4 py-3 text__16 outline-none transition-colors focus:border-Mneutral-900"
                       >
-                        <option value="">Choose province…</option>
+                        <option value="">{t('checkout.chooseProvince')}</option>
                         {CAMBODIA_PROVINCES.map((province) => (
                           <option key={province} value={province}>{province}</option>
                         ))}
@@ -496,27 +499,27 @@ export default function CheckoutPage() {
                   </div>
                 </div>
                 <div className="grid gap-5 sm:grid-cols-2">
-                  <CheckoutInput label="Postal Code" placeholder="12000" inputMode="numeric" value={form.zip} onChange={(v) => setField('zip', v.replace(/[^\d]/g, '').slice(0, 5))} />
+                  <CheckoutInput label={t('checkout.postalCode')} placeholder="12000" inputMode="numeric" value={form.zip} onChange={(v) => setField('zip', v.replace(/[^\d]/g, '').slice(0, 5))} />
                   <div>
-                    <label className="mb-2 block text__14 text-Mneutral-500">Country</label>
+                    <label className="mb-2 block text__14 text-Mneutral-500">{t('checkout.country')}</label>
                     <div className="flex items-center gap-2 rounded-full border border-Mneutral-100 bg-Mneutral-50 px-4 py-3">
-                      <span className="text__16 text-Mneutral-700">🇰🇭 Cambodia</span>
-                      <span className="ml-auto text__12 text-Mneutral-400">We ship within Cambodia only</span>
+                      <span className="text__16 text-Mneutral-700">🇰🇭 {t('checkout.cambodia')}</span>
+                      <span className="ml-auto text__12 text-Mneutral-400">{t('checkout.shipCambodiaOnly')}</span>
                     </div>
                   </div>
                 </div>
 
-                <h2 className="mb-2 mt-8 text__32 font-medium">Shipping Method</h2>
+                <h2 className="mb-2 mt-8 text__32 font-medium">{t('checkout.shippingMethod')}</h2>
                 <div className="flex items-center gap-4 rounded-[24px] border border-Mneutral-900 bg-Mneutral-50 p-4">
                   <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-Mneutral-900 text-white">
                     <ShoppingBag size={15} />
                   </div>
                   <div className="flex-1">
-                    <p className="text__16 font-medium">Standard Delivery</p>
-                    <p className="text__14 text-Mneutral-500">Nationwide across Cambodia · 2–5 business days</p>
+                    <p className="text__16 font-medium">{t('checkout.standardDelivery')}</p>
+                    <p className="text__14 text-Mneutral-500">{t('checkout.standardDeliveryDesc')}</p>
                   </div>
                   <span className="text__16 font-medium">
-                    {subtotal - discount >= 75 ? 'Free' : formatPrice(STANDARD_SHIPPING)}
+                    {subtotal - discount >= 75 ? t('common.free') : money(STANDARD_SHIPPING)}
                   </span>
                 </div>
                 {stepError && (
@@ -526,10 +529,10 @@ export default function CheckoutPage() {
                 )}
                 <div className="flex gap-3 pt-2">
                   <button type="button" onClick={() => setStep('info')} className="outline-pill-button">
-                    <ArrowLeft size={15} /> Back
+                    <ArrowLeft size={15} /> {t('common.back')}
                   </button>
                   <button type="button" onClick={() => goTo('payment')} className="filled-pill-button">
-                    Continue to Payment <ArrowRight size={15} />
+                    {t('checkout.continuePayment')} <ArrowRight size={15} />
                   </button>
                 </div>
               </motion.div>
@@ -539,13 +542,13 @@ export default function CheckoutPage() {
               <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} className="space-y-5">
                 <h2 className="mb-6 flex items-center gap-2 text__32 font-medium">
                   <Lock size={16} className="text-Mneutral-500" />
-                  Payment
+                  {t('checkout.payment')}
                 </h2>
 
                 {[
-                  { value: 'card' as const, label: 'Credit / Debit Card', desc: 'Visa, Mastercard', icon: CreditCard },
-                  { value: 'aba_payway' as const, label: 'ABA PayWay', desc: 'Pay via ABA Mobile or cards', icon: Wallet },
-                  { value: 'bakong' as const, label: 'Bakong (KHQR)', desc: 'Scan with any Cambodian bank app', icon: QrCode },
+                  { value: 'card' as const, label: t('checkout.card'), desc: t('checkout.cardDesc'), icon: CreditCard },
+                  { value: 'aba_payway' as const, label: t('checkout.aba'), desc: t('checkout.abaDesc'), icon: Wallet },
+                  { value: 'bakong' as const, label: t('checkout.bakong'), desc: t('checkout.bakongDesc'), icon: QrCode },
                 ].map((option) => {
                   const Icon = option.icon
                   return (
@@ -573,32 +576,32 @@ export default function CheckoutPage() {
 
                 {paymentChoice === 'card' && (
                   <div className="space-y-5 border-t border-Mneutral-100 pt-5">
-                    <CheckoutInput label="Card Number" placeholder="4242 4242 4242 4242" value={card.number} onChange={(v) => setCard((c) => ({ ...c, number: v }))} />
+                    <CheckoutInput label={t('checkout.cardNumber')} placeholder="4242 4242 4242 4242" value={card.number} onChange={(v) => setCard((c) => ({ ...c, number: v }))} />
                     <div className="grid gap-5 sm:grid-cols-2">
-                      <CheckoutInput label="Expiry Date" placeholder="MM / YY" value={card.expiry} onChange={(v) => setCard((c) => ({ ...c, expiry: v }))} />
-                      <CheckoutInput label="CVC" placeholder="123" value={card.cvc} onChange={(v) => setCard((c) => ({ ...c, cvc: v }))} />
+                      <CheckoutInput label={t('checkout.expiry')} placeholder="MM / YY" value={card.expiry} onChange={(v) => setCard((c) => ({ ...c, expiry: v }))} />
+                      <CheckoutInput label={t('checkout.cvc')} placeholder="123" value={card.cvc} onChange={(v) => setCard((c) => ({ ...c, cvc: v }))} />
                     </div>
-                    <CheckoutInput label="Name on Card" placeholder="Sophie Martin" value={card.name} onChange={(v) => setCard((c) => ({ ...c, name: v }))} />
+                    <CheckoutInput label={t('checkout.nameOnCard')} placeholder="Sophie Martin" value={card.name} onChange={(v) => setCard((c) => ({ ...c, name: v }))} />
                   </div>
                 )}
 
                 {paymentChoice === 'aba_payway' && (
                   <p className="flex items-center gap-2 rounded-[20px] bg-cream-100/50 px-4 py-3 text__12 text-Mneutral-600">
                     <BadgeCheck size={14} className="flex-shrink-0 text-sage-600" />
-                    You'll be redirected to ABA PayWay to complete the payment securely.
+                    {t('checkout.abaRedirect')}
                   </p>
                 )}
 
                 {paymentChoice === 'bakong' && (
                   <p className="flex items-center gap-2 rounded-[20px] bg-cream-100/50 px-4 py-3 text__12 text-Mneutral-600">
                     <BadgeCheck size={14} className="flex-shrink-0 text-sage-600" />
-                    A KHQR code will be shown after you confirm — scan it with any Cambodian bank app.
+                    {t('checkout.bakongNote')}
                   </p>
                 )}
 
                 <p className="flex items-center gap-2 rounded-[20px] bg-cream-100/50 px-4 py-3 text__12 text-Mneutral-600">
                   <BadgeCheck size={14} className="flex-shrink-0 text-sage-600" />
-                  Demo checkout — no payment is charged. Card processing is Stripe-ready; ABA PayWay and Bakong are wired for merchant credentials.
+                  {t('checkout.demoNote')}
                 </p>
 
                 {orderError && (
@@ -609,7 +612,7 @@ export default function CheckoutPage() {
 
                 <div className="flex gap-3">
                   <button type="button" onClick={() => setStep('shipping')} className="outline-pill-button" disabled={placing}>
-                    <ArrowLeft size={15} /> Back
+                    <ArrowLeft size={15} /> {t('common.back')}
                   </button>
                   <button
                     type="button"
@@ -618,12 +621,12 @@ export default function CheckoutPage() {
                     className="filled-pill-button flex-1 justify-center disabled:opacity-60"
                   >
                     <CreditCard size={16} />
-                    {placing ? 'Placing order…' : `Place Order · ${formatPrice(orderTotal)}`}
+                    {placing ? t('checkout.placing') : t('checkout.placeOrder', { amount: money(orderTotal) })}
                   </button>
                 </div>
                 <div className="mt-3 flex items-center justify-center gap-2 text-xs text-Mneutral-400">
                   <Lock size={10} />
-                  Your payment information is encrypted and secure
+                  {t('checkout.secure')}
                 </div>
               </motion.div>
             )}
@@ -631,7 +634,7 @@ export default function CheckoutPage() {
 
           {/* Order summary */}
           <div className="h-fit rounded-[32px] bg-white p-6 lg:sticky lg:top-24">
-            <h3 className="mb-5 text__28 font-medium">Order Summary</h3>
+            <h3 className="mb-5 text__28 font-medium">{t('checkout.orderSummary')}</h3>
             <div className="mb-5 space-y-3">
               {items.map((item) => (
                 <div key={item.product.id} className="flex gap-3">
@@ -651,15 +654,15 @@ export default function CheckoutPage() {
                     <p className="truncate text__16 font-medium">{item.product.name}</p>
                     <p className="text__14 text-Mneutral-400">{item.product.volume}</p>
                   </div>
-                  <span className="text__16 font-medium tabular-nums">{formatPrice(item.product.price * item.quantity)}</span>
+                  <span className="text__16 font-medium tabular-nums">{money(item.product.price * item.quantity)}</span>
                 </div>
               ))}
             </div>
 
             <div className="space-y-2 border-t border-Mneutral-100 pt-4 text__16">
               <div className="flex justify-between text-Mneutral-600">
-                <span>Subtotal</span>
-                <span className="tabular-nums">{formatPrice(subtotal)}</span>
+                <span>{t('common.subtotal')}</span>
+                <span className="tabular-nums">{money(subtotal)}</span>
               </div>
               {coupon && (
                 <div className="flex justify-between text-sage-600">
@@ -667,20 +670,20 @@ export default function CheckoutPage() {
                     <BadgeCheck size={13} />
                     {coupon.code}
                   </span>
-                  <span className="tabular-nums">−{formatPrice(discount)}</span>
+                  <span className="tabular-nums">−{money(discount)}</span>
                 </div>
               )}
               <div className="flex justify-between text-Mneutral-600">
-                <span>Shipping (Standard)</span>
-                <span>{shipping === 0 ? 'Free' : formatPrice(shipping)}</span>
+                <span>{t('checkout.shippingStandard')}</span>
+                <span>{shipping === 0 ? t('common.free') : money(shipping)}</span>
               </div>
               <div className="flex justify-between text-Mneutral-600">
-                <span>Tax</span>
-                <span className="tabular-nums">{formatPrice(tax)}</span>
+                <span>{t('common.tax')}</span>
+                <span className="tabular-nums">{money(tax)}</span>
               </div>
               <div className="flex justify-between border-t border-Mneutral-100 pt-2 font-medium text-Mneutral-900">
-                <span>Total</span>
-                <span className="tabular-nums">{formatPrice(orderTotal)}</span>
+                <span>{t('common.total')}</span>
+                <span className="tabular-nums">{money(orderTotal)}</span>
               </div>
             </div>
           </div>
@@ -689,9 +692,9 @@ export default function CheckoutPage() {
 
       <ConfirmDialog
         open={confirmPlace}
-        title="CONFIRM ORDER"
-        message={`Place your order for ${formatPrice(orderTotal)}? Your items will be reserved and a confirmation email sent to ${form.email || 'your inbox'}.`}
-        confirmLabel="Yes, place order"
+        title={t('checkout.confirmTitle')}
+        message={t('checkout.confirmMessage', { amount: money(orderTotal), email: form.email || t('checkout.yourInbox') })}
+        confirmLabel={t('checkout.yesPlace')}
         onCancel={() => setConfirmPlace(false)}
         onConfirm={placeOrder}
       />

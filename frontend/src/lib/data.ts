@@ -269,12 +269,12 @@ export const NAV_LINKS = [
 ]
 
 export const MARQUEE_ITEMS = [
-  'Clean Beauty',
-  'Dermatologist Tested',
-  'Cruelty Free',
-  'Vegan Formulas',
-  'Sustainable Packaging',
-  'Science-Backed',
-  'No Parabens',
-  'No Sulfates',
-]
+  'marquee.cleanBeauty',
+  'marquee.dermTested',
+  'marquee.crueltyFree',
+  'marquee.vegan',
+  'marquee.sustainable',
+  'marquee.science',
+  'marquee.noParabens',
+  'marquee.noSulfates',
+] as const

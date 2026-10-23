@@ -4,9 +4,11 @@ import { Link } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import ProductCard from '../ui/ProductCard'
 import { useCatalogStore } from '../../lib/catalog'
+import { useT } from '../../lib/i18n'
 
 export default function FeaturedProducts() {
   const { products } = useCatalogStore()
+  const t = useT()
   const featured = products.filter((p) => p.isFeatured).slice(0, 4)
 
   return (
@@ -15,10 +17,10 @@ export default function FeaturedProducts() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-14 gap-4">
           <div data-aos="fade-up">
-            <p className="font-accent italic text-[#c9a96e] text-lg mb-2">Our Bestsellers</p>
+            <p className="font-accent italic text-[#c9a96e] text-lg mb-2">{t('featured.kicker')}</p>
             <h2 className="heading-xl">
-              Loved by thousands,<br />
-              <span className="font-accent italic">formulated for you</span>
+              {t('featured.title1')}<br />
+              <span className="font-accent italic">{t('featured.title2')}</span>
             </h2>
           </div>
           <motion.div
@@ -26,7 +28,7 @@ export default function FeaturedProducts() {
             data-aos-delay="100"
           >
             <Link to="/shop" className="flex items-center gap-2 text-sm font-medium tracking-widest uppercase hover:text-[#c9a96e] transition-colors group">
-              View All
+              {t('common.viewAll')}
               <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
             </Link>
           </motion.div>

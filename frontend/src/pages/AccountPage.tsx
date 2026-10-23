@@ -4,7 +4,8 @@ import { motion } from 'framer-motion'
 import { BadgeCheck, Package, ShoppingBag, LogOut, ArrowRight } from 'lucide-react'
 import { useAuthStore, useUIStore } from '../lib/store'
 import { getApiUrl, apiFetch } from '../lib/api'
-import { formatPrice } from '../lib/utils'
+import { useMoney } from '../lib/currency'
+import { useLang, useT } from '../lib/i18n'
 import ConfirmDialog from '../components/ui/ConfirmDialog'
 
 interface MyOrderItem {
@@ -31,36 +32,39 @@ interface MyOrder {
 }
 
 /** Status tints — same language as the admin, tuned to the storefront palette. */
-const STATUS_STYLES: Record<string, { chip: string; label: string }> = {
-  PENDING: { chip: 'bg-Mneutral-100 text-Mneutral-600', label: 'Pending' },
-  PROCESSING: { chip: 'bg-[#f7f1de] text-[#7a6420]', label: 'Processing' },
-  SHIPPED: { chip: 'bg-[#ddf0e9] text-[#1f5c46]', label: 'Shipped' },
-  DELIVERED: { chip: 'bg-[#eaf1e3] text-[#4a6132]', label: 'Delivered' },
-  CANCELLED: { chip: 'bg-[#fdeeee] text-[#a83636]', label: 'Cancelled' },
-  REFUNDED: { chip: 'bg-[#fbe9e0] text-[#9c5530]', label: 'Refunded' },
+const STATUS_STYLES: Record<string, { chip: string; key: 'account.pending' | 'account.processing' | 'account.shipped' | 'account.delivered' | 'account.cancelledStatus' | 'account.refundedStatus' }> = {
+  PENDING: { chip: 'bg-Mneutral-100 text-Mneutral-600', key: 'account.pending' },
+  PROCESSING: { chip: 'bg-[#f7f1de] text-[#7a6420]', key: 'account.processing' },
+  SHIPPED: { chip: 'bg-[#ddf0e9] text-[#1f5c46]', key: 'account.shipped' },
+  DELIVERED: { chip: 'bg-[#eaf1e3] text-[#4a6132]', key: 'account.delivered' },
+  CANCELLED: { chip: 'bg-[#fdeeee] text-[#a83636]', key: 'account.cancelledStatus' },
+  REFUNDED: { chip: 'bg-[#fbe9e0] text-[#9c5530]', key: 'account.refundedStatus' },
 }
 
 
 /** Order progress timeline — derived from the order status. */
 const TIMELINE_STEPS = [
-  { key: 'PENDING', label: 'Placed' },
-  { key: 'PROCESSING', label: 'Processing' },
-  { key: 'SHIPPED', label: 'Shipped' },
-  { key: 'DELIVERED', label: 'Delivered' },
-]
+  { key: 'PENDING', labelKey: 'account.placed' },
+  { key: 'PROCESSING', labelKey: 'account.processing' },
+  { key: 'SHIPPED', labelKey: 'account.shipped' },
+  { key: 'DELIVERED', labelKey: 'account.delivered' },
+] as const
 
 function OrderTimeline({ status, trackingNumber }: { status: string; trackingNumber?: string | null }) {
+  const t = useT()
   if (status === 'CANCELLED') {
     return (
       <div className="mt-4 rounded-[20px] bg-[#fdeeee] px-4 py-3 text__14 text-[#a83636]">
-        This order was cancelled{trackingNumber ? ` — tracking reference ${trackingNumber}` : ''}.
+        {t('account.cancelled')}
+        {trackingNumber ? ` ${t('account.trackingReference', { number: trackingNumber })}.` : ''}
       </div>
     )
   }
   if (status === 'REFUNDED') {
     return (
       <div className="mt-4 rounded-[20px] bg-[#fbe9e0] px-4 py-3 text__14 text-[#9c5530]">
-        This order was refunded{trackingNumber ? ` — tracking reference ${trackingNumber}` : ''}.
+        {t('account.refunded')}
+        {trackingNumber ? ` ${t('account.trackingReference', { number: trackingNumber })}.` : ''}
       </div>
     )
   }
@@ -82,7 +86,7 @@ function OrderTimeline({ status, trackingNumber }: { status: string; trackingNum
                   {done ? '✓' : i + 1}
                 </div>
                 <span className={`mt-1 text__12 ${done ? 'font-medium text-Mneutral-700' : 'text-Mneutral-400'}`}>
-                  {step.label}
+                  {t(step.labelKey)}
                 </span>
               </div>
               {!last && (
@@ -111,6 +115,9 @@ export default function AccountPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [confirmLogout, setConfirmLogout] = useState(false)
+  const t = useT()
+  const lang = useLang()
+  const { money } = useMoney()
 
   useEffect(() => {
     document.title = 'Calesta — My Account'
@@ -191,15 +198,15 @@ export default function AccountPage() {
                 </div>
                 <div>
                   <p className="mb-1 text__14 font-medium uppercase tracking-[0.28em] text-Mneutral-400">
-                    MY ACCOUNT
+                    t('account.myAccount')
                   </p>
                   <h1 className="text__32 font-medium">
-                    Hi, {user.firstName}
+                    {t('account.hi', { name: user.firstName })}
                   </h1>
                   <p className="mt-1 flex flex-wrap items-center gap-2 text__14 text-Mneutral-500">
                     {user.email}
                     <BadgeCheck size={14} className="text-sage-600" />
-                    {memberSince && <span>· member since {memberSince}</span>}
+                    {memberSince && <span>· {t('account.memberSince', { date: memberSince })}</span>}
                   </p>
                 </div>
               </div>
@@ -210,23 +217,23 @@ export default function AccountPage() {
                 className="outline-pill-button px-5 py-3 text__14"
               >
                 <LogOut size={14} />
-                Logout
+                {t('account.logout')}
               </button>
             </div>
 
             {orders.length > 0 && (
               <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-3">
                 <div className="rounded-[24px] bg-Mneutral-50 px-5 py-4">
-                  <p className="text__14 text-Mneutral-500">Orders placed</p>
+                  <p className="text__14 text-Mneutral-500">{t('account.ordersPlaced')}</p>
                   <p className="mt-1 text__24 font-medium tabular-nums">{orders.length}</p>
                 </div>
                 <div className="rounded-[24px] bg-Mneutral-50 px-5 py-4">
-                  <p className="text__14 text-Mneutral-500">Total spent</p>
-                  <p className="mt-1 text__24 font-medium tabular-nums">{formatPrice(totalSpent)}</p>
+                  <p className="text__14 text-Mneutral-500">{t('account.totalSpent')}</p>
+                  <p className="mt-1 text__24 font-medium tabular-nums">{money(totalSpent)}</p>
                 </div>
                 <div className="col-span-2 rounded-[24px] bg-Mneutral-50 px-5 py-4 md:col-span-1">
-                  <p className="text__14 text-Mneutral-500">Free shipping</p>
-                  <p className="mt-1 text__24 font-medium">Over $75</p>
+                  <p className="text__14 text-Mneutral-500">{t('account.freeShipping')}</p>
+                  <p className="mt-1 text__24 font-medium">{t('common.freeShippingOverShort')}</p>
                 </div>
               </div>
             )}
@@ -236,11 +243,11 @@ export default function AccountPage() {
           <div className="rounded-[32px] bg-white px-[20px] py-[28px] xs:px-[40px] xs:py-[40px] xl:px-[56px]">
             <div className="mb-8 flex items-end justify-between gap-4">
               <div>
-                <p className="mb-3 text__18 text-Mneutral-400">ORDER HISTORY</p>
-                <h2 className="text__48 font-medium">Your Rituals</h2>
+                <p className="mb-3 text__18 text-Mneutral-400">{t('account.orderHistory')}</p>
+                <h2 className="text__48 font-medium">{t('account.yourRituals')}</h2>
               </div>
               {orders.length > 0 && (
-                <p className="text__18 text-Mneutral-500 tabular-nums">{orders.length} orders</p>
+                <p className="text__18 text-Mneutral-500 tabular-nums">{t('account.ordersCount', { count: orders.length })}</p>
               )}
             </div>
 
@@ -255,12 +262,12 @@ export default function AccountPage() {
             ) : orders.length === 0 ? (
               <div className="py-10 text-center">
                 <Package size={48} strokeWidth={1} className="mx-auto mb-4 text-Mneutral-300" />
-                <p className="text__24 font-medium">No orders yet</p>
+                <p className="text__24 font-medium">{t('account.noOrders')}</p>
                 <p className="mt-2 text__16 text-Mneutral-500">
-                  When you buy something, it will appear here.
+                  {t('account.noOrdersHint')}
                 </p>
                 <Link to="/shop" className="filled-pill-button mt-6">
-                  Start Shopping
+                  {t('common.startShopping')}
                 </Link>
               </div>
             ) : (
@@ -280,16 +287,16 @@ export default function AccountPage() {
                           <span className="font-medium tabular-nums text-Mneutral-900">
                             {order.orderNumber}
                           </span>
-                          <span className={`badge ${status.chip}`}>{status.label}</span>
+                          <span className={`badge ${status.chip}`}>{t(status.key)}</span>
                         </div>
                         <div className="flex items-center gap-4">
                           <span className="text__14 text-Mneutral-500">
-                            {new Date(order.createdAt).toLocaleDateString('en-US', {
+                            {new Date(order.createdAt).toLocaleDateString(lang === 'km' ? 'km-KH' : 'en-US', {
                               month: 'short', day: 'numeric', year: 'numeric',
                             })}
                           </span>
                           <span className="text__18 font-medium tabular-nums">
-                            {formatPrice(order.total)}
+                            {money(order.total)}
                           </span>
                         </div>
                       </div>
@@ -313,11 +320,11 @@ export default function AccountPage() {
                             <div className="min-w-0 flex-1">
                               <p className="truncate text__14 font-medium">{item.name}</p>
                               <p className="text__12 text-Mneutral-500 tabular-nums">
-                                {formatPrice(item.price)} × {item.quantity}
+                                {money(Number(item.price))} × {item.quantity}
                               </p>
                             </div>
                             <span className="text__14 font-medium tabular-nums text-Mneutral-700">
-                              {formatPrice(Number(item.price) * item.quantity)}
+                              {money(Number(item.price) * item.quantity)}
                             </span>
                           </div>
                         ))}
@@ -333,9 +340,9 @@ export default function AccountPage() {
 
       <ConfirmDialog
         open={confirmLogout}
-        title="LOGOUT"
-        message={`Are you sure you want to log out, ${user.firstName}? Your bag stays saved for next time.`}
-        confirmLabel="Yes, log out"
+        title={t('nav.logoutConfirmTitle')}
+        message={t('nav.logoutConfirm', { name: user.firstName })}
+        confirmLabel={t('nav.yesLogout')}
         onCancel={() => setConfirmLogout(false)}
         onConfirm={confirmLogoutAction}
       />

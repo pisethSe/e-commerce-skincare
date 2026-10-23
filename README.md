@@ -223,7 +223,14 @@ npm run db:clean
       validation, one standard delivery method (free over $75), payment via
       Credit/Debit Card, ABA PayWay, or Bakong (KHQR), order confirmation step
 - ✅ Sign in with Google (OAuth2) + password strength meter on signup
+- ✅ English / ខ្មែរ toggle — storefront chrome, dates, and category labels
+      localized; the choice is persisted per browser
+- ✅ USD / KHR dual pricing — switch currencies in the header; product cards
+      show the secondary amount. Rate configurable via `VITE_USD_TO_KHR`
+      (default 4,100 riel per dollar)
 - ✅ Account page (/account): profile, order history, spending stats
+- ✅ Order tracking timeline with tracking number once an order ships
+- ✅ Password reset by emailed link (single-use, 1-hour expiry)
 - ✅ Silent token refresh — expired sessions recover without re-login
 - ✅ About page with timeline
 - ✅ Journal listing page

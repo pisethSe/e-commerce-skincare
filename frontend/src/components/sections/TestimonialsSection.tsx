@@ -2,8 +2,10 @@ import React, { useRef } from 'react'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { Star, Quote } from 'lucide-react'
 import { TESTIMONIALS } from '../../lib/data'
+import { useT } from '../../lib/i18n'
 
 export default function TestimonialsSection() {
+  const t = useT()
   const ref = useRef<HTMLDivElement>(null)
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] })
   const x1 = useTransform(scrollYProgress, [0, 1], [0, -80])
@@ -20,18 +22,18 @@ export default function TestimonialsSection() {
 
       <div className="container-custom relative z-10">
         <div className="text-center mb-14" data-aos="fade-up">
-          <p className="font-accent italic text-[#c9a96e] text-lg mb-2">Real Results</p>
+          <p className="font-accent italic text-[#c9a96e] text-lg mb-2">{t('testimonials.kicker')}</p>
           <h2 className="heading-xl text-cream-50">
-            Skin transformations<br />
-            <span className="font-accent italic">you can see</span>
+            {t('testimonials.title1')}<br />
+            <span className="font-accent italic">{t('testimonials.title2')}</span>
           </h2>
           <div className="gold-divider" />
         </div>
 
         {/* Row 1 — slides left */}
         <motion.div style={{ x: x1 }} className="flex gap-6 mb-6">
-          {TESTIMONIALS.slice(0, 2).map((t) => (
-            <TestimonialCard key={t.id} testimonial={t} />
+          {TESTIMONIALS.slice(0, 2).map((testimonial) => (
+            <TestimonialCard key={testimonial.id} testimonial={testimonial} />
           ))}
           {/* Duplicate for seamlessness */}
           {TESTIMONIALS.slice(0, 2).map((t) => (
@@ -41,8 +43,8 @@ export default function TestimonialsSection() {
 
         {/* Row 2 — slides right */}
         <motion.div style={{ x: x2 }} className="flex gap-6">
-          {TESTIMONIALS.slice(2).map((t) => (
-            <TestimonialCard key={t.id} testimonial={t} />
+          {TESTIMONIALS.slice(2).map((testimonial) => (
+            <TestimonialCard key={testimonial.id} testimonial={testimonial} />
           ))}
           {TESTIMONIALS.slice(2).map((t) => (
             <TestimonialCard key={`${t.id}-dup`} testimonial={t} />

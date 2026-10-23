@@ -1,8 +1,10 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowRight, CheckCircle } from 'lucide-react'
+import { useT } from '../../lib/i18n'
 
 export default function NewsletterSection() {
+  const t = useT()
   const [email, setEmail] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'done'>('idle')
 
@@ -32,14 +34,12 @@ export default function NewsletterSection() {
           viewport={{ once: true }}
           transition={{ duration: 0.7 }}
         >
-          <p className="font-accent italic text-[#c9a96e] text-xl mb-3">Join the Ritual</p>
+          <p className="font-accent italic text-[#c9a96e] text-xl mb-3">{t('newsletter.kicker')}</p>
           <h2 className="heading-xl mb-4">
-            Get 15% off your<br />
-            <span className="font-accent italic">first order</span>
+            {t('newsletter.title1')}<br />
+            <span className="font-accent italic">{t('newsletter.title2')}</span>
           </h2>
-          <p className="text-charcoal-500 max-w-md mx-auto mb-10">
-            Subscribe for early access to new launches, expert skincare tips, and exclusive member offers.
-          </p>
+          <p className="text-charcoal-500 max-w-md mx-auto mb-10">{t('newsletter.body')}</p>
 
           {status === 'done' ? (
             <motion.div
@@ -48,7 +48,7 @@ export default function NewsletterSection() {
               animate={{ opacity: 1, scale: 1 }}
             >
               <CheckCircle size={22} />
-              <span className="font-medium text-lg">Welcome! Check your inbox for your discount code.</span>
+              <span className="font-medium text-lg">{t('newsletter.welcome')}</span>
             </motion.div>
           ) : (
             <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-0 max-w-md mx-auto">
@@ -76,7 +76,7 @@ export default function NewsletterSection() {
                     Joining...
                   </span>
                 ) : (
-                  <>Subscribe <ArrowRight size={14} /></>
+                  <>{t('home.subscribe')} <ArrowRight size={14} /></>
                 )}
               </motion.button>
             </form>

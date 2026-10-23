@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Eye, EyeOff, CheckCircle2, XCircle, Lock } from 'lucide-react'
 import { getApiUrl } from '../lib/api'
+import { useT } from '../lib/i18n'
 
 /** Password reset landing — the emailed link lands here with a token. */
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token') ?? ''
+  const t = useT()
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [show, setShow] = useState(false)
@@ -56,35 +58,29 @@ export default function ResetPasswordPage() {
         {done ? (
           <div className="text-center">
             <CheckCircle2 size={56} strokeWidth={1.2} className="mx-auto mb-6 text-sage-600" />
-            <h1 className="text__40 font-medium text-Mneutral-900">Password updated</h1>
-            <p className="mt-4 text__18 text-Mneutral-600">
-              You can sign in with your new password.
-            </p>
-            <Link to="/" className="filled-pill-button mt-8">Back Home</Link>
+            <h1 className="text__40 font-medium text-Mneutral-900">{t('reset.updated')}</h1>
+            <p className="mt-4 text__18 text-Mneutral-600">{t('reset.updatedBody')}</p>
+            <Link to="/" className="filled-pill-button mt-8">{t('common.backHome')}</Link>
           </div>
         ) : !token ? (
           <div className="text-center">
             <XCircle size={56} strokeWidth={1.2} className="mx-auto mb-6 text-[#a83636]" />
-            <h1 className="text__40 font-medium text-Mneutral-900">Missing reset link</h1>
-            <p className="mt-4 text__18 text-Mneutral-600">
-              Request a fresh link from the sign-in page.
-            </p>
+            <h1 className="text__40 font-medium text-Mneutral-900">{t('reset.missing')}</h1>
+            <p className="mt-4 text__18 text-Mneutral-600">{t('reset.missingBody')}</p>
             <Link to="/" className="filled-pill-button mt-8">Back Home</Link>
           </div>
         ) : (
           <>
             <h1 className="flex items-center gap-2 text__40 font-medium text-Mneutral-900">
               <Lock size={22} className="text-Mneutral-500" />
-              Choose a new password
+              {t('reset.choose')}
             </h1>
-            <p className="mt-3 text__16 text-Mneutral-600">
-              Pick something strong — at least 8 characters with a mix of letters, numbers, and symbols.
-            </p>
+            <p className="mt-3 text__16 text-Mneutral-600">{t('reset.chooseHint')}</p>
             <form className="mt-8 space-y-5" onSubmit={submit}>
               <div className="relative">
                 <input
                   type={show ? 'text' : 'password'}
-                  placeholder="New password"
+                  placeholder={t('reset.newPassword')}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full rounded-full border border-Mneutral-100 px-4 py-3 pr-12 text__16 outline-none transition-colors focus:border-Mneutral-900"
@@ -100,7 +96,7 @@ export default function ResetPasswordPage() {
               </div>
               <input
                 type={show ? 'text' : 'password'}
-                placeholder="Confirm new password"
+                placeholder={t('reset.confirmPassword')}
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 className="w-full rounded-full border border-Mneutral-100 px-4 py-3 text__16 outline-none transition-colors focus:border-Mneutral-900"
@@ -111,7 +107,7 @@ export default function ResetPasswordPage() {
                 </p>
               )}
               <button type="submit" disabled={busy} className="filled-pill-button w-full justify-center disabled:opacity-60">
-                {busy ? 'Updating…' : 'Update Password'}
+                {busy ? t('reset.updating') : t('reset.update')}
               </button>
             </form>
           </>

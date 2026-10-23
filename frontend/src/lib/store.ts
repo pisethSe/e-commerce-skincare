@@ -185,3 +185,26 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 )
+
+// Preferences — language + display currency (persisted)
+export type Lang = 'en' | 'km'
+export type Currency = 'USD' | 'KHR'
+
+interface PrefsState {
+  lang: Lang
+  currency: Currency
+  setLang: (lang: Lang) => void
+  setCurrency: (currency: Currency) => void
+}
+
+export const usePrefsStore = create<PrefsState>()(
+  persist(
+    (set) => ({
+      lang: 'en',
+      currency: 'USD',
+      setLang: (lang) => set({ lang }),
+      setCurrency: (currency) => set({ currency }),
+    }),
+    { name: 'calesta-prefs' }
+  )
+)

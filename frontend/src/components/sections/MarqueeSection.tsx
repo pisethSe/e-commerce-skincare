@@ -2,8 +2,10 @@ import React from 'react'
 import { motion } from 'framer-motion'
 import { Sparkles } from 'lucide-react'
 import { MARQUEE_ITEMS } from '../../lib/data'
+import { useT } from '../../lib/i18n'
 
 export default function MarqueeSection() {
+  const t = useT()
   const doubled = [...MARQUEE_ITEMS, ...MARQUEE_ITEMS]
 
   return (
@@ -19,7 +21,7 @@ export default function MarqueeSection() {
             className="inline-flex items-center gap-4 mx-6 text-cream-300 text-xs font-medium tracking-[0.18em] uppercase flex-shrink-0"
           >
             <Sparkles size={10} className="text-[#c9a96e] flex-shrink-0" />
-            {item}
+            {t(item)}
           </span>
         ))}
       </motion.div>

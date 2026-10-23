@@ -6,6 +6,7 @@ import CartSidebar from './CartSidebar'
 import AuthModal from '../auth/AuthModal'
 import { useLenis } from '../../hooks/useLenis'
 import { gsap } from '../../lib/gsap'
+import { usePrefsStore } from '../../lib/store'
 
 interface LayoutProps {
   children: React.ReactNode
@@ -14,7 +15,14 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation()
   const mainRef = useRef<HTMLElement>(null)
+  const lang = usePrefsStore((s) => s.lang)
   useLenis()
+
+  // Khmer typography needs its own font stack + a touch more line height
+  useEffect(() => {
+    document.documentElement.lang = lang
+    document.documentElement.classList.toggle('lang-km', lang === 'km')
+  }, [lang])
 
   useEffect(() => {
     window.scrollTo(0, 0)

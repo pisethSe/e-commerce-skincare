@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { CheckCircle2, XCircle } from 'lucide-react'
 import { useAuthStore } from '../lib/store'
 import { apiFetch } from '../lib/api'
+import { useT } from '../lib/i18n'
 
 /**
  * Google OAuth2 return landing — the backend redirects here with tokens in the
@@ -12,6 +13,7 @@ export default function AuthCallbackPage() {
   const setSession = useAuthStore((s) => s.setSession)
   const [status, setStatus] = useState<'working' | 'success' | 'error'>('working')
   const [message, setMessage] = useState('')
+  const t = useT()
 
   useEffect(() => {
     document.title = 'Calesta — Signing in'
@@ -23,7 +25,7 @@ export default function AuthCallbackPage() {
 
     if (resultStatus !== 'success' || !accessToken || !refreshToken) {
       setStatus('error')
-      setMessage(errorMessage ?? 'Google sign-in failed. Please try again.')
+      setMessage(errorMessage ?? t('callback.failedBody'))
       return
     }
 
@@ -57,21 +59,21 @@ export default function AuthCallbackPage() {
         {status === 'error' ? (
           <>
             <XCircle size={56} strokeWidth={1.2} className="mx-auto mb-6 text-[#a83636]" />
-            <h1 className="mb-3 text__40 font-medium text-Mneutral-900">Sign-in didn't complete</h1>
+            <h1 className="mb-3 text__40 font-medium text-Mneutral-900">{t('callback.failed')}</h1>
             <p className="mb-8 text__18 text-Mneutral-600">{message}</p>
-            <Link to="/" className="filled-pill-button">Back Home</Link>
+            <Link to="/" className="filled-pill-button">{t('common.backHome')}</Link>
           </>
         ) : status === 'success' ? (
           <>
             <CheckCircle2 size={56} strokeWidth={1.2} className="mx-auto mb-6 text-sage-600" />
-            <h1 className="mb-3 text__40 font-medium text-Mneutral-900">You're signed in</h1>
-            <p className="mb-8 text__18 text-Mneutral-600">Welcome to Calesta — taking you home.</p>
-            <Link to="/" className="filled-pill-button">Continue</Link>
+            <h1 className="mb-3 text__40 font-medium text-Mneutral-900">{t('callback.signedIn')}</h1>
+            <p className="mb-8 text__18 text-Mneutral-600">{t('callback.welcome')}</p>
+            <Link to="/" className="filled-pill-button">{t('common.continue')}</Link>
           </>
         ) : (
           <>
             <div className="mx-auto mb-6 h-14 w-14 animate-pulse rounded-full bg-Mneutral-100" />
-            <h1 className="mb-3 text__40 font-medium text-Mneutral-900">Completing sign-in…</h1>
+            <h1 className="mb-3 text__40 font-medium text-Mneutral-900">{t('callback.completing')}</h1>
             <p className="text__18 text-Mneutral-600">One moment while we set up your account.</p>
           </>
         )}

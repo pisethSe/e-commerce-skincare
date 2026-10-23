@@ -2,7 +2,8 @@ import React, { useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Product } from '../../types'
 import { useCartStore } from '../../lib/store'
-import { formatPrice } from '../../lib/utils'
+import { useMoney } from '../../lib/currency'
+import { useCategoryName, useT } from '../../lib/i18n'
 import ImageWithFallback from './ImageWithFallback'
 import { gsap, useGSAP } from '../../lib/gsap'
 
@@ -13,6 +14,9 @@ interface ProductCardProps {
 
 export default function ProductCard({ product, className = '' }: ProductCardProps) {
   const addItem = useCartStore((s) => s.addItem)
+  const t = useT()
+  const categoryName = useCategoryName()
+  const { money, alt } = useMoney()
   const cardRef = useRef<HTMLDivElement>(null)
   const imageWrapRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -93,7 +97,7 @@ export default function ProductCard({ product, className = '' }: ProductCardProp
 
         <div className="text-center">
           <h4 className="text__20 mb-[4px] font-medium text-Mneutral-900">
-            {product.category.name} · {product.tagline || product.name}
+            {categoryName(product.category.slug, product.category.name)} · {product.tagline || product.name}
           </h4>
           <div className="flex items-center justify-center gap-1">
             {Array.from({ length: 5 }).map((_, index) => (
@@ -111,9 +115,10 @@ export default function ProductCard({ product, className = '' }: ProductCardProp
           onClick={() => addItem(product)}
           className="inline-flex items-center gap-2 rounded-full border border-Mneutral-900 px-[12px] py-[10px] text__14 transition-all duration-300 hover:bg-Mneutral-900 hover:text-white"
         >
-          <span>ADD TO BAG · {formatPrice(product.price)}</span>
+          <span>{t('common.addToBag')} · {money(product.price)}</span>
           <img ref={arrowRef} src="/images/carbon_arrow-up-right (2).svg" alt="" className="h-4 w-4 will-change-transform" />
         </button>
+        <p className="mt-2 text__12 tabular-nums text-Mneutral-400">{alt(product.price)}</p>
       </div>
     </div>
   )

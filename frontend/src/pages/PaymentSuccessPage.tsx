@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { CheckCircle2, XCircle } from 'lucide-react'
 import { useAuthStore } from '../lib/store'
 import { apiFetch } from '../lib/api'
+import { useT } from '../lib/i18n'
 
 /**
  * Stripe Checkout return — verifies the session server-side and settles the
@@ -14,6 +15,7 @@ export default function PaymentSuccessPage() {
   const [status, setStatus] = useState<'working' | 'paid' | 'unpaid' | 'error'>('working')
   const [orderNumber, setOrderNumber] = useState<string | null>(null)
   const [message, setMessage] = useState('')
+  const t = useT()
 
   useEffect(() => {
     document.title = 'Calesta — Payment'
@@ -46,7 +48,7 @@ export default function PaymentSuccessPage() {
           setStatus('paid')
         } else {
           setStatus('unpaid')
-          setMessage(json.message ?? 'The payment has not settled yet — check your account page shortly.')
+          setMessage(json.message ?? t('pay.pendingBody'))
         }
       } catch {
         if (alive) {
@@ -66,33 +68,33 @@ export default function PaymentSuccessPage() {
         {status === 'paid' ? (
           <>
             <CheckCircle2 size={56} strokeWidth={1.2} className="mx-auto mb-6 text-sage-600" />
-            <p className="text__14 uppercase tracking-[0.28em] text-Mneutral-400">PAYMENT RECEIVED</p>
-            <h1 className="mt-3 text__40 font-medium text-Mneutral-900">Thank you!</h1>
+            <p className="text__14 uppercase tracking-[0.28em] text-Mneutral-400">{t('pay.received')}</p>
+            <h1 className="mt-3 text__40 font-medium text-Mneutral-900">{t('pay.thanks')}</h1>
             {orderNumber && (
               <p className="mt-4 text__18 text-Mneutral-600">
-                Order <span className="font-medium tabular-nums">{orderNumber}</span> is paid and will ship soon.
+                {t('pay.thanksBody', { number: orderNumber })}
               </p>
             )}
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-              <Link to="/account" className="filled-pill-button">View My Orders</Link>
-              <Link to="/shop" className="outline-pill-button">Continue Shopping</Link>
+              <Link to="/account" className="filled-pill-button">{t('pay.viewOrders')}</Link>
+              <Link to="/shop" className="outline-pill-button">{t('common.continueShopping')}</Link>
             </div>
           </>
         ) : status === 'error' ? (
           <>
             <XCircle size={56} strokeWidth={1.2} className="mx-auto mb-6 text-[#a83636]" />
-            <h1 className="mb-3 text__40 font-medium text-Mneutral-900">Sign in to continue</h1>
+            <h1 className="mb-3 text__40 font-medium text-Mneutral-900">{t('pay.signInContinue')}</h1>
             <p className="mb-8 text__18 text-Mneutral-600">{message}</p>
-            <Link to="/" className="filled-pill-button">Back Home</Link>
+            <Link to="/" className="filled-pill-button">{t('common.backHome')}</Link>
           </>
         ) : (
           <>
             <XCircle size={56} strokeWidth={1.2} className="mx-auto mb-6 text-amber-600" />
             <h1 className="mb-3 text__40 font-medium text-Mneutral-900">
-              {status === 'working' ? 'Verifying payment…' : 'Payment pending'}
+              {status === 'working' ? t('pay.verifying') : t('pay.pending')}
             </h1>
             <p className="mb-8 text__18 text-Mneutral-600">{message}</p>
-            <Link to="/account" className="filled-pill-button">View My Orders</Link>
+            <Link to="/account" className="filled-pill-button">{t('pay.viewOrders')}</Link>
           </>
         )}
       </div>

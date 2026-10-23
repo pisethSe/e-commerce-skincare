@@ -210,12 +210,20 @@ test('reset-password: full flow — old sessions die, the new password works, th
 
   // Request the reset — the link is logged (no SMTP configured)
   await call('POST', '/api/auth/forgot-password', { body: { email: user.email } })
-  const { execSync } = await import('node:child_process')
-  const log = execSync(
-    `grep -o 'reset-password?token=[a-f0-9]*' /private/var/folders/7p/hbhjltbx6nl4xsv9swbh91pr0000gn/T/opencode/backend-dev.log | tail -1`,
-  ).toString().trim()
-  const token = log.split('=')[1]
-  assert.ok(token, 'a reset link was generated and logged')
+  // The dev server logs the reset link when SMTP is not configured.
+  const { readFileSync, existsSync } = await import('node:fs')
+  const { resolve } = await import('node:path')
+  const candidates = [
+    process.env.BACKEND_LOG,
+    resolve(process.cwd(), '../.logs/backend.log'),
+    resolve(process.cwd(), 'backend-dev.log'),
+    '/tmp/calesta-backend.log',
+  ].filter(Boolean)
+  const logPath = candidates.find((file) => existsSync(file))
+  const log = logPath ? readFileSync(logPath, 'utf8') : ''
+  const matches = [...log.matchAll(/reset-password\?token=([a-f0-9]+)/g)]
+  const token = matches.length ? matches[matches.length - 1][1] : ''
+  assert.ok(token, `a reset link was generated and logged (looked in ${logPath ?? 'no log file'})`)
 
   // Invalid token rejected
   const bad = await call('POST', '/api/auth/reset-password', {
@@ -262,9 +270,13 @@ test('role tokens resolve to the right roles', async () => {
 })
 
 /* ── Google OAuth2 ────────────────────────────── */
-test('GET /api/auth/google redirects to Google consent with the configured client', async () => {
+test('GET /api/auth/google redirects to Google consent with the configured client', async (t) => {
   if (!serverUp) return
   const res = await fetch(`${BASE}/api/auth/google`, { redirect: 'manual' })
+  if (res.status === 501) {
+    t.skip('Google OAuth is not configured in this environment')
+    return
+  }
   assert.equal(res.status, 302)
   const location = res.headers.get('location') ?? ''
   assert.ok(location.includes('accounts.google.com'), 'should redirect to Google')

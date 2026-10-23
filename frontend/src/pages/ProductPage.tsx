@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Heart, Share2 } from 'lucide-react'
 import { useCatalogStore } from '../lib/catalog'
-import { formatPrice } from '../lib/utils'
+import { useMoney } from '../lib/currency'
+import { useCategoryName, useT } from '../lib/i18n'
 import { useCartStore, useWishlistStore } from '../lib/store'
 import ProductCard from '../components/ui/ProductCard'
 import ImageWithFallback from '../components/ui/ImageWithFallback'
@@ -16,6 +17,9 @@ export default function ProductPage() {
   const [quantity, setQuantity] = useState(1)
   const addItem = useCartStore((s) => s.addItem)
   const { toggle, has } = useWishlistStore()
+  const t = useT()
+  const categoryName = useCategoryName()
+  const { money } = useMoney()
 
   useEffect(() => {
     if (product) {
@@ -28,9 +32,9 @@ export default function ProductPage() {
   if (!product) {
     return (
       <div className="bg-Mneutral-50 pt-[120px] text-center text-Mneutral-900">
-        <p className="text__32 font-medium">Product not found</p>
+        <p className="text__32 font-medium">{t('product.notFound')}</p>
         <Link to="/shop" className="pill-button mt-6">
-          Back to Shop
+          {t('product.backToShop')}
         </Link>
       </div>
     )
@@ -49,13 +53,11 @@ export default function ProductPage() {
             className="absolute left-5 top-5 z-10 inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text__14 font-medium text-Mneutral-900 backdrop-blur-sm"
           >
             <ArrowLeft size={14} />
-            Back
+            {t('common.back')}
           </button>
 
           <h1 className="absolute bottom-[8%] left-1/2 z-10 w-full -translate-x-1/2 text-center text__64 text-white">
-            {product.category.name} Care,
-            <br className="ss:hidden" />
-            Visible Results
+            {t('product.careLine', { category: categoryName(product.category.slug, product.category.name) })}
           </h1>
 
           <ImageWithFallback
@@ -71,7 +73,7 @@ export default function ProductPage() {
 
       <section className="section-template">
         <div className="container-custom text-center">
-          <p className="mb-[24px] text__18 text-Mneutral-400">{product.category.name.toUpperCase()}</p>
+          <p className="mb-[24px] text__18 text-Mneutral-400">{categoryName(product.category.slug, product.category.name).toUpperCase()}</p>
           <h2 className="text__48">
             {product.description}
           </h2>
@@ -83,8 +85,8 @@ export default function ProductPage() {
           <div className="grid grid-cols-1 gap-[12px] md:grid-cols-2">
             <div className="flex h-full w-full flex-wrap rounded-[32px] bg-white px-[20px] py-[20px] xs:px-[40px] xs:py-[40px] xl:px-[64px] xl:py-[64px]">
               <div className="w-full">
-                <p className="mb-4 font-medium text__18 text-Mneutral-400">{product.category.name.toUpperCase()}</p>
-                <h2 className="text__48">Ingredients</h2>
+                <p className="mb-4 font-medium text__18 text-Mneutral-400">{categoryName(product.category.slug, product.category.name).toUpperCase()}</p>
+                <h2 className="text__48">{t('product.ingredients')}</h2>
               </div>
 
               <p className="text__24 text-Mneutral-600">
@@ -93,17 +95,17 @@ export default function ProductPage() {
 
               <div className="grid grid-cols-1 gap-[24px] text-Mneutral-600">
                 <div>
-                  <h5 className="text__18 font-semibold">Texture:</h5>
-                  <p className="text__18 text-Mneutral-700">Silky, fast-absorbing, refined</p>
+                  <h5 className="text__18 font-semibold">{t('product.texture')}</h5>
+                  <p className="text__18 text-Mneutral-700">{t('product.textureValue')}</p>
                 </div>
                 <div>
-                  <h5 className="text__18 font-semibold">Ideal for:</h5>
-                  <p className="text__18 text-Mneutral-700">Dull, dry, uneven, or stressed skin</p>
+                  <h5 className="text__18 font-semibold">{t('product.idealFor')}</h5>
+                  <p className="text__18 text-Mneutral-700">{t('product.idealValue')}</p>
                 </div>
                 <div>
-                  <h5 className="text__18 font-semibold">Key benefits:</h5>
+                  <h5 className="text__18 font-semibold">{t('product.keyBenefits')}</h5>
                   <p className="text__18 text-Mneutral-700">
-                    {product.benefits?.join(', ') || 'Hydration, radiance, and skin barrier support'}
+                    {product.benefits?.join(', ') || t('product.benefitsFallback')}
                   </p>
                 </div>
               </div>
@@ -114,7 +116,7 @@ export default function ProductPage() {
                   onClick={() => addItem(product, quantity)}
                   className="filled-pill-button"
                 >
-                  ADD TO BAG · {formatPrice(product.price)}
+                  {t('common.addToBag')} · {money(product.price)}
                 </button>
                 <button
                   type="button"
@@ -122,11 +124,11 @@ export default function ProductPage() {
                   className={`pill-button ${wished ? 'bg-Mneutral-900 text-white' : ''}`}
                 >
                   <Heart size={16} />
-                  {wished ? 'SAVED' : 'SAVE'}
+                  {wished ? t('product.saved') : t('product.save')}
                 </button>
                 <button type="button" className="pill-button">
                   <Share2 size={16} />
-                  SHARE
+                  {t('product.share')}
                 </button>
               </div>
             </div>
@@ -155,17 +157,15 @@ export default function ProductPage() {
 
             <div className="order-1 flex h-full w-full flex-wrap rounded-[32px] bg-white px-[20px] py-[20px] xs:px-[40px] xs:py-[40px] xl:px-[64px] xl:py-[64px] md:order-2">
               <div className="w-full">
-                <p className="mb-4 font-medium text__18 text-Mneutral-400">{product.category.name.toUpperCase()}</p>
-                <h2 className="text__48">How to use</h2>
+                <p className="mb-4 font-medium text__18 text-Mneutral-400">{categoryName(product.category.slug, product.category.name).toUpperCase()}</p>
+                <h2 className="text__48">{t('product.howToUse')}</h2>
               </div>
 
               <div className="mt-4 grid self-end gap-[24px] text-Mneutral-600 md:mt-[116px]">
                 <p className="text__24">
-                  {product.howToUse || 'Apply after cleansing and before moisturizing. Pat gently into skin.'}
+                  {product.howToUse || t('product.howToUseFallback')}
                 </p>
-                <p className="text__24">
-                  Because your skin deserves concentrated, effective care every day.
-                </p>
+                <p className="text__24">{t('product.careNote')}</p>
 
                 <div className="mt-[24px] flex items-center gap-4">
                   <div className="flex items-center gap-2 rounded-full border border-Mneutral-200 px-3 py-2">
@@ -177,7 +177,7 @@ export default function ProductPage() {
                       +
                     </button>
                   </div>
-                  <span className="text__24 font-medium">{formatPrice(product.price)}</span>
+                  <span className="text__24 font-medium">{money(product.price)}</span>
                 </div>
               </div>
             </div>
@@ -211,7 +211,7 @@ export default function ProductPage() {
       {related.length > 0 && (
         <section className="section-template">
           <div className="container-custom">
-            <h2 className="mb-[2.5rem] text__48">More to Explore</h2>
+            <h2 className="mb-[2.5rem] text__48">{t('product.moreToExplore')}</h2>
             <div className="grid grid-cols-1 gap-[20px] xs:grid-cols-2 lg:grid-cols-4">
               {related.map((item) => (
                 <ProductCard key={item.id} product={item} />

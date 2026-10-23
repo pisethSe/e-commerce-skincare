@@ -50,6 +50,19 @@
     color: var(--charcoal);
   }
 
+  /* Khmer UI — Kantumruy Pro carries the script, slight line-height relief */
+  html.lang-km body,
+  html.lang-km .font-display,
+  html.lang-km .font-accent,
+  html.lang-km .font-body {
+    font-family: 'Kantumruy Pro', 'Inter Tight', sans-serif;
+    letter-spacing: 0;
+  }
+
+  html.lang-km body {
+    line-height: 1.65;
+  }
+
   /* Custom scrollbar */
   ::-webkit-scrollbar {
     width: 6px;

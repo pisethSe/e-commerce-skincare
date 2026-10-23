@@ -1,21 +1,23 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
+import { useT } from '../../lib/i18n'
 import { motion } from 'framer-motion'
 import { ArrowRight, Clock } from 'lucide-react'
 import { useCatalogStore } from '../../lib/catalog'
 import { formatDate } from '../../lib/utils'
 
 export default function JournalSection() {
+  const t = useT()
   const { posts } = useCatalogStore()
   return (
     <section className="section-padding bg-white">
       <div className="container-custom">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-14">
           <div data-aos="fade-up">
-            <p className="font-accent italic text-[#c9a96e] text-lg mb-2">The Lumière Journal</p>
+            <p className="font-accent italic text-[#c9a96e] text-lg mb-2">{t('journal.kicker')}</p>
             <h2 className="heading-xl">
-              Skincare wisdom,<br />
-              <span className="font-accent italic">curated for you</span>
+              {t('journal.title1')}<br />
+              <span className="font-accent italic">{t('journal.title2')}</span>
             </h2>
           </div>
           <Link
@@ -23,7 +25,7 @@ export default function JournalSection() {
             className="flex items-center gap-2 text-sm font-medium tracking-widest uppercase hover:text-[#c9a96e] transition-colors group mt-4 md:mt-0"
             data-aos="fade-up"
           >
-            All Articles <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+            {t('journal.allArticles')} <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
 

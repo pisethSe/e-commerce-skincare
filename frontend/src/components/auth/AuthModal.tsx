@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Eye, EyeOff, X } from 'lucide-react'
 import { getApiUrl } from '../../lib/api'
 import { useAuthStore, useUIStore } from '../../lib/store'
+import { useT } from '../../lib/i18n'
 
 type AuthMode = 'login' | 'signup' | 'forgot'
 
@@ -15,16 +16,16 @@ const initialForm = {
 }
 
 /** Simple strength heuristic — length + character variety. */
-function passwordStrength(password: string): { score: 0 | 1 | 2 | 3; label: string; bar: string } {
-  if (!password) return { score: 0, label: '', bar: '' }
+function passwordStrength(password: string): { score: 0 | 1 | 2 | 3; labelKey: 'auth.weak' | 'auth.fair' | 'auth.strong' | null; bar: string } {
+  if (!password) return { score: 0, labelKey: null, bar: '' }
   const hasLetter = /[a-zA-Z]/.test(password)
   const hasNumber = /\d/.test(password)
   const hasSymbol = /[^a-zA-Z0-9]/.test(password)
   const hasUpper = /[A-Z]/.test(password)
   const classes = [hasLetter, hasNumber, hasSymbol, hasUpper].filter(Boolean).length
-  if (password.length < 8 || classes <= 1) return { score: 1, label: 'Weak', bar: 'bg-red-500' }
-  if (password.length < 10 || classes <= 2) return { score: 2, label: 'Fair', bar: 'bg-amber-500' }
-  return { score: 3, label: 'Strong', bar: 'bg-emerald-600' }
+  if (password.length < 8 || classes <= 1) return { score: 1, labelKey: 'auth.weak', bar: 'bg-red-500' }
+  if (password.length < 10 || classes <= 2) return { score: 2, labelKey: 'auth.fair', bar: 'bg-amber-500' }
+  return { score: 3, labelKey: 'auth.strong', bar: 'bg-emerald-600' }
 }
 
 function GoogleIcon() {
@@ -41,6 +42,7 @@ function GoogleIcon() {
 export default function AuthModal() {
   const { isAuthModalOpen, authMode, closeAuthModal, openAuthModal } = useUIStore()
   const setSession = useAuthStore((s) => s.setSession)
+  const t = useT()
   const [form, setForm] = useState(initialForm)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -50,8 +52,8 @@ export default function AuthModal() {
   const [acceptTerms, setAcceptTerms] = useState(false)
 
   const title = useMemo(
-    () => (authMode === 'login' ? 'LOGIN' : authMode === 'forgot' ? 'RESET PASSWORD' : 'CREATE AN ACCOUNT'),
-    [authMode]
+    () => (authMode === 'login' ? t('auth.login') : authMode === 'forgot' ? t('auth.resetPassword') : t('auth.createAccount')),
+    [authMode, t]
   )
 
   const resetState = () => {
@@ -200,7 +202,7 @@ export default function AuthModal() {
               type="button"
               onClick={handleClose}
               className="absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-full border border-Mneutral-100 text-Mneutral-900 transition-colors hover:bg-Mneutral-50"
-              aria-label="Close auth modal"
+              aria-label={t('auth.close')}
             >
               <X size={16} />
             </button>
@@ -214,7 +216,7 @@ export default function AuthModal() {
                   className="-mt-2 w-fit text__14 text-Mneutral-500 underline"
                   onClick={() => handleModeChange('login')}
                 >
-                  ← Back to sign in
+                  ← {t('auth.backToSignIn')}
                 </button>
               ) : (
               <div className="grid grid-cols-2 text-center text__14">
@@ -227,7 +229,7 @@ export default function AuthModal() {
                   }`}
                   onClick={() => handleModeChange('login')}
                 >
-                  Sign in
+                  {t('auth.signIn')}
                 </button>
                 <button
                   type="button"
@@ -238,7 +240,7 @@ export default function AuthModal() {
                   }`}
                   onClick={() => handleModeChange('signup')}
                 >
-                  I&apos;m new here
+                  {t('auth.newHere')}
                 </button>
               </div>
               ) }
@@ -249,12 +251,12 @@ export default function AuthModal() {
                     <FieldInput
                       value={form.firstName}
                       onChange={(value) => handleChange('firstName', value)}
-                      placeholder="First Name*"
+                      placeholder={t('auth.firstName')}
                     />
                     <FieldInput
                       value={form.lastName}
                       onChange={(value) => handleChange('lastName', value)}
-                      placeholder="Last Name*"
+                      placeholder={t('auth.lastName')}
                     />
                   </>
                 )}
@@ -262,7 +264,7 @@ export default function AuthModal() {
                 <FieldInput
                   value={form.email}
                   onChange={(value) => handleChange('email', value)}
-                  placeholder="Email Address*"
+                  placeholder={t('auth.email')}
                   type="email"
                 />
 
@@ -270,7 +272,7 @@ export default function AuthModal() {
                 <PasswordInput
                   value={form.password}
                   onChange={(value) => handleChange('password', value)}
-                  placeholder="Password*"
+                  placeholder={t('auth.password')}
                   visible={showPassword}
                   toggleVisible={() => setShowPassword((current) => !current)}
                 />
@@ -292,12 +294,12 @@ export default function AuthModal() {
                         ))}
                       </div>
                       <span className="text__12 text-Mneutral-500">
-                        {passwordStrength(form.password).label}
+                        {passwordStrength(form.password).labelKey ? t(passwordStrength(form.password).labelKey!) : ''}
                       </span>
                     </div>
                     {passwordStrength(form.password).score < 3 && (
                       <p className="mt-1.5 text__12 text-Mneutral-400">
-                        Tip: use 10+ characters with a mix of upper & lower case, numbers, and symbols for a strong password.
+                        {t('auth.strengthTip')}
                       </p>
                     )}
                   </div>
@@ -309,7 +311,7 @@ export default function AuthModal() {
                     className="-mt-3 w-fit text__14 text-Mneutral-500 underline"
                     onClick={() => handleModeChange('forgot')}
                   >
-                    Forgot password?
+                    {t('auth.forgot')}
                   </button>
                 )}
 
@@ -318,7 +320,7 @@ export default function AuthModal() {
                     <PasswordInput
                       value={form.confirmPassword}
                       onChange={(value) => handleChange('confirmPassword', value)}
-                      placeholder="Confirm Password*"
+                      placeholder={t('auth.confirmPassword')}
                       visible={showConfirmPassword}
                       toggleVisible={() => setShowConfirmPassword((current) => !current)}
                     />
@@ -335,7 +337,7 @@ export default function AuthModal() {
                       >
                         {acceptTerms ? <span className="h-[8px] w-[8px] rounded-sm bg-white" /> : null}
                       </span>
-                      <span className="text__14">I&apos;ve read and accept the Terms & Conditions</span>
+                      <span className="text__14">{t('auth.acceptTerms')}</span>
                     </button>
                   </>
                 )}
@@ -345,7 +347,7 @@ export default function AuthModal() {
 
                 {authMode === 'signup' ? (
                   <p className="text__14 text-Mneutral-600">
-                    By clicking on &apos;Create an Account&apos;, you accept our confidentiality policies.
+                    {t('auth.termsNote')}
                   </p>
                 ) : null}
 
@@ -354,12 +356,12 @@ export default function AuthModal() {
                   disabled={loading}
                   className="inline-flex w-full items-center justify-center rounded-full bg-Mneutral-900 px-[20px] py-[14px] font-medium text__16 text-center text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {loading ? 'Please wait...' : authMode === 'login' ? 'LOGIN' : authMode === 'forgot' ? 'SEND RESET LINK' : 'SIGN UP'}
+                  {loading ? t('auth.pleaseWait') : authMode === 'login' ? t('auth.login') : authMode === 'forgot' ? t('auth.sendReset') : t('auth.signUp')}
                 </button>
 
                 {authMode !== 'forgot' && (<><div className="flex items-center gap-3">
                   <span className="h-px flex-1 bg-Mneutral-200" />
-                  <span className="text__12 text-Mneutral-400">or</span>
+                  <span className="text__12 text-Mneutral-400">{t('auth.or')}</span>
                   <span className="h-px flex-1 bg-Mneutral-200" />
                 </div>
 
@@ -372,7 +374,7 @@ export default function AuthModal() {
                   className="inline-flex w-full items-center justify-center gap-3 rounded-full border border-Mneutral-300 bg-white px-[20px] py-[14px] font-medium text__16 text-center text-Mneutral-900 transition-colors hover:bg-Mneutral-50"
                 >
                   <GoogleIcon />
-                  Continue with Google
+                  {t('auth.continueGoogle')}
                 </button></>)}
               </form>
             </div>

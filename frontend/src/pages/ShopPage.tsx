@@ -3,17 +3,20 @@ import { useSearchParams } from 'react-router-dom'
 import ProductCard from '../components/ui/ProductCard'
 import { useCatalogStore } from '../lib/catalog'
 import { Product } from '../types'
+import { useCategoryName, useT } from '../lib/i18n'
 
 const sortOptions = [
-  { label: 'Newest', value: 'newest' },
-  { label: 'Bestsellers', value: 'bestseller' },
-  { label: 'Price: Low to High', value: 'price_asc' },
-  { label: 'Price: High to Low', value: 'price_desc' },
-]
+  { key: 'shop.sortNewest', value: 'newest' },
+  { key: 'shop.sortBestsellers', value: 'bestseller' },
+  { key: 'shop.sortPriceAsc', value: 'price_asc' },
+  { key: 'shop.sortPriceDesc', value: 'price_desc' },
+] as const
 
 export default function ShopPage() {
   const [searchParams] = useSearchParams()
   const { products, categories } = useCatalogStore()
+  const t = useT()
+  const categoryName = useCategoryName()
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '')
   const [sortBy, setSortBy] = useState('newest')
 
@@ -43,14 +46,12 @@ export default function ShopPage() {
       <section className="section-template pt-[32px]">
         <div className="container-custom">
           <div className="overflow-hidden rounded-[32px] bg-white px-[20px] py-[28px] xs:px-[40px] xs:py-[40px] xl:px-[80px] xl:py-[64px]">
-            <p className="mb-4 font-medium text__18 text-Mneutral-400">OUR PRODUCTS</p>
+            <p className="mb-4 font-medium text__18 text-Mneutral-400">{t('shop.kicker')}</p>
             <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
               <div>
-                <h1 className="text__56 font-medium">Find the ritual that fits your skin.</h1>
+                <h1 className="text__56 font-medium">{t('shop.title')}</h1>
               </div>
-              <p className="text__18 text-Mneutral-600">
-                Explore our cleanser, serum, moisturizer, and targeted treatment lineup crafted to match the Calesta visual experience.
-              </p>
+              <p className="text__18 text-Mneutral-600">{t('shop.sub')}</p>
             </div>
           </div>
         </div>
@@ -67,7 +68,7 @@ export default function ShopPage() {
                   selectedCategory === '' ? 'bg-Mneutral-900 text-white' : 'border border-Mneutral-200 text-Mneutral-900'
                 }`}
               >
-                All Products
+                {t('shop.allProducts')}
               </button>
               {categories.map((category) => (
                 <button
@@ -78,13 +79,13 @@ export default function ShopPage() {
                     selectedCategory === category.slug ? 'bg-Mneutral-900 text-white' : 'border border-Mneutral-200 text-Mneutral-900'
                   }`}
                 >
-                  {category.name}
+                  {categoryName(category.slug, category.name)}
                 </button>
               ))}
             </div>
 
             <div className="flex items-center gap-3">
-              <span className="text__16 text-Mneutral-600">{filtered.length} products</span>
+              <span className="text__16 text-Mneutral-600">{t('common.productsCount', { count: filtered.length })}</span>
               <select
                 value={sortBy}
                 onChange={(event) => setSortBy(event.target.value)}
@@ -92,7 +93,7 @@ export default function ShopPage() {
               >
                 {sortOptions.map((option) => (
                   <option key={option.value} value={option.value}>
-                    {option.label}
+                    {t(option.key)}
                   </option>
                 ))}
               </select>

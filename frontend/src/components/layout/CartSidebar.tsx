@@ -3,11 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, ShoppingBag, Trash2, Plus, Minus } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useCartStore } from '../../lib/store'
-import { formatPrice } from '../../lib/utils'
+import { useMoney } from '../../lib/currency'
+import { useT } from '../../lib/i18n'
 import ImageWithFallback from '../ui/ImageWithFallback'
 
 export default function CartSidebar() {
   const { items, isOpen, toggleCart, removeItem, updateQuantity, total } = useCartStore()
+  const t = useT()
+  const { money } = useMoney()
 
   return (
     <AnimatePresence>
@@ -34,7 +37,7 @@ export default function CartSidebar() {
             <div className="flex items-center justify-between border-b border-Mneutral-100 px-6 py-5">
               <div className="flex items-center gap-3">
                 <ShoppingBag size={20} strokeWidth={1.5} />
-                <span className="text__24 font-medium">Your Bag</span>
+                <span className="text__24 font-medium">{t('cart.title')}</span>
                 <span className="text__16 text-Mneutral-600">({items.length})</span>
               </div>
               <button
@@ -55,13 +58,13 @@ export default function CartSidebar() {
                     animate={{ opacity: 1 }}
                   >
                     <ShoppingBag size={48} strokeWidth={1} className="text-Mneutral-300" />
-                    <p className="text__32 text-Mneutral-600">Your bag is empty</p>
-                    <p className="text__16 text-Mneutral-500">Add some luxurious treats</p>
+                    <p className="text__32 text-Mneutral-600">{t('cart.empty')}</p>
+                    <p className="text__16 text-Mneutral-500">{t('cart.emptyHint')}</p>
                     <button
                       onClick={toggleCart}
                       className="filled-pill-button mt-4"
                     >
-                      Shop Now
+                      {t('common.shopNow')}
                     </button>
                   </motion.div>
                 ) : (
@@ -96,7 +99,7 @@ export default function CartSidebar() {
                             <p className="mt-0.5 text__14 text-Mneutral-500">{item.variant.name}</p>
                           )}
                           <p className="mt-1 text__16 font-medium text-Mneutral-900">
-                            {formatPrice(item.product.price)}
+                            {money(item.product.price)}
                           </p>
 
                           {/* Quantity */}
@@ -141,8 +144,8 @@ export default function CartSidebar() {
                 {/* Free shipping bar */}
                 <div>
                   <div className="mb-2 flex justify-between text__14 text-Mneutral-600">
-                    <span>Free shipping on orders over $75</span>
-                    <span>{formatPrice(Math.max(0, 75 - total()))} away</span>
+                    <span>{t('common.freeShippingOver')}</span>
+                    <span>{t('common.away', { amount: money(Math.max(0, 75 - total())) })}</span>
                   </div>
                   <div className="h-1 overflow-hidden rounded-full bg-Mneutral-100">
                     <motion.div
@@ -156,24 +159,24 @@ export default function CartSidebar() {
 
                 {/* Totals */}
                 <div className="flex justify-between items-center">
-                  <span className="text__16 text-Mneutral-600">Subtotal</span>
-                  <span className="text__24 font-medium">{formatPrice(total())}</span>
+                  <span className="text__16 text-Mneutral-600">{t('common.subtotal')}</span>
+                  <span className="text__24 font-medium">{money(total())}</span>
                 </div>
-                <p className="text__14 text-Mneutral-500">Taxes and shipping calculated at checkout</p>
+                <p className="text__14 text-Mneutral-500">{t('common.taxesAtCheckout')}</p>
 
                 <Link
                   to="/checkout"
                   onClick={toggleCart}
                   className="filled-pill-button w-full justify-center"
                 >
-                  Checkout
+                  {t('common.checkout')}
                 </Link>
                 <Link
                   to="/cart"
                   onClick={toggleCart}
                   className="block text-center text__16 text-Mneutral-600 underline underline-offset-2"
                 >
-                  View full cart
+                  {t('cart.viewFullCart')}
                 </Link>
               </motion.div>
             )}

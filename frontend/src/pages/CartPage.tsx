@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { BadgeCheck, Minus, Plus, ShoppingBag, Tag, Trash2, X } from 'lucide-react'
 import { useCartStore } from '../lib/store'
-import { formatPrice } from '../lib/utils'
+import { useMoney } from '../lib/currency'
+import { useT } from '../lib/i18n'
 import ImageWithFallback from '../components/ui/ImageWithFallback'
 
 export default function CartPage() {
@@ -18,6 +19,8 @@ export default function CartPage() {
   } = useCartStore()
   const [couponInput, setCouponInput] = useState('')
   const [checkingCoupon, setCheckingCoupon] = useState(false)
+  const t = useT()
+  const { money } = useMoney()
 
   useEffect(() => {
     document.title = 'Calesta — Cart'
@@ -28,10 +31,10 @@ export default function CartPage() {
       <div className="bg-Mneutral-50 pt-[140px]">
         <div className="container-custom rounded-[32px] bg-white px-[20px] py-[80px] text-center xs:px-[40px]">
           <ShoppingBag size={64} strokeWidth={1} className="mx-auto mb-6 text-Mneutral-300" />
-          <h1 className="mb-3 text__40 font-medium text-Mneutral-900">Your bag is empty</h1>
-          <p className="mb-8 text__18 text-Mneutral-600">Discover our luxurious skincare collection</p>
+          <h1 className="mb-3 text__40 font-medium text-Mneutral-900">{t('cart.empty')}</h1>
+          <p className="mb-8 text__18 text-Mneutral-600">{t('cart.emptyDiscover')}</p>
           <Link to="/shop" className="filled-pill-button">
-            Start Shopping
+            {t('common.startShopping')}
           </Link>
         </div>
       </div>
@@ -41,7 +44,7 @@ export default function CartPage() {
   const subtotal = total()
   const discount = coupon?.discount ?? 0
   const shipping = subtotal - discount >= 75 ? 0 : 8.95
-  const tax = (subtotal - discount) * 0.08
+  const tax = (subtotal - discount) * 0.10
   const orderTotal = subtotal - discount + shipping + tax
 
   return (
@@ -51,10 +54,10 @@ export default function CartPage() {
           <div className="rounded-[32px] bg-white px-[20px] py-[24px] xs:px-[40px] xs:py-[40px] xl:px-[56px]">
             <div className="mb-8 flex items-end justify-between gap-4">
               <div>
-                <p className="mb-3 text__18 text-Mneutral-400">MY BAG</p>
-                <h1 className="text__48 font-medium">Selected Rituals</h1>
+                <p className="mb-3 text__18 text-Mneutral-400">{t('cart.myBag')}</p>
+                <h1 className="text__48 font-medium">{t('cart.selectedRituals')}</h1>
               </div>
-              <p className="text__18 text-Mneutral-500">{items.length} items</p>
+              <p className="text__18 text-Mneutral-500">{t('common.itemsCount', { count: items.length })}</p>
             </div>
 
             <div className="grid gap-[18px]">
@@ -86,14 +89,14 @@ export default function CartPage() {
                   </div>
 
                   <div className="flex items-start justify-between gap-4 md:block">
-                    <p className="text__24 font-medium">{formatPrice(item.product.price * item.quantity)}</p>
+                    <p className="text__24 font-medium">{money(item.product.price * item.quantity)}</p>
                     <button
                       type="button"
                       onClick={() => removeItem(item.product.id)}
                       className="mt-3 inline-flex items-center gap-2 text__14 text-Mneutral-500 transition-colors hover:text-Mneutral-900"
                     >
                       <Trash2 size={14} />
-                      Remove
+                      {t('common.remove')}
                     </button>
                   </div>
                 </div>
@@ -102,11 +105,11 @@ export default function CartPage() {
           </div>
 
           <div className="h-fit rounded-[32px] bg-white p-6 lg:sticky lg:top-24">
-            <h2 className="mb-6 text__32 font-medium">Summary</h2>
+            <h2 className="mb-6 text__32 font-medium">{t('cart.summary')}</h2>
             <div className="mb-6 space-y-3 text__16">
               <div className="flex justify-between text-Mneutral-600">
-                <span>Subtotal</span>
-                <span>{formatPrice(subtotal)}</span>
+                <span>{t('common.subtotal')}</span>
+                <span>{money(subtotal)}</span>
               </div>
               {coupon && (
                 <div className="flex justify-between text-sage-600">
@@ -122,20 +125,20 @@ export default function CartPage() {
                       <X size={13} />
                     </button>
                   </span>
-                  <span>−{formatPrice(discount)}</span>
+                  <span>−{money(discount)}</span>
                 </div>
               )}
               <div className="flex justify-between text-Mneutral-600">
-                <span>Shipping</span>
-                <span>{shipping === 0 ? 'Free' : formatPrice(shipping)}</span>
+                <span>{t('common.shipping')}</span>
+                <span>{shipping === 0 ? t('common.free') : money(shipping)}</span>
               </div>
               <div className="flex justify-between text-Mneutral-600">
-                <span>Tax</span>
-                <span>{formatPrice(tax)}</span>
+                <span>{t('common.tax')}</span>
+                <span>{money(tax)}</span>
               </div>
               <div className="flex justify-between border-t border-Mneutral-100 pt-3 text__20 font-medium">
-                <span>Total</span>
-                <span>{formatPrice(orderTotal)}</span>
+                <span>{t('common.total')}</span>
+                <span>{money(orderTotal)}</span>
               </div>
             </div>
 
@@ -143,13 +146,13 @@ export default function CartPage() {
             <div className="mb-6 rounded-[24px] bg-Mneutral-50 p-4">
               <label htmlFor="coupon-code" className="mb-2 flex items-center gap-2 text__14 text-Mneutral-500">
                 <Tag size={13} />
-                Coupon code
+                {t('common.couponCode')}
               </label>
               {coupon ? (
                 <div className="flex items-center justify-between rounded-full border border-sage-200 bg-white px-4 py-2.5">
                   <span className="inline-flex items-center gap-2 text__14 font-medium text-sage-700">
                     <BadgeCheck size={15} />
-                    {coupon.code} applied — you save {formatPrice(coupon.discount)}
+                    {t('cart.appliedSave', { code: coupon.code, amount: money(coupon.discount) })}
                   </span>
                   <button
                     type="button"
@@ -159,7 +162,7 @@ export default function CartPage() {
                     }}
                     className="text__12 text-Mneutral-500 underline underline-offset-2 transition-colors hover:text-Mneutral-900"
                   >
-                    Remove
+                    {t('common.remove')}
                   </button>
                 </div>
               ) : (
@@ -176,7 +179,7 @@ export default function CartPage() {
                     id="coupon-code"
                     value={couponInput}
                     onChange={(e) => setCouponInput(e.target.value)}
-                    placeholder="Try WELCOME15"
+                    placeholder={t('cart.tryCode')}
                     className="w-full rounded-full border border-Mneutral-200 bg-white px-4 py-2.5 text__14 outline-none transition-colors focus:border-Mneutral-900"
                   />
                   <button
@@ -184,7 +187,7 @@ export default function CartPage() {
                     disabled={checkingCoupon || !couponInput.trim()}
                     className="filled-pill-button flex-shrink-0 px-5 py-2.5 disabled:opacity-50"
                   >
-                    {checkingCoupon ? 'Checking…' : 'Apply'}
+                    {checkingCoupon ? t('common.checking') : t('common.apply')}
                   </button>
                 </form>
               )}
@@ -196,7 +199,7 @@ export default function CartPage() {
             </div>
 
             <div className="mb-6 rounded-[24px] bg-Mneutral-50 p-4">
-              <p className="text__14 text-Mneutral-500">Free shipping on orders over $75</p>
+              <p className="text__14 text-Mneutral-500">{t('common.freeShippingOver')}</p>
               <div className="mt-3 h-2 overflow-hidden rounded-full bg-Mneutral-100">
                 <div
                   className="h-full rounded-full bg-Mbrand-teal transition-all duration-300"
@@ -206,10 +209,10 @@ export default function CartPage() {
             </div>
 
             <Link to="/checkout" className="filled-pill-button w-full justify-center">
-              Proceed to Checkout
+              {t('common.proceedCheckout')}
             </Link>
             <Link to="/shop" className="mt-4 block text-center text__16 text-Mneutral-600 underline underline-offset-2">
-              Continue Shopping
+              {t('common.continueShopping')}
             </Link>
           </div>
         </div>

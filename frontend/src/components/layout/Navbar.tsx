@@ -3,7 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ShoppingBag, Menu, X } from 'lucide-react'
 import { NAV_LINKS } from '../../lib/data'
-import { useAuthStore, useCartStore, useUIStore } from '../../lib/store'
+import { useAuthStore, useCartStore, usePrefsStore, useUIStore } from '../../lib/store'
+import { useT } from '../../lib/i18n'
 import ConfirmDialog from '../ui/ConfirmDialog'
 
 export default function Navbar() {
@@ -16,6 +17,10 @@ export default function Navbar() {
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
   const { isMobileMenuOpen, toggleMobileMenu, openAuthModal } = useUIStore()
+  const { lang, currency, setLang, setCurrency } = usePrefsStore()
+  const t = useT()
+  const navKey = (href: string) =>
+    href === '/shop' ? 'nav.products' : href === '/journal' ? 'nav.journal' : href === '/about' ? 'nav.about' : 'nav.checkout'
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 12)
@@ -53,7 +58,7 @@ export default function Navbar() {
                       location.pathname === link.href ? 'opacity-100' : 'opacity-75'
                     }`}
                   >
-                    {link.label}
+                    {t(navKey(link.href) as never)}
                   </Link>
                 ))}
               </nav>
@@ -67,14 +72,14 @@ export default function Navbar() {
                         location.pathname === '/account' ? 'bg-Mneutral-900 text-white' : ''
                       }`}
                     >
-                      HI, {user.firstName.toUpperCase()}
+                      {t('nav.hi', { name: user.firstName.toUpperCase() })}
                     </Link>
                     <button
                       type="button"
                       onClick={() => setConfirmLogout(true)}
                       className="rounded-full border border-Mneutral-200 px-[12px] py-[10px] text__14 text-Mneutral-600 transition-colors hover:border-Mneutral-900 hover:text-Mneutral-900"
                     >
-                      LOGOUT
+                      {t('nav.logout')}
                     </button>
                   </div>
                 ) : (
@@ -83,15 +88,35 @@ export default function Navbar() {
                     onClick={() => openAuthModal('login')}
                     className="hidden rounded-full border border-Mneutral-900 px-[12px] py-[10px] text__14 md:inline-block"
                   >
-                    LOGIN
+                    {t('nav.login')}
                   </button>
                 )}
 
                 <button
                   type="button"
+                  onClick={() => setLang(lang === 'en' ? 'km' : 'en')}
+                  className="hidden h-[40px] items-center justify-center rounded-full border border-Mneutral-200 px-[10px] text__14 text-Mneutral-900 transition-colors hover:border-Mneutral-900 md:inline-flex"
+                  aria-label={t('nav.language')}
+                  title={t('nav.language')}
+                >
+                  {lang === 'en' ? 'ខ្មែរ' : 'EN'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setCurrency(currency === 'USD' ? 'KHR' : 'USD')}
+                  className="hidden h-[40px] items-center justify-center rounded-full border border-Mneutral-200 px-[12px] text__14 font-medium tabular-nums text-Mneutral-900 transition-colors hover:border-Mneutral-900 md:inline-flex"
+                  aria-label={t('nav.currency')}
+                  title={t('nav.currency')}
+                >
+                  {currency === 'USD' ? '$ USD' : '៛ KHR'}
+                </button>
+
+                <button
+                  type="button"
                   onClick={toggleCart}
                   className="relative flex h-[40px] w-[40px] items-center justify-center rounded-full border border-Mneutral-200 text-Mneutral-900 md:h-[44px] md:w-[44px]"
-                  aria-label="Open cart"
+                  aria-label={t('nav.openCart')}
                 >
                   <ShoppingBag size={18} strokeWidth={1.75} />
                   {itemCount() > 0 && (
@@ -105,7 +130,7 @@ export default function Navbar() {
                   type="button"
                   onClick={toggleMobileMenu}
                   className="flex h-[40px] w-[40px] items-center justify-center rounded-full bg-Mneutral-900 text-white md:hidden"
-                  aria-label="Toggle navigation"
+                  aria-label={t('nav.toggleMenu')}
                 >
                   {isMobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
                 </button>
@@ -136,7 +161,7 @@ export default function Navbar() {
                     to={link.href}
                     className="block text__40 font-medium text-Mneutral-900"
                   >
-                    {link.label}
+                    {t(navKey(link.href) as never)}
                   </Link>
                 </motion.div>
               ))}
@@ -146,14 +171,14 @@ export default function Navbar() {
                     to="/account"
                     className="inline-flex w-fit items-center rounded-full border border-Mneutral-900 px-[12px] py-[10px] text__14"
                   >
-                    MY ACCOUNT
+                    {t('nav.account')}
                   </Link>
                   <button
                     type="button"
                     onClick={() => setConfirmLogout(true)}
                     className="inline-flex w-fit items-center rounded-full border border-Mneutral-200 px-[12px] py-[10px] text__14 text-Mneutral-600"
                   >
-                    LOGOUT
+                    {t('nav.logout')}
                   </button>
                 </div>
               ) : (
@@ -163,17 +188,35 @@ export default function Navbar() {
                     onClick={() => openAuthModal('login')}
                     className="inline-flex w-fit items-center rounded-full border border-Mneutral-900 px-[12px] py-[10px] text__14"
                   >
-                    LOGIN
+                    {t('nav.login')}
                   </button>
                   <button
                     type="button"
                     onClick={() => openAuthModal('signup')}
                     className="inline-flex w-fit items-center rounded-full bg-Mneutral-900 px-[12px] py-[10px] text__14 text-white"
                   >
-                    SIGN UP
+                    {t('nav.signup')}
                   </button>
                 </div>
               )}
+              <div className="mt-6 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setLang(lang === 'en' ? 'km' : 'en')}
+                  className="inline-flex items-center gap-2 rounded-full border border-Mneutral-200 px-[14px] py-[10px] text__14 text-Mneutral-900"
+                  aria-label={t('nav.language')}
+                >
+                  {lang === 'en' ? 'ភាសាខ្មែរ' : 'English'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrency(currency === 'USD' ? 'KHR' : 'USD')}
+                  className="inline-flex items-center gap-2 rounded-full border border-Mneutral-200 px-[14px] py-[10px] text__14 font-medium text-Mneutral-900"
+                  aria-label={t('nav.currency')}
+                >
+                  {currency === 'USD' ? '$ USD' : '៛ KHR'}
+                </button>
+              </div>
             </div>
           </motion.div>
         )}
@@ -181,9 +224,9 @@ export default function Navbar() {
 
       <ConfirmDialog
         open={confirmLogout}
-        title="LOGOUT"
-        message={user ? `Are you sure you want to log out, ${user.firstName}? Your bag stays saved for next time.` : 'Are you sure you want to log out?'}
-        confirmLabel="Yes, log out"
+        title={t('nav.logoutConfirmTitle')}
+        message={user ? t('nav.logoutConfirm', { name: user.firstName }) : t('nav.logoutConfirmPlain')}
+        confirmLabel={t('nav.yesLogout')}
         onCancel={() => setConfirmLogout(false)}
         onConfirm={() => {
           setConfirmLogout(false)
