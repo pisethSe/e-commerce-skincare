@@ -18,6 +18,7 @@ export default function ProductCard({ product, className = '' }: ProductCardProp
   const t = useT()
   const categoryName = useCategoryName()
   const { money, alt } = useMoney()
+  const outOfStock = !product.inStock || (product.stockCount ?? 1) <= 0
   const cardRef = useRef<HTMLDivElement>(null)
   const imageWrapRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -125,9 +126,10 @@ export default function ProductCard({ product, className = '' }: ProductCardProp
           ref={buttonRef}
           type="button"
           onClick={() => addItem(product)}
-          className="inline-flex items-center gap-2 rounded-full border border-Mneutral-900 px-[12px] py-[10px] text__14 transition-all duration-300 hover:bg-Mneutral-900 hover:text-white"
+          disabled={outOfStock}
+          className="inline-flex items-center gap-2 rounded-full border border-Mneutral-900 px-[12px] py-[10px] text__14 transition-all duration-300 hover:bg-Mneutral-900 hover:text-white disabled:cursor-not-allowed disabled:border-Mneutral-300 disabled:text-Mneutral-400 disabled:hover:bg-transparent disabled:hover:text-Mneutral-400"
         >
-          <span>{t('common.addToBag')} · {money(product.price)}</span>
+          <span>{outOfStock ? t('product.soldOut') : `${t('common.addToBag')} · ${money(product.price)}`}</span>
           <img ref={arrowRef} src="/images/carbon_arrow-up-right (2).svg" alt="" className="h-4 w-4 will-change-transform" />
         </button>
         <p className="mt-2 text__12 tabular-nums text-Mneutral-400">{alt(product.price)}</p>

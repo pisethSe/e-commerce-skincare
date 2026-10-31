@@ -163,22 +163,27 @@ test('POST /api/orders rejects unauthenticated requests', async () => {
 /* ── Read orders ──────────────────────────────── */
 test('GET /api/orders/my lists the customer\'s own orders', async () => {
   if (!serverUp) return
-  const token = await customerToken()
 
-  // Make the test self-sufficient: a freshly seeded database has no orders yet.
-  const addressId = await makeAddress(token)
+  // Use a throwaway customer, not the seeded demo account: this test creates an
+  // order and must not leave fixtures on sophie@example.com after every run.
+  const user = await makeUser('myorders')
+  const addressId = await makeAddress(user.token)
   const product = await pickStockedProduct(1)
   const created = await call('POST', '/api/orders', {
-    token,
+    token: user.token,
     body: { items: [{ productId: product.id, quantity: 1 }], addressId },
   })
   assert.equal(created.status, 201)
 
-  const { status, body } = await call('GET', '/api/orders/my', { token })
+  const { status, body } = await call('GET', '/api/orders/my', { token: user.token })
   assert.equal(status, 200)
   assert.ok(Array.isArray(body.data))
   assert.ok(body.data.some((order) => order.id === created.body.data.id))
   assert.ok(body.pagination.total >= 1)
+  // Lifetime totals power the account header even though the list is paginated.
+  assert.equal(body.summary.totalOrders, body.pagination.total)
+  assert.equal(body.summary.totalOrders, 1)
+  assert.equal(body.summary.totalSpent, Number(created.body.data.total))
 })
 
 test('GET /api/orders/my rejects unauthenticated requests', async () => {

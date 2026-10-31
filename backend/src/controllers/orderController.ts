@@ -192,7 +192,7 @@ export const getMyOrders = async (req: AuthRequest, res: Response): Promise<void
   const { page = '1', limit = '10' } = req.query
   const skip = (Number(page) - 1) * Number(limit)
 
-  const [orders, total] = await Promise.all([
+  const [orders, total, spent] = await Promise.all([
     prisma.order.findMany({
       where: { userId: req.user!.id },
       include: {
@@ -204,6 +204,12 @@ export const getMyOrders = async (req: AuthRequest, res: Response): Promise<void
       take: Number(limit),
     }),
     prisma.order.count({ where: { userId: req.user!.id } }),
+    // Lifetime spend excludes cancelled orders so the account header stays
+    // accurate even when the order list is paginated.
+    prisma.order.aggregate({
+      where: { userId: req.user!.id, status: { not: 'CANCELLED' } },
+      _sum: { total: true },
+    }),
   ])
 
   res.json({
@@ -214,6 +220,10 @@ export const getMyOrders = async (req: AuthRequest, res: Response): Promise<void
       limit: Number(limit),
       total,
       totalPages: Math.ceil(total / Number(limit)),
+    },
+    summary: {
+      totalOrders: total,
+      totalSpent: Number(spent._sum.total || 0),
     },
   })
 }

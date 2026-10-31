@@ -35,7 +35,7 @@ export default function JournalPage() {
               <p className="mt-3 text__18 text-Mneutral-600">{t('journalPage.noStoriesHint')}</p>
             </div>
           ) : (
-          <Link to="/journal" className="grid gap-[12px] md:grid-cols-2">
+          <Link to={`/journal/${posts[0].slug}`} className="grid gap-[12px] md:grid-cols-2">
             <div className="overflow-hidden rounded-[32px]">
               <ImageWithFallback
                 src={posts[0].coverImage}
@@ -61,7 +61,11 @@ export default function JournalPage() {
 
           <div className="mt-[32px] grid grid-cols-1 gap-[20px] md:grid-cols-2">
             {posts.slice(1).map((post) => (
-              <article key={post.id} className="overflow-hidden rounded-[32px] bg-white">
+              <Link
+                key={post.id}
+                to={`/journal/${post.slug}`}
+                className="overflow-hidden rounded-[32px] bg-white transition-transform duration-300 hover:-translate-y-1"
+              >
                 <div className="overflow-hidden">
                   <ImageWithFallback
                     src={post.coverImage}
@@ -80,7 +84,7 @@ export default function JournalPage() {
                     <span>{t('journalPage.minRead', { count: post.readTime ?? 0 })}</span>
                   </div>
                 </div>
-              </article>
+              </Link>
             ))}
           </div>
         </div>

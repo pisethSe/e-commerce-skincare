@@ -119,6 +119,23 @@ describe('TrackOrderPage', () => {
     expect(options.token).toBeUndefined()
   })
 
+  it('labels cash-on-delivery orders correctly', async () => {
+    apiMock.mockImplementation(async () =>
+      jsonResponse({
+        success: true,
+        data: { ...tracked, paymentMethod: 'cod', paymentStatus: 'UNPAID' },
+      }),
+    )
+    const user = userEvent.setup()
+    renderPage(`/track?order=${tracked.orderNumber}`)
+
+    await user.type(screen.getByLabelText('Email'), 'sophie@example.com')
+    await user.click(screen.getByRole('button', { name: /track order/i }))
+
+    expect(await screen.findByText('Unpaid · Cash on delivery')).toBeInTheDocument()
+    expect(screen.queryByText(/Credit \/ Debit Card/)).not.toBeInTheDocument()
+  })
+
   it('shows a friendly error on an unknown order and lets the shopper try another', async () => {
     apiMock.mockImplementation(async () =>
       jsonResponse({ success: false, message: 'No order matches that number and email' }, 404),

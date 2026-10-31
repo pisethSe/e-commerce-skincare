@@ -43,6 +43,7 @@ const PAYMENT_METHOD: Record<string, TKey> = {
   card: 'checkout.card',
   aba_payway: 'checkout.aba',
   bakong: 'checkout.bakong',
+  cod: 'checkout.cod',
 }
 
 /**

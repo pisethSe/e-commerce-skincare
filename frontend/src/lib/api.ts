@@ -18,6 +18,50 @@ import { useAuthStore } from './store'
  * the stored session. This is why users no longer get logged out mid-checkout
  * when their short-lived access token expires.
  */
+// A page can fire several authenticated requests at once (for example the
+// account page in React StrictMode). Without a shared promise each 401 starts
+// its own refresh, and rotating refresh tokens make all but one fail — which
+// used to force shoppers to log in again mid-session.
+let refreshPromise: Promise<string | null> | null = null
+
+async function refreshAccessToken(): Promise<string | null> {
+  if (refreshPromise) return refreshPromise
+
+  refreshPromise = (async () => {
+    try {
+      const store = useAuthStore.getState()
+      if (!store.refreshToken || !store.user) return null
+
+      const refreshRes = await fetch(getApiUrl('/api/auth/refresh'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: store.refreshToken }),
+      })
+      if (!refreshRes.ok) return null
+
+      const json = await refreshRes.json()
+      if (!json.success || !json.data?.accessToken) return null
+
+      // The shopper may have logged out while the refresh was in flight.
+      const current = useAuthStore.getState()
+      if (!current.user) return null
+
+      current.setSession({
+        user: current.user,
+        accessToken: json.data.accessToken,
+        refreshToken: json.data.refreshToken ?? store.refreshToken,
+      })
+      return json.data.accessToken as string
+    } catch {
+      return null
+    } finally {
+      refreshPromise = null
+    }
+  })()
+
+  return refreshPromise
+}
+
 export async function apiFetch(
   path: string,
   options: RequestInit & { token?: string } = {},
@@ -28,29 +72,11 @@ export async function apiFetch(
     return fetch(getApiUrl(path), { ...options, headers })
   }
 
-  let res = await doFetch(options.token)
+  const res = await doFetch(options.token)
   if (res.status !== 401) return res
 
-  const store = useAuthStore.getState()
-  const refreshToken = store.refreshToken
-  if (!refreshToken || !store.user) return res
+  const accessToken = await refreshAccessToken()
+  if (!accessToken) return res
 
-  try {
-    const refreshRes = await fetch(getApiUrl('/api/auth/refresh'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
-    })
-    if (!refreshRes.ok) return res
-    const json = await refreshRes.json()
-    if (!json.success || !json.data?.accessToken) return res
-    store.setSession({
-      user: store.user,
-      accessToken: json.data.accessToken,
-      refreshToken: json.data.refreshToken,
-    })
-    return await doFetch(json.data.accessToken)
-  } catch {
-    return res
-  }
+  return doFetch(accessToken)
 }

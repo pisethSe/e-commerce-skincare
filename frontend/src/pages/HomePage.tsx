@@ -1,7 +1,8 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Droplets, Sparkles } from "lucide-react";
 import ProductCard from "../components/ui/ProductCard";
+import { apiFetch } from "../lib/api";
 import { useCatalogStore } from "../lib/catalog";
 import { TESTIMONIALS } from "../lib/data";
 import { gsap, useGSAP } from "../lib/gsap";
@@ -24,10 +25,35 @@ export default function HomePage() {
   const pageRef = useRef<HTMLDivElement>(null);
   const { products } = useCatalogStore();
   const t = useT();
+  const [email, setEmail] = useState("");
+  const [subscribeStatus, setSubscribeStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
 
   useEffect(() => {
     document.title = "Calesta — Skincare & Beauty";
   }, []);
+
+  const handleSubscribe = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const value = email.trim();
+    if (!value || subscribeStatus === "loading") return;
+
+    setSubscribeStatus("loading");
+    try {
+      const res = await apiFetch("/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: value }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.success) {
+        throw new Error(json?.message || t("newsletter.error"));
+      }
+      setSubscribeStatus("done");
+      setEmail("");
+    } catch {
+      setSubscribeStatus("error");
+    }
+  };
 
   useGSAP(
     () => {
@@ -426,20 +452,38 @@ export default function HomePage() {
                 <h3 className="text__56">{t("home.communityTitle")}</h3>
                 <p className="text__18">{t("home.communityBody")}</p>
               </div>
-              <div className="flex items-center justify-center">
-                <div className="flex w-full items-center gap-2 rounded-full bg-white p-[4px] pl-4 xs:w-[390px]">
-                  <input
-                    type="text"
-                    placeholder={t("home.enterEmail")}
-                    className="w-full border-none bg-transparent text__16 text-Mneutral-900 placeholder:text-Mneutral-500 outline-none"
-                  />
-                  <button
-                    type="button"
-                    className="rounded-full bg-Mneutral-900 px-[20px] py-[14px] font-medium text__18 text-white"
+              <div className="flex flex-col items-center justify-center gap-3">
+                {subscribeStatus === "done" ? (
+                  <p role="status" className="text__16 font-medium">
+                    {t("newsletter.welcome")}
+                  </p>
+                ) : (
+                  <form
+                    onSubmit={handleSubscribe}
+                    className="flex w-full items-center gap-2 rounded-full bg-white p-[4px] pl-4 xs:w-[390px]"
                   >
-                    {t("home.subscribe")}
-                  </button>
-                </div>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                      placeholder={t("home.enterEmail")}
+                      required
+                      className="w-full border-none bg-transparent text__16 text-Mneutral-900 placeholder:text-Mneutral-500 outline-none"
+                    />
+                    <button
+                      type="submit"
+                      disabled={subscribeStatus === "loading"}
+                      className="rounded-full bg-Mneutral-900 px-[20px] py-[14px] font-medium text__18 text-white disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {subscribeStatus === "loading" ? t("common.checking") : t("home.subscribe")}
+                    </button>
+                  </form>
+                )}
+                {subscribeStatus === "error" && (
+                  <p role="alert" className="text__14 font-medium text-red-700">
+                    {t("newsletter.error")}
+                  </p>
+                )}
               </div>
             </div>
           </div>

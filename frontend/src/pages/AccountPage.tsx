@@ -39,7 +39,12 @@ export default function AccountPage() {
   const openAuthModal = useUIStore((s) => s.openAuthModal)
 
   const [orders, setOrders] = useState<MyOrder[]>([])
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalOrders, setTotalOrders] = useState(0)
+  const [totalSpent, setTotalSpent] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmLogout, setConfirmLogout] = useState(false)
   const t = useT()
@@ -51,32 +56,54 @@ export default function AccountPage() {
   }, [])
 
   useEffect(() => {
+    setOrders([])
+    setPage(1)
+    setTotalPages(1)
+    setTotalOrders(0)
+    setTotalSpent(0)
+    setError(null)
+  }, [accessToken])
+
+  useEffect(() => {
     if (!accessToken) {
       setLoading(false)
       return
     }
     let alive = true
-    setLoading(true)
-    apiFetch('/api/orders/my', {
-      token: accessToken, headers: { },
+    const firstPage = page === 1
+    if (firstPage) setLoading(true)
+    else setLoadingMore(true)
+    setError(null)
+
+    apiFetch(`/api/orders/my?page=${page}&limit=10`, {
+      token: accessToken,
     })
       .then((r) => r.json())
       .then((result) => {
         if (!alive) return
-        if (result.success) setOrders(result.data ?? [])
-        else setError(result.message ?? 'Could not load your orders.')
-        setLoading(false)
-      })
-      .catch(() => {
-        if (alive) {
-          setError('Could not load your orders — is the API running?')
-          setLoading(false)
+        if (result.success) {
+          const next = result.data ?? []
+          setOrders((prev) => (firstPage ? next : [...prev, ...next]))
+          setTotalOrders(result.summary?.totalOrders ?? result.pagination?.total ?? next.length)
+          setTotalSpent(Number(result.summary?.totalSpent ?? 0))
+          setTotalPages(result.pagination?.totalPages ?? 1)
+        } else {
+          setError(result.message ?? 'Could not load your orders.')
         }
       })
+      .catch(() => {
+        if (alive) setError('Could not load your orders — is the API running?')
+      })
+      .finally(() => {
+        if (!alive) return
+        setLoading(false)
+        setLoadingMore(false)
+      })
+
     return () => {
       alive = false
     }
-  }, [accessToken])
+  }, [accessToken, page])
 
   /* ---------- Not signed in ---------- */
   if (!user) {
@@ -103,10 +130,6 @@ export default function AccountPage() {
   const memberSince = user.createdAt
     ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     : null
-  const totalSpent = orders
-    .filter((o) => o.status !== 'CANCELLED')
-    .reduce((sum, o) => sum + Number(o.total), 0)
-
   const confirmLogoutAction = () => {
     setConfirmLogout(false)
     logout()
@@ -125,7 +148,7 @@ export default function AccountPage() {
                 </div>
                 <div>
                   <p className="mb-1 text__14 font-medium uppercase tracking-[0.28em] text-Mneutral-400">
-                    t('account.myAccount')
+                    {t('account.myAccount')}
                   </p>
                   <h1 className="text__32 font-medium">
                     {t('account.hi', { name: user.firstName })}
@@ -152,7 +175,7 @@ export default function AccountPage() {
               <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-3">
                 <div className="rounded-[24px] bg-Mneutral-50 px-5 py-4">
                   <p className="text__14 text-Mneutral-500">{t('account.ordersPlaced')}</p>
-                  <p className="mt-1 text__24 font-medium tabular-nums">{orders.length}</p>
+                  <p className="mt-1 text__24 font-medium tabular-nums">{totalOrders}</p>
                 </div>
                 <div className="rounded-[24px] bg-Mneutral-50 px-5 py-4">
                   <p className="text__14 text-Mneutral-500">{t('account.totalSpent')}</p>
@@ -174,7 +197,7 @@ export default function AccountPage() {
                 <h2 className="text__48 font-medium">{t('account.yourRituals')}</h2>
               </div>
               {orders.length > 0 && (
-                <p className="text__18 text-Mneutral-500 tabular-nums">{t('account.ordersCount', { count: orders.length })}</p>
+                <p className="text__18 text-Mneutral-500 tabular-nums">{t('account.ordersCount', { count: totalOrders })}</p>
               )}
             </div>
 
@@ -258,6 +281,18 @@ export default function AccountPage() {
                     </motion.div>
                   )
                 })}
+                {page < totalPages && (
+                  <div className="pt-2 text-center">
+                    <button
+                      type="button"
+                      onClick={() => setPage((current) => current + 1)}
+                      disabled={loadingMore}
+                      className="pill-button disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {loadingMore ? t('account.loadingMore') : t('account.loadMore')}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

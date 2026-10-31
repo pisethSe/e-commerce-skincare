@@ -217,6 +217,10 @@ export const dictionary = {
     en: 'Welcome! Check your inbox for your discount code.',
     km: 'សូមស្វាគមន៍! ពិនិត្យប្រអប់សាររបស់អ្នកសម្រាប់កូដបញ្ចុះតម្លៃ។',
   },
+  'newsletter.error': {
+    en: 'Could not subscribe. Please try again.',
+    km: 'មិនអាចជាវព័ត៌មានបានទេ។ សូមព្យាយាមម្តងទៀត។',
+  },
   'journal.kicker': { en: 'The Calesta Journal', km: 'ទស្សនាវដ្ដី Calesta' },
   'journal.title1': { en: 'Skincare wisdom,', km: 'ប្រាជ្ញាថែទាំស្បែក' },
   'journal.title2': { en: 'curated for you', km: 'ជ្រើសរើសសម្រាប់អ្នក' },
@@ -535,6 +539,8 @@ export const dictionary = {
   'account.memberSince': { en: 'member since {date}', km: 'សមាជិកតាំងពី {date}' },
   'account.logout': { en: 'Logout', km: 'ចាកចេញ' },
   'account.ordersPlaced': { en: 'Orders placed', km: 'ការបញ្ជាទិញ' },
+  'account.loadMore': { en: 'Load more orders', km: 'ផ្ទុកការបញ្ជាទិញបន្ថែម' },
+  'account.loadingMore': { en: 'Loading…', km: 'កំពុងផ្ទុក…' },
   'account.totalSpent': { en: 'Total spent', km: 'ចំណាយសរុប' },
   'account.freeShipping': { en: 'Free shipping', km: 'ដឹកជញ្ជូនឥតគិតថ្លៃ' },
   'account.orderHistory': { en: 'ORDER HISTORY', km: 'ប្រវត្តិការបញ្ជាទិញ' },
@@ -701,6 +707,11 @@ export const dictionary = {
   },
   'journalPage.featured': { en: 'FEATURED ARTICLE', km: 'អត្ថបទពិសេស' },
   'journalPage.minRead': { en: '{count} min read', km: 'អាន {count} នាទី' },
+  'journalPage.back': { en: 'Back to the journal', km: 'ត្រឡប់ទៅទស្សនាវដ្ដី' },
+  'journalPage.loading': { en: 'Loading story…', km: 'កំពុងផ្ទុករឿង…' },
+  'journalPage.notFound': { en: 'Story not found', km: 'រកមិនឃើញរឿង' },
+  'journalPage.loadError': { en: 'Could not load this story.', km: 'មិនអាចផ្ទុករឿងនេះបានទេ។' },
+  'journalPage.retry': { en: 'Try again', km: 'ព្យាយាមម្តងទៀត' },
 
   // Reset password
   'reset.updated': { en: 'Password updated', km: 'បានធ្វើបច្ចុប្បន្នភាពពាក្យសម្ងាត់' },

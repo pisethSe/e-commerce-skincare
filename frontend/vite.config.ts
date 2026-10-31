@@ -19,7 +19,6 @@ export default defineConfig({
           if (/node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return 'react'
           if (/node_modules[\\/](framer-motion|motion-dom|motion-utils)[\\/]/.test(id)) return 'motion'
           if (/node_modules[\\/](gsap|lenis)[\\/]/.test(id) || id.includes('@gsap/react')) return 'gsap'
-          if (id.includes('node_modules/swiper/')) return 'swiper'
           return 'vendor'
         },
       },
