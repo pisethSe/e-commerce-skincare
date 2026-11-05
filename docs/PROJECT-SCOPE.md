@@ -9,6 +9,7 @@
 | Status | Living document — update at the end of every work slice |
 | Source of truth | This file for scope and sequencing; `README.md` for setup; CI for the quality gate |
 | Detailed requirements | [`REQUIREMENTS.md`](./REQUIREMENTS.md) — functional and non-functional breakdown |
+| Workflow reference | [`WORKFLOW-PARITY.md`](./WORKFLOW-PARITY.md) — weYOUNG comparison and conflict decisions |
 
 ---
 
