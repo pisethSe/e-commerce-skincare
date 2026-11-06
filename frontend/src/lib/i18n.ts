@@ -12,11 +12,6 @@ export const dictionary = {
   // Navigation / shell
   'nav.products': { en: 'Our Products', km: 'ផលិតផលរបស់យើង' },
   'nav.home': { en: 'Home', km: 'ទំព័រដើម' },
-  'nav.productsShort': { en: 'Products', km: 'ផលិតផល' },
-  'nav.searchShort': { en: 'Search', km: 'ស្វែងរក' },
-  'nav.cartShort': { en: 'Cart', km: 'កន្ត្រក' },
-  'nav.you': { en: 'You', km: 'អ្នក' },
-  'nav.mobileMenu': { en: 'Mobile navigation', km: 'ម៉ឺនុយទូរស័ព្ទ' },
   'nav.journal': { en: 'Journal', km: 'ទស្សនាវដ្ដី' },
   'nav.about': { en: 'About Us', km: 'អំពីយើង' },
   'nav.checkout': { en: 'Checkout', km: 'ការទូទាត់' },
