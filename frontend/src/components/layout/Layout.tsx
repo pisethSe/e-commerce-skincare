@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import Navbar from './Navbar'
 import Footer from './Footer'
+import BottomNav from './BottomNav'
 import CartSidebar from './CartSidebar'
 import AuthModal from '../auth/AuthModal'
 import { useLenis } from '../../hooks/useLenis'
@@ -53,6 +54,8 @@ export default function Layout({ children }: LayoutProps) {
         {children}
       </main>
       <Footer />
+      <div aria-hidden className="h-[68px] lg:hidden" />
+      <BottomNav />
     </div>
   )
 }

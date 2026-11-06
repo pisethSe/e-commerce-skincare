@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Droplets, Sparkles } from "lucide-react";
 import ProductCard from "../components/ui/ProductCard";
+import ImageWithFallback from "../components/ui/ImageWithFallback";
 import { apiFetch } from "../lib/api";
 import { useCatalogStore } from "../lib/catalog";
 import { TESTIMONIALS } from "../lib/data";
@@ -23,7 +24,7 @@ const communityShots = [
 
 export default function HomePage() {
   const pageRef = useRef<HTMLDivElement>(null);
-  const { products } = useCatalogStore();
+  const { products, categories } = useCatalogStore();
   const t = useT();
   const [email, setEmail] = useState("");
   const [subscribeStatus, setSubscribeStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
@@ -159,6 +160,12 @@ export default function HomePage() {
       ref={pageRef}
       className="overflow-hidden bg-Mneutral-50 pt-[76px] text-Mneutral-900"
     >
+      <div className="border-b border-Mneutral-100 bg-Mneutral-900 px-4 py-2.5 text-center">
+        <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-white/90 xs:text-[11px]">
+          {t("home.announcement")}
+        </p>
+      </div>
+
       <section className="px-2 pt-4 pb-0 md:px-4">
         <div className="hero-shell relative mx-auto w-full max-w-[1680px] overflow-hidden rounded-[32px] bg-[#9edccd] pt-[40px] lg:pt-[80px]">
           <img
@@ -272,6 +279,48 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {categories.length > 0 && (
+        <section className="section-template pt-[32px] md:pt-[56px]" data-gsap-reveal>
+          <div className="container-custom">
+            <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+              <h2 className="text__32 font-medium md:text__48">{t("home.shopByCategory")}</h2>
+              <Link
+                to="/shop"
+                className="text__14 text-Mneutral-600 underline underline-offset-4 transition-colors hover:text-Mneutral-900"
+              >
+                {t("home.viewAll")}
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4" data-gsap-stagger>
+              {categories.slice(0, 4).map((category) => (
+                <Link
+                  key={category.id}
+                  to={`/shop?category=${encodeURIComponent(category.slug)}`}
+                  className="group relative aspect-[4/3] overflow-hidden rounded-[24px] bg-[radial-gradient(circle_at_top,#fffaf1,#efe2ca)]"
+                >
+                  {category.image ? (
+                    <ImageWithFallback
+                      src={category.image}
+                      alt={category.name}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                      fallbackClassName="flex h-full w-full items-center justify-center"
+                      fallbackText={category.name}
+                    />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center text__48 font-medium text-Mneutral-900/15">
+                      {category.name.slice(0, 1)}
+                    </span>
+                  )}
+                  <span className="absolute inset-x-3 bottom-3 rounded-full bg-white/90 px-3 py-2 text-center text__14 font-medium backdrop-blur-sm">
+                    {category.name}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <section
         className="py-[40px] text-center md:py-[180px] lg:py-[220px]"

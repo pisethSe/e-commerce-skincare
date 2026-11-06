@@ -41,7 +41,9 @@ export default function CartSidebar() {
                 <span className="text__16 text-Mneutral-600">({items.length})</span>
               </div>
               <button
+                type="button"
                 onClick={toggleCart}
+                aria-label={t('cart.close')}
                 className="p-2 transition-colors hover:text-Mneutral-600"
               >
                 <X size={20} strokeWidth={1.5} />
@@ -71,7 +73,7 @@ export default function CartSidebar() {
                   <div className="space-y-4">
                     {items.map((item) => (
                       <motion.div
-                        key={item.product.id}
+                        key={`${item.product.id}-${item.variant?.id ?? 'base'}`}
                         layout
                         initial={{ opacity: 0, x: 30 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -164,13 +166,18 @@ export default function CartSidebar() {
                 </div>
                 <p className="text__14 text-Mneutral-500">{t('common.taxesAtCheckout')}</p>
 
-                <Link
-                  to="/checkout"
-                  onClick={toggleCart}
-                  className="filled-pill-button w-full justify-center"
-                >
-                  {t('common.checkout')}
-                </Link>
+                <div className="flex gap-3">
+                  <button type="button" onClick={toggleCart} className="pill-button flex-1 justify-center">
+                    {t('cart.cancel')}
+                  </button>
+                  <Link
+                    to="/checkout"
+                    onClick={toggleCart}
+                    className="filled-pill-button flex-1 justify-center"
+                  >
+                    {t('common.checkout')}
+                  </Link>
+                </div>
                 <Link
                   to="/cart"
                   onClick={toggleCart}

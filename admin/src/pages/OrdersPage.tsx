@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Download, Eye, Search, ShoppingBag } from 'lucide-react'
+import { BadgeCheck, Download, Eye, Search, ShoppingBag } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { apiData, apiList, type Pagination as PaginationMeta } from '../lib/api'
 import { formatMoney, formatDate, ORDER_STATUSES, ORDER_STATUS_STYLES } from '../lib/format'
@@ -67,6 +67,7 @@ export default function OrdersPage() {
   const [trackingDraft, setTrackingDraft] = useState('')
   const [savingTracking, setSavingTracking] = useState(false)
   const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const [updatingPaymentId, setUpdatingPaymentId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -105,6 +106,27 @@ export default function OrdersPage() {
       toast.error(e instanceof Error ? e.message : 'Status update failed')
     } finally {
       setUpdatingId(null)
+    }
+  }
+
+  const markPaid = async (order: AdminOrder) => {
+    if (order.paymentStatus === 'PAID') return
+    setUpdatingPaymentId(order.id)
+    try {
+      const updated = await apiData<AdminOrder>({
+        method: 'PATCH',
+        url: `/orders/${order.id}/payment`,
+        data: { paymentStatus: 'PAID' },
+      })
+      setOrders((prev) =>
+        prev.map((o) => (o.id === order.id ? { ...o, paymentStatus: updated.paymentStatus ?? 'PAID' } : o))
+      )
+      setDetail((d) => (d && d.id === order.id ? { ...d, paymentStatus: updated.paymentStatus ?? 'PAID' } : d))
+      toast.success(`${order.orderNumber} marked as paid`)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Payment update failed')
+    } finally {
+      setUpdatingPaymentId(null)
     }
   }
 
@@ -334,6 +356,26 @@ export default function OrdersPage() {
               <span className="text__14 text-[#9ca8a5]">{formatDate(detail.createdAt)}</span>
               {detail.paymentMethod && (
                 <span className="admin-chip">{paymentLabel(detail.paymentMethod)}</span>
+              )}
+              <span
+                className={`rounded-[6px] px-2 py-1 text-[10px] font-medium uppercase tracking-wide ${
+                  detail.paymentStatus === 'PAID'
+                    ? 'bg-[#eaf1e3] text-[#4a6132]'
+                    : 'bg-[#f7f1de] text-[#7a6420]'
+                }`}
+              >
+                {detail.paymentStatus === 'PAID' ? 'Paid' : 'Unpaid'}
+              </span>
+              {detail.paymentStatus !== 'PAID' && (
+                <button
+                  type="button"
+                  onClick={() => void markPaid(detail)}
+                  disabled={updatingPaymentId === detail.id}
+                  className="btn-admin-outline h-8 px-3 text__12 disabled:opacity-60"
+                >
+                  <BadgeCheck size={13} />
+                  {updatingPaymentId === detail.id ? 'Saving…' : 'Mark as paid'}
+                </button>
               )}
             </div>
 

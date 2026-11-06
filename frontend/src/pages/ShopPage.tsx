@@ -67,6 +67,7 @@ export default function ShopPage() {
   const categoryName = useCategoryName()
 
   const [filters, setFilters] = useState<Filters>(() => readFilters(searchParams))
+  const [priceDraft, setPriceDraft] = useState({ min: filters.minPrice, max: filters.maxPrice })
   const [queryInput, setQueryInput] = useState(filters.q)
   const [debouncedQuery, setDebouncedQuery] = useState(filters.q)
   const [page, setPage] = useState(1)
@@ -83,6 +84,10 @@ export default function ShopPage() {
   useEffect(() => {
     document.title = filters.q ? `Calesta — Search: ${filters.q}` : 'Calesta — Our Products'
   }, [filters.q])
+
+  useEffect(() => {
+    setPriceDraft({ min: filters.minPrice, max: filters.maxPrice })
+  }, [filters.minPrice, filters.maxPrice])
 
   // Debounce typing; the URL and the request follow the settled term.
   useEffect(() => {
@@ -179,6 +184,17 @@ export default function ShopPage() {
     setPage(1)
   }
 
+  const applyPriceRange = () => {
+    const min = priceDraft.min.trim()
+    const max = priceDraft.max.trim()
+    // Swap reversed bounds instead of returning an empty result set.
+    if (min && max && Number(min) > Number(max)) {
+      updateFilters({ minPrice: max, maxPrice: min })
+      return
+    }
+    updateFilters({ minPrice: min, maxPrice: max })
+  }
+
   const clearSearch = () => {
     setQueryInput('')
     setDebouncedQuery('')
@@ -264,7 +280,10 @@ export default function ShopPage() {
       <section className="pt-0 section-template">
         <div className="container-custom">
           <div className="mb-[20px] flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="mr-1 text__12 font-medium uppercase tracking-wide text-Mneutral-400">
+                {t('shop.category')}
+              </span>
               <button
                 type="button"
                 onClick={() => updateFilters({ category: '' })}
@@ -355,6 +374,44 @@ export default function ShopPage() {
             })}
 
             <span className="mx-1 hidden h-4 w-px bg-Mneutral-200 xs:block" />
+
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text__12 text-Mneutral-400">{t('shop.priceRange')}</span>
+              <input
+                type="number"
+                min={0}
+                inputMode="numeric"
+                value={priceDraft.min}
+                onChange={(event) => setPriceDraft((current) => ({ ...current, min: event.target.value }))}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') applyPriceRange()
+                }}
+                placeholder={t('shop.min')}
+                aria-label={t('shop.minPrice')}
+                className="h-8 w-[68px] rounded-full border border-Mneutral-200 bg-white px-3 text__12 tabular-nums outline-none focus:border-Mneutral-900"
+              />
+              <span className="text__12 text-Mneutral-400">–</span>
+              <input
+                type="number"
+                min={0}
+                inputMode="numeric"
+                value={priceDraft.max}
+                onChange={(event) => setPriceDraft((current) => ({ ...current, max: event.target.value }))}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') applyPriceRange()
+                }}
+                placeholder={t('shop.max')}
+                aria-label={t('shop.maxPrice')}
+                className="h-8 w-[68px] rounded-full border border-Mneutral-200 bg-white px-3 text__12 tabular-nums outline-none focus:border-Mneutral-900"
+              />
+              <button
+                type="button"
+                onClick={applyPriceRange}
+                className="h-8 rounded-full border border-Mneutral-200 bg-white px-3 text__12 font-medium text-Mneutral-700 transition-colors hover:border-Mneutral-900 hover:text-Mneutral-900"
+              >
+                {t('shop.applyRange')}
+              </button>
+            </div>
 
             <button
               type="button"

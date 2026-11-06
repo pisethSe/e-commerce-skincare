@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import rateLimit from 'express-rate-limit'
-import { createOrder, getMyOrders, getOrderById, updateOrderStatus, getAllOrders, updateTrackingNumber, trackOrder } from '../controllers/orderController'
+import { createOrder, getMyOrders, getOrderById, updateOrderStatus, getAllOrders, updateTrackingNumber, trackOrder, cancelMyOrder, updatePaymentStatus } from '../controllers/orderController'
 import { authenticate, requireAdmin } from '../middleware/auth'
 
 const router = Router()
@@ -20,9 +20,11 @@ router.post('/track', trackLimiter, trackOrder)
 router.use(authenticate)
 router.post('/', createOrder)
 router.get('/my', getMyOrders)
+router.patch('/:id/cancel', cancelMyOrder)
 router.get('/:id', getOrderById)
 router.get('/', requireAdmin, getAllOrders)
 router.patch('/:id/status', requireAdmin, updateOrderStatus)
+router.patch('/:id/payment', requireAdmin, updatePaymentStatus)
 router.patch('/:id/tracking', requireAdmin, updateTrackingNumber)
 
 export default router

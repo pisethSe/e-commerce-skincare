@@ -13,10 +13,14 @@ const generateOrderNumber = (): string => {
 
 // POST /api/orders
 export const createOrder = async (req: AuthRequest, res: Response): Promise<void> => {
-  const { items, addressId, couponCode, paymentMethod, paymentId, shippingMethod } = req.body
+  const { items, addressId, couponCode, paymentMethod, paymentId, shippingMethod, notes } = req.body
 
   if (!items || items.length === 0) throw new ApiError('Order must have at least one item', 400)
   if (!addressId) throw new ApiError('Shipping address is required', 400)
+  if (notes !== undefined && notes !== null && typeof notes !== 'string') {
+    throw new ApiError('Order notes must be text', 400)
+  }
+  const orderNotes = typeof notes === 'string' ? notes.trim().slice(0, 500) : null
 
   // One shipping method — standard delivery (free over $75 after discount).
   // Legacy clients sending other methods map back to standard.
@@ -122,6 +126,7 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
         paymentMethod: method,
         paymentId,
         couponId,
+        notes: orderNotes || null,
         items: {
           create: orderItems,
         },
@@ -189,12 +194,25 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
 
 // GET /api/orders — my orders
 export const getMyOrders = async (req: AuthRequest, res: Response): Promise<void> => {
-  const { page = '1', limit = '10' } = req.query
+  const { page = '1', limit = '10', status } = req.query
   const skip = (Number(page) - 1) * Number(limit)
 
-  const [orders, total, spent] = await Promise.all([
+  // The account page mirrors the reference store's All / Active / Past tabs.
+  // Filtering happens in SQL so pagination stays correct on long histories.
+  const where: Record<string, unknown> = { userId: req.user!.id }
+  if (typeof status === 'string' && status) {
+    if (status === 'active') {
+      where.status = { in: ['PENDING', 'PROCESSING', 'SHIPPED'] }
+    } else if (status === 'past') {
+      where.status = { in: ['DELIVERED', 'CANCELLED', 'REFUNDED'] }
+    } else if (['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED'].includes(status)) {
+      where.status = status
+    }
+  }
+
+  const [orders, total, allTotal, spent] = await Promise.all([
     prisma.order.findMany({
-      where: { userId: req.user!.id },
+      where,
       include: {
         items: { include: { product: { select: { name: true, images: true } } } },
         address: true,
@@ -203,6 +221,7 @@ export const getMyOrders = async (req: AuthRequest, res: Response): Promise<void
       skip,
       take: Number(limit),
     }),
+    prisma.order.count({ where }),
     prisma.order.count({ where: { userId: req.user!.id } }),
     // Lifetime spend excludes cancelled orders so the account header stays
     // accurate even when the order list is paginated.
@@ -222,10 +241,92 @@ export const getMyOrders = async (req: AuthRequest, res: Response): Promise<void
       totalPages: Math.ceil(total / Number(limit)),
     },
     summary: {
-      totalOrders: total,
+      totalOrders: allTotal,
       totalSpent: Number(spent._sum.total || 0),
     },
   })
+}
+
+// PATCH /api/orders/:id/payment — admin records offline settlement (usually COD)
+export const updatePaymentStatus = async (req: AuthRequest, res: Response): Promise<void> => {
+  const { paymentStatus } = req.body
+  const allowed = ['PAID', 'UNPAID', 'REFUNDED']
+  if (!allowed.includes(paymentStatus)) {
+    throw new ApiError(`Payment status must be one of ${allowed.join(', ')}`, 400)
+  }
+
+  const existing = await prisma.order.findUnique({
+    where: { id: req.params.id as string },
+    select: { id: true },
+  })
+  if (!existing) throw new ApiError('Order not found', 404)
+
+  const updated = await prisma.order.update({
+    where: { id: existing.id },
+    data: { paymentStatus },
+  })
+  res.json({ success: true, data: updated })
+}
+
+// PATCH /api/orders/:id/cancel — customer self-service for unpaid pending orders
+export const cancelMyOrder = async (req: AuthRequest, res: Response): Promise<void> => {
+  const order = await prisma.order.findFirst({
+    where: { id: req.params.id as string, userId: req.user!.id },
+    include: { items: { select: { productId: true, quantity: true } } },
+  })
+  if (!order) throw new ApiError('Order not found', 404)
+
+  if (order.status !== 'PENDING' || order.paymentStatus === 'PAID') {
+    throw new ApiError('Only unpaid pending orders can be cancelled online. Contact support for help with this order.', 400)
+  }
+
+  const updated = await prisma.$transaction(async (tx) => {
+    // Claim the cancellation atomically so two concurrent requests cannot both
+    // restock the same order.
+    const claimed = await tx.order.updateMany({
+      where: {
+        id: order.id,
+        userId: req.user!.id,
+        status: 'PENDING',
+        paymentStatus: { not: 'PAID' },
+      },
+      data: { status: 'CANCELLED' },
+    })
+    if (claimed.count === 0) {
+      throw new ApiError('Only unpaid pending orders can be cancelled online. Contact support for help with this order.', 400)
+    }
+
+    // Return reserved stock and release the coupon in the same transaction.
+    for (const item of order.items) {
+      const product = await tx.product.update({
+        where: { id: item.productId },
+        data: { stockCount: { increment: item.quantity } },
+        select: { stockCount: true, inStock: true },
+      })
+      if (!product.inStock) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { inStock: true },
+        })
+      }
+    }
+    if (order.couponId) {
+      const coupon = await tx.coupon.findUnique({
+        where: { id: order.couponId },
+        select: { usedCount: true },
+      })
+      if (coupon && coupon.usedCount > 0) {
+        await tx.coupon.update({
+          where: { id: order.couponId },
+          data: { usedCount: { decrement: 1 } },
+        })
+      }
+    }
+
+    return tx.order.findUniqueOrThrow({ where: { id: order.id } })
+  })
+
+  res.json({ success: true, data: updated, message: 'Order cancelled' })
 }
 
 // GET /api/orders/:id

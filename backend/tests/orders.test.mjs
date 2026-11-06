@@ -192,6 +192,139 @@ test('GET /api/orders/my rejects unauthenticated requests', async () => {
   assert.equal(status, 401)
 })
 
+test('POST /api/orders stores customer order notes', async () => {
+  if (!serverUp) return
+  const user = await makeUser('notes')
+  const addressId = await makeAddress(user.token)
+  const product = await pickStockedProduct(1)
+
+  const { status, body } = await call('POST', '/api/orders', {
+    token: user.token,
+    body: {
+      items: [{ productId: product.id, quantity: 1 }],
+      addressId,
+      notes: 'Please call before delivery',
+    },
+  })
+  assert.equal(status, 201)
+  assert.equal(body.data.notes, 'Please call before delivery')
+})
+
+test('GET /api/orders/my filters All / Active / Past without breaking totals', async () => {
+  if (!serverUp) return
+  const user = await makeUser('filters')
+  const addressId = await makeAddress(user.token)
+  const product = await pickStockedProduct(2)
+
+  const active = await call('POST', '/api/orders', {
+    token: user.token,
+    body: { items: [{ productId: product.id, quantity: 1 }], addressId },
+  })
+  const past = await call('POST', '/api/orders', {
+    token: user.token,
+    body: { items: [{ productId: product.id, quantity: 1 }], addressId },
+  })
+  assert.equal(active.status, 201)
+  assert.equal(past.status, 201)
+
+  const cancelled = await call('PATCH', `/api/orders/${past.body.data.id}/cancel`, { token: user.token })
+  assert.equal(cancelled.status, 200)
+  assert.equal(cancelled.body.data.status, 'CANCELLED')
+
+  const activeList = await call('GET', '/api/orders/my?status=active', { token: user.token })
+  assert.equal(activeList.status, 200)
+  assert.equal(activeList.body.pagination.total, 1)
+  assert.equal(activeList.body.data[0].id, active.body.data.id)
+  assert.equal(activeList.body.summary.totalOrders, 2, 'summary still counts every order')
+
+  const pastList = await call('GET', '/api/orders/my?status=past', { token: user.token })
+  assert.equal(pastList.status, 200)
+  assert.equal(pastList.body.pagination.total, 1)
+  assert.equal(pastList.body.data[0].id, past.body.data.id)
+
+  const allList = await call('GET', '/api/orders/my', { token: user.token })
+  assert.equal(allList.body.pagination.total, 2)
+  assert.equal(
+    allList.body.summary.totalSpent,
+    Number(active.body.data.total),
+    'cancelled orders are excluded from lifetime spend'
+  )
+})
+
+test('PATCH /api/orders/:id/cancel restocks an unpaid pending order', async () => {
+  if (!serverUp) return
+  const user = await makeUser('cancel')
+  const addressId = await makeAddress(user.token)
+  const product = await pickStockedProduct(2)
+
+  const { status: createdStatus, body: created } = await call('POST', '/api/orders', {
+    token: user.token,
+    body: { items: [{ productId: product.id, quantity: 2 }], addressId, paymentMethod: 'cod' },
+  })
+  assert.equal(createdStatus, 201)
+
+  const afterOrder = await call('GET', `/api/products/${product.slug}`)
+  assert.equal(afterOrder.body.data.stockCount, product.stockCount - 2)
+
+  const cancelled = await call('PATCH', `/api/orders/${created.data.id}/cancel`, { token: user.token })
+  assert.equal(cancelled.status, 200)
+  assert.equal(cancelled.body.data.status, 'CANCELLED')
+
+  const afterCancel = await call('GET', `/api/products/${product.slug}`)
+  assert.equal(afterCancel.body.data.stockCount, product.stockCount)
+
+  const twice = await call('PATCH', `/api/orders/${created.data.id}/cancel`, { token: user.token })
+  assert.equal(twice.status, 400)
+})
+
+test('PATCH /api/orders/:id/payment records offline settlement (admin)', async () => {
+  if (!serverUp) return
+  const user = await makeUser('paid')
+  const addressId = await makeAddress(user.token)
+  const product = await pickStockedProduct(1)
+  const { body: created } = await call('POST', '/api/orders', {
+    token: user.token,
+    body: { items: [{ productId: product.id, quantity: 1 }], addressId, paymentMethod: 'cod' },
+  })
+  assert.equal(created.data.paymentStatus, 'UNPAID')
+
+  const paid = await call('PATCH', `/api/orders/${created.data.id}/payment`, {
+    token: await adminToken(),
+    body: { paymentStatus: 'PAID' },
+  })
+  assert.equal(paid.status, 200)
+  assert.equal(paid.body.data.paymentStatus, 'PAID')
+
+  const forbidden = await call('PATCH', `/api/orders/${created.data.id}/payment`, {
+    token: user.token,
+    body: { paymentStatus: 'PAID' },
+  })
+  assert.equal(forbidden.status, 403)
+
+  const invalid = await call('PATCH', `/api/orders/${created.data.id}/payment`, {
+    token: await adminToken(),
+    body: { paymentStatus: 'SETTLED' },
+  })
+  assert.equal(invalid.status, 400)
+})
+
+test('PATCH /api/orders/:id/cancel hides other customers\' orders', async () => {
+  if (!serverUp) return
+  const owner = await makeUser('cancelowner')
+  const stranger = await makeUser('cancelstranger')
+  const addressId = await makeAddress(owner.token)
+  const product = await pickStockedProduct(1)
+  const { body: created } = await call('POST', '/api/orders', {
+    token: owner.token,
+    body: { items: [{ productId: product.id, quantity: 1 }], addressId },
+  })
+
+  const { status } = await call('PATCH', `/api/orders/${created.data.id}/cancel`, {
+    token: stranger.token,
+  })
+  assert.equal(status, 404)
+})
+
 test('GET /api/orders/:id works for the order owner', async () => {
   if (!serverUp) return
   const user = await makeUser('o6')

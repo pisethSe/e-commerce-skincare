@@ -245,16 +245,31 @@ W-2 and W-3 contain the conflicts above and should not start until those are dec
 
 | Decision | Options | Chosen | Date |
 | --- | --- | --- | --- |
-| D-01 Source of truth | Copy patterns vs exact clone | _Pending_ | — |
-| D-02 Guest checkout | Keep account-only vs add guest | _Pending_ | — |
-| D-03 Payment methods | Keep four methods vs card-only | _Pending_ | — |
-| D-04 Address model | Keep Calesta fields vs province/district/phone | _Pending_ | — |
-| D-05 Pickup | Add pickup vs delivery-only | _Pending_ | — |
-| D-06 Shipping fee | Keep $8.95/$75 vs $1.50/$40 | _Pending_ | — |
-| D-07 Order statuses | Keep six vs reference four | _Pending_ | — |
-| D-08 Differentiators | Keep reviews/wishlist/tracking vs remove | _Pending_ | — |
+| D-01 Source of truth | Copy patterns vs exact clone | Copy interaction patterns; keep Calesta business rules | 2026-11-06 |
+| D-02 Guest checkout | Keep account-only vs add guest | Keep account-only (guest checkout out of scope) | 2026-11-06 |
+| D-03 Payment methods | Keep four methods vs card-only | Keep COD, ABA PayWay, Bakong, card | 2026-11-06 |
+| D-04 Address model | Keep Calesta fields vs province/district/phone | Keep Phnom Penh/province, khan/province, house/street, phone; postal optional | 2026-11-06 |
+| D-05 Pickup | Add pickup vs delivery-only | Delivery-only, one standard method | 2026-11-06 |
+| D-06 Shipping fee | Keep $8.95/$75 vs $1.50/$40 | Keep $8.95 standard, free over $75 | 2026-11-06 |
+| D-07 Order statuses | Keep six vs reference four | Keep PENDING, PROCESSING, SHIPPED, DELIVERED, CANCELLED, REFUNDED | 2026-11-06 |
+| D-08 Differentiators | Keep reviews/wishlist/tracking vs remove | Keep reviews, wishlist, journal, newsletter, public tracking | 2026-11-06 |
 
-Until D-01 is answered, only W-1 is safe to implement because it does not change money, identity, address, or order-state rules.
+---
+
+## 8.1 Implementation status (2026-11-06)
+
+The safe interaction-pattern slices are implemented and browser-smoke-tested. Business-rule conflicts remain deliberately unchanged.
+
+| Slice | Status | Notes |
+| --- | --- | --- |
+| W-1 Product/cart | Done | Buy Now, stock urgency, quantity caps, share/copy link, cart drawer cancel, variant-aware line keys, live cart badge |
+| W-2 Checkout | Done (adapted) | Order notes (500 max), coupon/offers block, recommended card badge, Pay Now vs Place Order, saved addresses in account; pickup and single-page checkout rejected |
+| W-3 Order lifecycle | Partially done | Customer cancel-unpaid with restock/coupon release, active/past filters, payment-status chips; activity log, cancellation reasons, restore preview, separate delivery status still open |
+| W-4 Notifications/offers | Partially done | Offers/coupon surface at checkout; in-app order notifications still open |
+| W-5 Admin parity | Partially done | Mark-as-paid action in order drawer; activity timeline, stock ledger, restore preview still open |
+| W-6 Tests/docs | Done | Backend order tests, frontend store test, tsc/build/audit, browser smoke, this document |
+
+Still intentionally different from weYOUNG: account-only checkout, four payment methods, Calesta address fields, one delivery method, $8.95/$75 shipping, 10% VAT, six order statuses, USD ledger with KHR display, and retained reviews/wishlist/journal/newsletter/public tracking.
 
 ---
 

@@ -14,7 +14,11 @@ export default function Navbar() {
   const navigate = useNavigate()
   const [scrolled, setScrolled] = useState(false)
   const [confirmLogout, setConfirmLogout] = useState(false)
-  const itemCount = useCartStore((s) => s.itemCount)
+  // Subscribe to the items array, not the itemCount() function: selecting the
+  // function keeps a stable reference, so the badge would go stale after
+  // checkout clears the bag.
+  const cartItems = useCartStore((s) => s.items)
+  const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
   const wishlistCount = useWishlistStore((s) => s.ids.length)
   const toggleCart = useCartStore((s) => s.toggleCart)
   const user = useAuthStore((s) => s.user)
@@ -233,9 +237,9 @@ export default function Navbar() {
                   aria-label={t('nav.openCart')}
                 >
                   <ShoppingBag size={18} strokeWidth={1.75} />
-                  {itemCount() > 0 && (
+                  {itemCount > 0 && (
                     <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-Mneutral-900 px-1 text-[10px] font-semibold text-white">
-                      {itemCount()}
+                      {itemCount}
                     </span>
                   )}
                 </button>

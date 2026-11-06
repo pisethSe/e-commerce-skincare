@@ -245,6 +245,27 @@ export default function AuthModal() {
               </div>
               ) }
 
+              {authMode !== 'forgot' && (
+                <div className="grid gap-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // /api prefix — the vite proxy routes it to the backend
+                      window.location.href = getApiUrl('/api/auth/google')
+                    }}
+                    className="inline-flex w-full items-center justify-center gap-3 rounded-full border border-Mneutral-300 bg-white px-[20px] py-[14px] font-medium text__16 text-center text-Mneutral-900 transition-colors hover:bg-Mneutral-50"
+                  >
+                    <GoogleIcon />
+                    {t('auth.continueGoogle')}
+                  </button>
+                  <div className="flex items-center gap-3">
+                    <span className="h-px flex-1 bg-Mneutral-200" />
+                    <span className="text__12 text-Mneutral-400">{t('auth.continueEmail')}</span>
+                    <span className="h-px flex-1 bg-Mneutral-200" />
+                  </div>
+                </div>
+              )}
+
               <form className="grid grid-cols-1 gap-[24px]" onSubmit={handleSubmit}>
                 {authMode === 'signup' && (
                   <>
@@ -359,23 +380,6 @@ export default function AuthModal() {
                   {loading ? t('auth.pleaseWait') : authMode === 'login' ? t('auth.login') : authMode === 'forgot' ? t('auth.sendReset') : t('auth.signUp')}
                 </button>
 
-                {authMode !== 'forgot' && (<><div className="flex items-center gap-3">
-                  <span className="h-px flex-1 bg-Mneutral-200" />
-                  <span className="text__12 text-Mneutral-400">{t('auth.or')}</span>
-                  <span className="h-px flex-1 bg-Mneutral-200" />
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    // /api prefix — the vite proxy routes it to the backend
-                    window.location.href = getApiUrl('/api/auth/google')
-                  }}
-                  className="inline-flex w-full items-center justify-center gap-3 rounded-full border border-Mneutral-300 bg-white px-[20px] py-[14px] font-medium text__16 text-center text-Mneutral-900 transition-colors hover:bg-Mneutral-50"
-                >
-                  <GoogleIcon />
-                  {t('auth.continueGoogle')}
-                </button></>)}
               </form>
             </div>
           </motion.div>

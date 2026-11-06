@@ -60,6 +60,7 @@ describe('cart store', () => {
 
     useCartStore.getState().clearCart()
     expect(useCartStore.getState().items).toEqual([])
+    expect(useCartStore.getState().itemCount()).toBe(0)
     expect(useCartStore.getState().coupon).toBeNull()
   })
 })

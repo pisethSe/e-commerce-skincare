@@ -11,6 +11,12 @@ type Entry = { en: string; km: string }
 export const dictionary = {
   // Navigation / shell
   'nav.products': { en: 'Our Products', km: 'ផលិតផលរបស់យើង' },
+  'nav.home': { en: 'Home', km: 'ទំព័រដើម' },
+  'nav.productsShort': { en: 'Products', km: 'ផលិតផល' },
+  'nav.searchShort': { en: 'Search', km: 'ស្វែងរក' },
+  'nav.cartShort': { en: 'Cart', km: 'កន្ត្រក' },
+  'nav.you': { en: 'You', km: 'អ្នក' },
+  'nav.mobileMenu': { en: 'Mobile navigation', km: 'ម៉ឺនុយទូរស័ព្ទ' },
   'nav.journal': { en: 'Journal', km: 'ទស្សនាវដ្ដី' },
   'nav.about': { en: 'About Us', km: 'អំពីយើង' },
   'nav.checkout': { en: 'Checkout', km: 'ការទូទាត់' },
@@ -83,6 +89,8 @@ export const dictionary = {
 
   // Cart sidebar + page
   'cart.title': { en: 'Your Bag', km: 'កន្ត្រករបស់អ្នក' },
+  'cart.cancel': { en: 'Cancel', km: 'បោះបង់' },
+  'cart.close': { en: 'Close cart', km: 'បិទកន្ត្រក' },
   'cart.empty': { en: 'Your bag is empty', km: 'កន្ត្រករបស់អ្នកទទេ' },
   'cart.emptyHint': { en: 'Add some luxurious treats', km: 'បន្ថែមផលិតផលថែទាំស្បែកដ៏ប្រណិត' },
   'cart.viewFullCart': { en: 'View full cart', km: 'មើលកន្ត្រកពេញលេញ' },
@@ -101,6 +109,12 @@ export const dictionary = {
 
   // Home
   'home.kicker': { en: 'BEAUTY CARE', km: 'ការថែទាំសម្ផស្ស' },
+  'home.announcement': {
+    en: 'Free standard delivery in Cambodia over $75 · Cash on delivery available',
+    km: 'ដឹកជញ្ជូនស្តង់ដារឥតគិតថ្លៃក្នុងកម្ពុជាលើសពី $75 · អាចបង់ប្រាក់ពេលទទួលទំនិញ',
+  },
+  'home.shopByCategory': { en: 'Shop by Category', km: 'ទិញតាមប្រភេទ' },
+  'home.viewAll': { en: 'View all', km: 'មើលទាំងអស់' },
   'home.title1': { en: 'Your Best Skin', km: 'ស្បែកដ៏ល្អបំផុតរបស់អ្នក' },
   'home.title2': { en: 'Starts Here', km: 'ចាប់ផ្តើមនៅទីនេះ' },
   'home.sub': {
@@ -264,6 +278,13 @@ export const dictionary = {
   'shop.clearSearch': { en: 'Clear search', km: 'សម្អាតការស្វែងរក' },
   'shop.resultsFor': { en: 'Results for “{query}”', km: 'លទ្ធផលសម្រាប់ “{query}”' },
   'shop.filters': { en: 'Filters', km: 'តម្រង' },
+  'shop.category': { en: 'Category', km: 'ប្រភេទ' },
+  'shop.priceRange': { en: 'Price range', km: 'ជួរតម្លៃ' },
+  'shop.min': { en: 'Min', km: 'ទាប' },
+  'shop.max': { en: 'Max', km: 'ខ្ពស់' },
+  'shop.minPrice': { en: 'Minimum price', km: 'តម្លៃទាបបំផុត' },
+  'shop.maxPrice': { en: 'Maximum price', km: 'តម្លៃខ្ពស់បំផុត' },
+  'shop.applyRange': { en: 'Apply', km: 'អនុវត្ត' },
   'shop.clearFilters': { en: 'Clear all', km: 'សម្អាតទាំងអស់' },
   'shop.price': { en: 'Price', km: 'តម្លៃ' },
   'shop.priceUnder': { en: 'Under {amount}', km: 'ក្រោម {amount}' },
@@ -287,6 +308,11 @@ export const dictionary = {
 
   // Back in stock
   'product.soldOut': { en: 'Sold out', km: 'អស់ស្តុក' },
+  'product.onlyLeft': { en: 'Only {count} left', km: 'នៅសល់តែ {count} ប៉ុណ្ណោះ' },
+  'product.buyNow': { en: 'BUY NOW', km: 'ទិញឥឡូវនេះ' },
+  'product.linkCopied': { en: 'LINK COPIED', km: 'បានចម្លងតំណ' },
+  'product.decreaseQuantity': { en: 'Decrease quantity', km: 'បន្ថយចំនួន' },
+  'product.increaseQuantity': { en: 'Increase quantity', km: 'បន្ថែមចំនួន' },
   'product.outOfStockHint': {
     en: 'This ritual is currently sold out. Leave your email and we will let you know the moment it returns.',
     km: 'ផលិតផលនេះអស់ស្តុកបណ្តោះអាសន្ន។ ទុកអ៊ីមែលរបស់អ្នក ហើយយើងនឹងជូនដំណឹងភ្លាមៗពេលមានស្តុកវិញ។',
@@ -483,7 +509,19 @@ export const dictionary = {
     km: 'ការទូទាត់សាកល្បង — គ្មានការគិតថ្លៃទេ។ ការទូទាត់កាតត្រៀមជាមួយ Stripe រួចហើយ។ ABA PayWay និងបាកុងភ្ជាប់រួចសម្រាប់ព័ត៌មានអាជីវករ។',
   },
   'checkout.placeOrder': { en: 'Place Order · {amount}', km: 'បញ្ជាទិញ · {amount}' },
+  'checkout.payNow': { en: 'Pay Now · {amount}', km: 'បង់ប្រាក់ឥឡូវ · {amount}' },
+  'checkout.recommended': { en: 'Recommended', km: 'ណែនាំ' },
   'checkout.placing': { en: 'Placing order…', km: 'កំពុងបញ្ជាទិញ…' },
+  'checkout.orderNotes': { en: 'Order notes (optional)', km: 'កំណត់ចំណាំការបញ្ជាទិញ (ស្រេចចិត្ត)' },
+  'checkout.orderNotesPlaceholder': {
+    en: 'Delivery instructions, gift note, or anything we should know…',
+    km: 'សេចក្តីណែនាំពេលដឹកជញ្ជូន កំណត់ចំណាំអំណោយ ឬអ្វីផ្សេងទៀតដែលយើងគួរដឹង…',
+  },
+  'checkout.offers': { en: 'Offers', km: 'ការផ្តល់ជូន' },
+  'checkout.offerPlaceholder': { en: 'Coupon code', km: 'កូដបញ្ចុះតម្លៃ' },
+  'checkout.applyOffer': { en: 'Apply', km: 'អនុវត្ត' },
+  'checkout.applyingOffer': { en: 'Applying…', km: 'កំពុងអនុវត្ត…' },
+  'checkout.removeOffer': { en: 'Remove coupon', km: 'ដកកូដបញ្ចុះតម្លៃ' },
   'checkout.secure': {
     en: 'Your payment information is encrypted and secure',
     km: 'ព័ត៌មានទូទាត់របស់អ្នកត្រូវបានអ៊ិនគ្រីប និងមានសុវត្ថិភាព',
@@ -535,6 +573,46 @@ export const dictionary = {
 
   // Account
   'account.myAccount': { en: 'MY ACCOUNT', km: 'គណនីរបស់ខ្ញុំ' },
+  'account.myOrders': { en: 'My Orders', km: 'ការបញ្ជាទិញរបស់ខ្ញុំ' },
+  'account.myOrdersHint': { en: 'Track your orders', km: 'តាមដានការបញ្ជាទិញរបស់អ្នក' },
+  'account.myAccountHint': { en: 'Your details and account preferences', km: 'ព័ត៌មាន និងចំណូលចិត្តគណនីរបស់អ្នក' },
+  'account.myAddresses': { en: 'My Addresses', km: 'អាសយដ្ឋានរបស់ខ្ញុំ' },
+  'account.myAddressesHint': { en: 'Manage your saved delivery addresses', km: 'គ្រប់គ្រងអាសយដ្ឋានដឹកជញ្ជូនដែលបានរក្សាទុក' },
+  'account.filterAll': { en: 'All', km: 'ទាំងអស់' },
+  'account.filterActive': { en: 'Active', km: 'កំពុងដំណើរការ' },
+  'account.filterPast': { en: 'Past', km: 'អតីត' },
+  'account.noFilteredOrders': { en: 'No orders in this view', km: 'គ្មានការបញ្ជាទិញក្នុងទិដ្ឋភាពនេះ' },
+  'account.noFilteredOrdersHint': { en: 'Try another tab or start a new order.', km: 'សាកល្បងផ្ទាំងផ្សេង ឬចាប់ផ្តើមការបញ្ជាទិញថ្មី។' },
+  'account.paid': { en: 'Paid', km: 'បានបង់ប្រាក់' },
+  'account.unpaid': { en: 'Unpaid', km: 'មិនទាន់បង់ប្រាក់' },
+  'account.trackOrder': { en: 'Track this order', km: 'តាមដានការបញ្ជាទិញនេះ' },
+  'account.cancelOrder': { en: 'Cancel order', km: 'បោះបង់ការបញ្ជាទិញ' },
+  'account.cancelOrderTitle': { en: 'CANCEL ORDER', km: 'បោះបង់ការបញ្ជាទិញ' },
+  'account.cancelOrderMessage': {
+    en: 'Cancel order {number}? Reserved stock will be returned to the shop.',
+    km: 'បោះបង់ការបញ្ជាទិញ {number}? ទំនិញដែលបានកក់ទុកនឹងត្រូវបញ្ជូនត្រឡប់ទៅហាងវិញ។',
+  },
+  'account.cancelOrderConfirm': { en: 'Yes, cancel order', km: 'បាទ/ចាស បោះបង់' },
+  'account.cancelling': { en: 'Cancelling…', km: 'កំពុងបោះបង់…' },
+  'account.accountDetails': { en: 'ACCOUNT DETAILS', km: 'ព័ត៌មានគណនី' },
+  'account.yourDetails': { en: 'Your Details', km: 'ព័ត៌មានរបស់អ្នក' },
+  'account.memberSinceLabel': { en: 'Member since', km: 'សមាជិកតាំងពី' },
+  'account.detailsHint': {
+    en: 'To change your email or password, use the reset-password flow from the sign-in screen. Addresses can be added at checkout.',
+    km: 'ដើម្បីផ្លាស់ប្តូរអ៊ីមែល ឬពាក្យសម្ងាត់ សូមប្រើដំណើរការកំណត់ពាក្យសម្ងាត់ឡើងវិញពីទំព័រចូលគណនី។ អាសយដ្ឋានអាចបន្ថែមនៅពេលទូទាត់។',
+  },
+  'account.savedAddresses': { en: 'SAVED ADDRESSES', km: 'អាសយដ្ឋានដែលបានរក្សាទុក' },
+  'account.addAddress': { en: 'Add address', km: 'បន្ថែមអាសយដ្ឋាន' },
+  'account.noAddresses': { en: 'No saved addresses', km: 'គ្មានអាសយដ្ឋានរក្សាទុក' },
+  'account.noAddressesHint': {
+    en: 'Add one at checkout and it will appear here.',
+    km: 'បន្ថែមនៅពេលទូទាត់ ហើយវានឹងបង្ហាញនៅទីនេះ។',
+  },
+  'account.defaultAddress': { en: 'Default', km: 'លំនាំដើម' },
+  'account.signInHint': {
+    en: 'Your profile, order history, and saved addresses live here once you sign in.',
+    km: 'ព័ត៌មាន ប្រវត្តិការបញ្ជាទិញ និងអាសយដ្ឋានរបស់អ្នកនឹងបង្ហាញនៅទីនេះបន្ទាប់ពីចូលគណនី។',
+  },
   'account.hi': { en: 'Hi, {name}', km: 'សួស្តី {name}' },
   'account.memberSince': { en: 'member since {date}', km: 'សមាជិកតាំងពី {date}' },
   'account.logout': { en: 'Logout', km: 'ចាកចេញ' },
@@ -630,6 +708,7 @@ export const dictionary = {
   'auth.forgot': { en: 'Forgot password?', km: 'ភ្លេចពាក្យសម្ងាត់?' },
   'auth.sendReset': { en: 'SEND RESET LINK', km: 'ផ្ញើតំណកំណត់ឡើងវិញ' },
   'auth.continueGoogle': { en: 'Continue with Google', km: 'បន្តជាមួយ Google' },
+  'auth.continueEmail': { en: 'or continue with email', km: 'ឬបន្តជាមួយអ៊ីមែល' },
   'auth.acceptTerms': {
     en: "I've read and accept the Terms & Conditions",
     km: 'ខ្ញុំបានអាន និងយល់ព្រមលក្ខខណ្ឌប្រើប្រាស់',

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Heart, Share2 } from 'lucide-react'
+import { ArrowLeft, Check, Heart, Share2 } from 'lucide-react'
 import { normalizeProduct, useCatalogStore } from '../lib/catalog'
 import { getApiUrl } from '../lib/api'
 import { useAuthStore } from '../lib/store'
@@ -24,6 +24,7 @@ export default function ProductPage() {
   const [notifyEmail, setNotifyEmail] = useState('')
   const [notifyState, setNotifyState] = useState<'idle' | 'sending' | 'done'>('idle')
   const [notifyError, setNotifyError] = useState('')
+  const [shared, setShared] = useState(false)
   const addItem = useCartStore((s) => s.addItem)
   const user = useAuthStore((s) => s.user)
   const { toggle, has } = useWishlistStore()
@@ -31,6 +32,31 @@ export default function ProductPage() {
   const categoryName = useCategoryName()
   const { money } = useMoney()
   const outOfStock = Boolean(product && (!product.inStock || (product.stockCount ?? 1) <= 0))
+  const stockLeft = Math.max(0, product?.stockCount ?? 0)
+  const lowStock = !outOfStock && stockLeft > 0 && stockLeft <= (product?.lowStockThreshold ?? 10)
+
+  const buyNow = () => {
+    if (!product || outOfStock) return
+    addItem(product, quantity)
+    useCartStore.setState({ isOpen: false })
+    navigate('/checkout')
+  }
+
+  const shareProduct = async () => {
+    if (!product) return
+    const url = window.location.href
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: product.name, text: product.tagline, url })
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(url)
+        setShared(true)
+        window.setTimeout(() => setShared(false), 2000)
+      }
+    } catch {
+      // The native share sheet can be dismissed; that is not an error worth surfacing.
+    }
+  }
 
   // Sold-out products are hidden from the listing, but direct links still work.
   useEffect(() => {
@@ -179,27 +205,43 @@ export default function ProductPage() {
                 </div>
               </div>
 
-              <div className="mt-8 flex w-full flex-wrap items-center gap-3 self-end">
-                <button
-                  type="button"
-                  onClick={() => addItem(product, quantity)}
-                  disabled={outOfStock}
-                  className="filled-pill-button disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {outOfStock ? t('product.soldOut') : `${t('common.addToBag')} · ${money(product.price)}`}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => toggle(product.id)}
-                  className={`pill-button ${wished ? 'bg-Mneutral-900 text-white' : ''}`}
-                >
-                  <Heart size={16} />
-                  {wished ? t('product.saved') : t('product.save')}
-                </button>
-                <button type="button" className="pill-button">
-                  <Share2 size={16} />
-                  {t('product.share')}
-                </button>
+              <div className="mt-8 w-full">
+                {lowStock && (
+                  <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#f7f1de] px-3 py-1.5 text__12 font-medium text-[#7a6420]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#b28a1f]" />
+                    {t('product.onlyLeft', { count: stockLeft })}
+                  </p>
+                )}
+                <div className="flex w-full flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => addItem(product, quantity)}
+                    disabled={outOfStock}
+                    className="filled-pill-button disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {outOfStock ? t('product.soldOut') : `${t('common.addToBag')} · ${money(product.price)}`}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={buyNow}
+                    disabled={outOfStock}
+                    className="pill-button bg-Mneutral-900 text-white transition-colors hover:bg-Mneutral-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {t('product.buyNow')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggle(product.id)}
+                    className={`pill-button ${wished ? 'bg-Mneutral-900 text-white' : ''}`}
+                  >
+                    <Heart size={16} />
+                    {wished ? t('product.saved') : t('product.save')}
+                  </button>
+                  <button type="button" onClick={() => void shareProduct()} className="pill-button">
+                    {shared ? <Check size={16} /> : <Share2 size={16} />}
+                    {shared ? t('product.linkCopied') : t('product.share')}
+                  </button>
+                </div>
               </div>
 
               {outOfStock && (
@@ -270,11 +312,23 @@ export default function ProductPage() {
 
                 <div className="mt-[24px] flex items-center gap-4">
                   <div className="flex items-center gap-2 rounded-full border border-Mneutral-200 px-3 py-2">
-                    <button type="button" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="text__18">
+                    <button
+                      type="button"
+                      aria-label={t('product.decreaseQuantity')}
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className="text__18 disabled:opacity-40"
+                      disabled={quantity <= 1}
+                    >
                       −
                     </button>
                     <span className="min-w-8 text-center text__16">{quantity}</span>
-                    <button type="button" onClick={() => setQuantity(quantity + 1)} className="text__18">
+                    <button
+                      type="button"
+                      aria-label={t('product.increaseQuantity')}
+                      onClick={() => setQuantity(Math.min(stockLeft > 0 ? stockLeft : 99, quantity + 1))}
+                      className="text__18 disabled:opacity-40"
+                      disabled={stockLeft > 0 && quantity >= stockLeft}
+                    >
                       +
                     </button>
                   </div>

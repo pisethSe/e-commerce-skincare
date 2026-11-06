@@ -13,7 +13,9 @@ import {
   MapPin,
   ShoppingBag,
   QrCode,
+  Tag,
   Wallet,
+  X,
 } from 'lucide-react'
 import { useCartStore, useAuthStore, useUIStore } from '../lib/store'
 import { useMoney } from '../lib/currency'
@@ -68,7 +70,7 @@ const INITIAL_FORM: CheckoutForm = {
 const STANDARD_SHIPPING = 8.95
 
 export default function CheckoutPage() {
-  const { items, total, coupon, clearCart } = useCartStore()
+  const { items, total, coupon, couponError, applyCoupon, clearCoupon, clearCart } = useCartStore()
   const user = useAuthStore((s) => s.user)
   const accessToken = useAuthStore((s) => s.accessToken)
   const openAuthModal = useUIStore((s) => s.openAuthModal)
@@ -89,6 +91,9 @@ export default function CheckoutPage() {
   const [bakongPayment, setBakongPayment] = useState<{ orderId: string; orderNumber: string; total: number } | null>(null)
   const [bakongQr, setBakongQr] = useState<{ qrImage: string; qr: string; currency: string } | null>(null)
   const [verifying, setVerifying] = useState(false)
+  const [notes, setNotes] = useState('')
+  const [couponDraft, setCouponDraft] = useState('')
+  const [couponApplying, setCouponApplying] = useState(false)
 
   useEffect(() => {
     document.title = 'Calesta — Checkout'
@@ -133,6 +138,13 @@ export default function CheckoutPage() {
 
   const setField = (key: keyof CheckoutForm, value: string) =>
     setForm((f) => ({ ...f, [key]: value }))
+
+  const applyCheckoutCoupon = async () => {
+    setCouponApplying(true)
+    const applied = await applyCoupon(couponDraft)
+    if (applied) setCouponDraft('')
+    setCouponApplying(false)
+  }
 
   const validateStep = (target: Step): boolean => {
     if (target === 'shipping') {
@@ -229,6 +241,7 @@ export default function CheckoutPage() {
           ...(coupon ? { couponCode: coupon.code } : {}),
           paymentMethod: paymentChoice,
           shippingMethod: 'standard',
+          ...(notes.trim() ? { notes: notes.trim() } : {}),
         }),
       })
       const orderResult = await orderRes.json()
@@ -617,10 +630,10 @@ export default function CheckoutPage() {
                 </h2>
 
                 {[
-                  { value: 'cod' as const, label: t('checkout.cod'), desc: t('checkout.codDesc'), icon: Banknote },
-                  { value: 'aba_payway' as const, label: t('checkout.aba'), desc: t('checkout.abaDesc'), icon: Wallet },
-                  { value: 'bakong' as const, label: t('checkout.bakong'), desc: t('checkout.bakongDesc'), icon: QrCode },
-                  { value: 'card' as const, label: t('checkout.card'), desc: t('checkout.cardDesc'), icon: CreditCard },
+                  { value: 'cod' as const, label: t('checkout.cod'), desc: t('checkout.codDesc'), icon: Banknote, recommended: false },
+                  { value: 'aba_payway' as const, label: t('checkout.aba'), desc: t('checkout.abaDesc'), icon: Wallet, recommended: false },
+                  { value: 'bakong' as const, label: t('checkout.bakong'), desc: t('checkout.bakongDesc'), icon: QrCode, recommended: false },
+                  { value: 'card' as const, label: t('checkout.card'), desc: t('checkout.cardDesc'), icon: CreditCard, recommended: true },
                 ].map((option) => {
                   const Icon = option.icon
                   return (
@@ -639,7 +652,14 @@ export default function CheckoutPage() {
                         <Icon size={16} />
                       </div>
                       <div className="flex-1">
-                        <p className="text__16 font-medium">{option.label}</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text__16 font-medium">{option.label}</p>
+                          {option.recommended && (
+                            <span className="rounded-full bg-[#eaf1e3] px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-[#4a6132]">
+                              {t('checkout.recommended')}
+                            </span>
+                          )}
+                        </div>
                         <p className="text__14 text-Mneutral-500">{option.desc}</p>
                       </div>
                     </label>
@@ -685,6 +705,22 @@ export default function CheckoutPage() {
                   </p>
                 )}
 
+                <div>
+                  <label htmlFor="checkout-notes" className="mb-2 block text__14 text-Mneutral-500">
+                    {t('checkout.orderNotes')}
+                  </label>
+                  <textarea
+                    id="checkout-notes"
+                    value={notes}
+                    maxLength={500}
+                    onChange={(event) => setNotes(event.target.value)}
+                    placeholder={t('checkout.orderNotesPlaceholder')}
+                    rows={3}
+                    className="w-full resize-none rounded-[20px] border border-Mneutral-100 px-4 py-3 text__16 outline-none transition-colors focus:border-Mneutral-900"
+                  />
+                  <p className="mt-1 text-right text__12 text-Mneutral-400 tabular-nums">{notes.length}/500</p>
+                </div>
+
                 {orderError && (
                   <p role="alert" className="rounded-[16px] bg-blush-50 px-4 py-3 text__14 text-blush-700">
                     {orderError}
@@ -708,7 +744,11 @@ export default function CheckoutPage() {
                     ) : (
                       <CreditCard size={16} />
                     )}
-                    {placing ? t('checkout.placing') : t('checkout.placeOrder', { amount: money(orderTotal) })}
+                    {placing
+                      ? t('checkout.placing')
+                      : paymentChoice === 'cod'
+                        ? t('checkout.placeOrder', { amount: money(orderTotal) })
+                        : t('checkout.payNow', { amount: money(orderTotal) })}
                   </button>
                 </div>
                 <div className="mt-3 flex items-center justify-center gap-2 text-xs text-Mneutral-400">
@@ -744,6 +784,51 @@ export default function CheckoutPage() {
                   <span className="text__16 font-medium tabular-nums">{money(item.product.price * item.quantity)}</span>
                 </div>
               ))}
+            </div>
+
+            <div className="mb-4 rounded-[20px] bg-Mneutral-50 p-4">
+              <p className="mb-2 flex items-center gap-2 text__14 font-medium text-Mneutral-700">
+                <Tag size={14} />
+                {t('checkout.offers')}
+              </p>
+              {coupon ? (
+                <div className="flex items-center justify-between gap-3 rounded-full bg-white px-3 py-2">
+                  <span className="inline-flex items-center gap-1.5 text__14 font-medium text-sage-700">
+                    <BadgeCheck size={14} />
+                    {coupon.code}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={clearCoupon}
+                    aria-label={t('checkout.removeOffer')}
+                    className="rounded-full p-1 text-Mneutral-400 transition-colors hover:text-Mneutral-900"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    value={couponDraft}
+                    onChange={(event) => setCouponDraft(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') void applyCheckoutCoupon()
+                    }}
+                    placeholder={t('checkout.offerPlaceholder')}
+                    aria-label={t('checkout.offerPlaceholder')}
+                    className="min-w-0 flex-1 rounded-full border border-Mneutral-200 bg-white px-3 py-2 text__14 uppercase outline-none focus:border-Mneutral-900"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void applyCheckoutCoupon()}
+                    disabled={couponApplying}
+                    className="rounded-full bg-Mneutral-900 px-4 py-2 text__12 font-medium text-white transition-colors hover:bg-Mneutral-700 disabled:opacity-60"
+                  >
+                    {couponApplying ? t('checkout.applyingOffer') : t('checkout.applyOffer')}
+                  </button>
+                </div>
+              )}
+              {couponError && <p className="mt-2 text__12 text-blush-700">{couponError}</p>}
             </div>
 
             <div className="space-y-2 border-t border-Mneutral-100 pt-4 text__16">
