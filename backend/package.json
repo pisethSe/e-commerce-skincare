@@ -12,7 +12,8 @@
     "db:seed": "ts-node prisma/seed.ts",
     "db:studio": "prisma studio",
     "db:clean": "node scripts/cleanup.mjs",
-    "test": "node --test tests/"
+    "pretest": "npm run build",
+    "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {
     "@prisma/client": "^5.10.0",

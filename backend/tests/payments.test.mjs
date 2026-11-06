@@ -5,7 +5,9 @@
  */
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { buildKhqr, crc16, parseKhqr } from '../src/lib/khqr.ts'
+// Import the compiled module so the suite also runs on CI's Node 22 runner,
+// which cannot load `.ts` files directly. `pretest` builds before testing.
+import { buildKhqr, crc16, parseKhqr } from '../dist/lib/khqr.js'
 import { call, isServerUp, customerToken, makeUser, makeAddress, pickStockedProduct } from './helpers.mjs'
 
 const serverUp = await isServerUp()
