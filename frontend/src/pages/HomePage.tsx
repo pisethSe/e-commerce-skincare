@@ -160,10 +160,18 @@ export default function HomePage() {
       ref={pageRef}
       className="overflow-hidden bg-Mneutral-50 pt-[76px] text-Mneutral-900"
     >
-      <div className="border-b border-Mneutral-100 bg-Mneutral-900 px-4 py-2.5 text-center">
-        <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-white/90 xs:text-[11px]">
-          {t("home.announcement")}
-        </p>
+      <div
+        className="announcement-marquee border-b border-Mneutral-100 bg-Mneutral-900"
+        aria-label={t("home.announcement")}
+      >
+        <div className="announcement-marquee-track">
+          <p className="announcement-marquee-item">
+            {t("home.announcement")}
+          </p>
+          <p className="announcement-marquee-item" aria-hidden="true">
+            {t("home.announcement")}
+          </p>
+        </div>
       </div>
 
       <section className="px-2 pt-4 pb-0 md:px-4">

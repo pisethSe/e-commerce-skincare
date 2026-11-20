@@ -321,7 +321,7 @@ export default function AccountPage() {
                 </div>
                 {totalOrders > 0 && (
                   <p className="text__18 text-Mneutral-500 tabular-nums">
-                    {t('account.ordersCount', { count: filteredOrders })}
+                    {filteredOrders === 1 ? t('account.oneOrder') : t('account.ordersCount', { count: filteredOrders })}
                   </p>
                 )}
               </div>

@@ -8,7 +8,7 @@ import assert from 'node:assert/strict'
 // Import the compiled module so the suite also runs on CI's Node 22 runner,
 // which cannot load `.ts` files directly. `pretest` builds before testing.
 import { buildKhqr, crc16, parseKhqr } from '../dist/lib/khqr.js'
-import { call, isServerUp, customerToken, makeUser, makeAddress, pickStockedProduct } from './helpers.mjs'
+import { call, isServerUp, adminToken, makeUser, makeAddress, pickStockedProduct } from './helpers.mjs'
 
 const serverUp = await isServerUp()
 
@@ -129,6 +129,29 @@ test('Bakong verify for another user\'s order is 404', async () => {
     body: { orderId: orderBody.data.id },
   })
   assert.equal(status, 404)
+})
+
+test('Bakong verify rejects cancelled orders', async () => {
+  if (!serverUp) return
+  const user = await makeUser('paycancelled')
+  const addressId = await makeAddress(user.token)
+  const product = await pickStockedProduct(5)
+  const { body: orderBody } = await call('POST', '/api/orders', {
+    token: user.token,
+    body: { items: [{ productId: product.id, quantity: 1 }], addressId, paymentMethod: 'bakong' },
+  })
+
+  const admin = await adminToken()
+  await call('PATCH', `/api/orders/${orderBody.data.id}/status`, {
+    token: admin,
+    body: { status: 'CANCELLED' },
+  })
+  const { status, body } = await call('POST', '/api/payments/bakong/verify', {
+    token: user.token,
+    body: { orderId: orderBody.data.id },
+  })
+  assert.equal(status, 409)
+  assert.match(body.message, /inactive orders cannot be paid/i)
 })
 
 test('Stripe endpoints answer 501 until credentials are configured', async () => {

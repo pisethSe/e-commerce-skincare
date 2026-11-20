@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { CheckCircle2, XCircle } from 'lucide-react'
 import { useAuthStore } from '../lib/store'
 import { apiFetch } from '../lib/api'
@@ -11,6 +11,7 @@ import { useT } from '../lib/i18n'
  */
 export default function AuthCallbackPage() {
   const setSession = useAuthStore((s) => s.setSession)
+  const navigate = useNavigate()
   const [status, setStatus] = useState<'working' | 'success' | 'error'>('working')
   const [message, setMessage] = useState('')
   const t = useT()
@@ -37,9 +38,9 @@ export default function AuthCallbackPage() {
         if (!alive) return
         if (!json.success) throw new Error(json.message ?? 'Could not load your profile')
         setSession({ user: json.data, accessToken, refreshToken })
-        setStatus('success')
         // Clean the tokens out of the URL bar
         window.history.replaceState({}, '', '/auth/callback')
+        navigate('/')
       } catch (err) {
         if (alive) {
           setStatus('error')
@@ -51,7 +52,7 @@ export default function AuthCallbackPage() {
     return () => {
       alive = false
     }
-  }, [setSession])
+  }, [navigate, setSession])
 
   return (
     <div className="bg-Mneutral-50 pt-[140px]">

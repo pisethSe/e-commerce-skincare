@@ -85,7 +85,7 @@ Calesta v1
 | Journal listing and article detail | Yes | ✅ Done |
 | Password reset, Google OAuth2 | Yes | 🟡 OAuth blocked on credentials |
 | English / Khmer UI, USD / KHR display | Yes | ✅ Done |
-| Legal pages (privacy, terms, shipping/returns) | Yes, launch-required | ⬜ Planned |
+| Legal pages (privacy, terms, shipping/returns) | Yes, launch-required | ✅ Done |
 
 ### 2.2 Platform scope — admin, API, data
 
@@ -310,14 +310,14 @@ Use this table for every request that is not already in the WBS.
 
 | ID | Work package | Small tasks | Acceptance | Status | Size |
 | --- | --- | --- | --- | --- | --- |
-| 5.1 | Backend test suite | Auth, catalog, orders, payments, reviews, admin, workflow rules | 176 tests, 0 failures, 1 credential skip | ✅ | L |
-| 5.2 | Frontend test suite | Currency, i18n, catalog, stores, reviews, tracking, cards, refresh | 38 tests, 0 failures | ✅ | L |
+| 5.1 | Backend test suite | Auth, catalog, orders, payments, reviews, admin, workflow rules | 190 tests, 0 failures | ✅ | L |
+| 5.2 | Frontend test suite | Currency, i18n, catalog, stores, reviews, tracking, cards, refresh | 80 tests, 0 failures | ✅ | L |
 | 5.3 | Type and build gate | `tsc --noEmit`, production builds for all three apps | All builds green | ✅ | M |
 | 5.4 | Dependency security | `npm audit --omit=dev`, remove unused packages, upgrade router | 0 vulnerabilities in all apps | ✅ | M |
 | 5.5 | CI pipeline | Postgres service, API tests, storefront tests/build, admin build | Workflow runs on push/PR | ✅ | L |
 | 5.6 | Database hygiene | Throwaway test users, `db:clean`, seed integrity | Demo account not polluted | ✅ | M |
 | 5.7 | Browser smoke suite | Home, search, product, cart, checkout, tracking, account, admin | Main flows pass without console errors | ✅ | L |
-| 5.8 | Documentation truth-up | Ports, router v7, test counts, removed packages, env keys | README and env examples match code | ⬜ | M |
+| 5.8 | Documentation truth-up | Ports, router v7, test counts, removed packages, env keys | README and env examples match code | ✅ | M |
 | 5.9 | Accessibility pass | Keyboard nav, focus trap, labels, contrast, modal | No critical WCAG issues in core flows | ⬜ | L |
 | 5.10 | Performance budget | Bundle analysis, lazy routes, image weight, LCP | Budgets documented and met | ⬜ | L |
 | 5.11 | CI remote verification | Push, inspect GitHub Actions, add badge | Remote jobs green | ⬜ | S |
@@ -334,7 +334,7 @@ Use this table for every request that is not already in the WBS.
 | 6.6 | OAuth production URIs | Google console callback/origins | Google sign-in works in prod | 🔒 | S |
 | 6.7 | Payment sandbox/live | Stripe/ABA/Bakong credentials, test transaction | One sandbox payment settles | 🔒 | L |
 | 6.8 | Email deliverability | SMTP, SPF, DKIM, test inbox | Confirmation/reset emails arrive | 🔒 | M |
-| 6.9 | Legal pages | Privacy, terms, shipping/returns, footer links | Pages published and linked | ⬜ | M |
+| 6.9 | Legal pages | Privacy, terms, shipping/returns, footer links | Pages published and linked | ✅ | M |
 | 6.10 | Monitoring and backups | Uptime, error tracking, DB backup, log rotation | Alerts and restore drill documented | ⬜ | L |
 | 6.11 | Production smoke | Real order, tracking, admin status, email | End-to-end order completes | 🔒 | M |
 | 6.12 | Go-live checklist | Rollback plan, support contacts, launch note | Signed off | ⬜ | S |
@@ -359,10 +359,10 @@ These are deliberately sized to fit one sitting (S/M) and to avoid opening multi
 
 | Priority | Slice | Why now | Output | Size | Dependency |
 | --- | --- | --- | --- | --- | --- |
-| P0 | **Docs truth-up** | README still says Router v6, Swiper, Zod, 33 tests, ports 3000/3001 | README + env examples match the code | M | None |
+| P0 | **Docs truth-up** | Keep README, env examples, and WBS aligned with the implementation | README + env examples match the code | M | None |
 | P0 | **CI remote verification** | Local green is not proof the workflow runs | GitHub Actions run link + badge | S | Push access |
 | P0 | **Launch env contract** | Missing Google/payment/email keys block launch | One checklist of required prod secrets | M | None |
-| P0 | **Legal pages** | Launch-required and currently missing | Privacy, terms, shipping/returns + footer links | M | Copy approval |
+| P0 | **Legal pages** | Launch-required pages are implemented; production copy still needs approval | Privacy, terms, shipping/returns + footer links | M | Copy approval |
 | P1 | **Accessibility pass** | Checkout/modal/nav are revenue-critical | Keyboard/focus/label fixes + notes | L | None |
 | P1 | **Performance budget** | Bundle and image weight affect mobile conversion | Budget + measured report | L | None |
 | P1 | **Payment sandbox harness** | Gateways are blocked on credentials | Mock/contract tests for each gateway | L | None |
@@ -371,13 +371,14 @@ These are deliberately sized to fit one sitting (S/M) and to avoid opening multi
 | P2 | **Monitoring/backup runbook** | Launch without it is risky | Uptime, errors, backup, restore steps | M | Hosting |
 | P2 | **Post-launch calendar** | Keeps content/support predictable | 4-week ops calendar | S | None |
 
-### Recommended next slice
+### Completed slice
 
-**Slice 1 — Docs truth-up (P0).** It is unblocked, low-risk, and removes misinformation that would otherwise slow down deployment and onboarding. It also gives us a clean baseline before touching production configuration.
+**Slice 1 — Docs truth-up (P0).** Completed after the implementation and test
+counts were reconciled with the repository.
 
 Definition of done for Slice 1:
 
-- README tech stack reflects React Router v7, no Swiper/Zod, current test counts, current ports, and the Quiet Ledger palette.
+- README tech stack reflects React Router v7, current dependencies, current test counts, current ports, and the Quiet Ledger palette.
 - `backend/.env.example` lists every key the code actually reads, including Google, ABA PayWay, Bakong, SMTP, and public URLs.
 - `frontend/.env.example` documents `VITE_API_URL` and `VITE_USD_TO_KHR`.
 - Admin env/deployment notes are explicit (no hidden required variable).
@@ -393,7 +394,7 @@ Definition of done for Slice 1:
 | M1 — Storefront | Can browse and cart | Home/shop/product/cart pass smoke | ✅ |
 | M2 — Commerce | Can place and track an order | COD order + tracking verified | ✅ |
 | M3 — Admin | Can operate the store | Orders, stock, content, coupons verified | ✅ |
-| M4 — Quality gate | Regressions are caught | 176 backend + 38 frontend tests, builds, audit | ✅ |
+| M4 — Quality gate | Regressions are caught | 190 backend + 80 frontend tests, builds, audit | ✅ |
 | M5 — Launch ready | Production can be configured | Docs, legal, a11y, monitoring, CI remote green | 🟡 |
 | M6 — Live | Real customers can buy | Prod smoke order + payment/email verified | ⬜ |
 | M7 — Stable | Operations are boring | 30 days, no Sev-1, backlog reviewed | ⬜ |
@@ -413,7 +414,7 @@ Definition of done for Slice 1:
 | Test data pollution | Misleading admin metrics | Throwaway users + `db:clean` after suites | Engineering |
 | Log growth (`.logs/backend.log`) | Disk and debugging noise | Add rotation/retention in launch hardening | Engineering |
 | No monitoring | Outages go unnoticed | Uptime + error tracking before go-live | Engineering |
-| Legal pages missing | Compliance/trust gap | Publish privacy, terms, shipping/returns before launch | Piseth |
+| Legal copy needs approval | Compliance/trust gap | Review and approve privacy, terms, shipping/returns before launch | Piseth |
 | Payment/refund compliance | Manual process may not scale | Document manual refunds; revisit automation | Piseth |
 | Exchange-rate drift | KHR display differs from expectation | Display-only label + configurable rate | Engineering |
 | CI remote unverified | False confidence | Run and inspect Actions after push | Engineering |
@@ -474,13 +475,13 @@ Definition of done for Slice 1:
 
 ## 10. Immediate next step
 
-**Do not start a new feature yet.** Complete **Slice 1 — Docs truth-up**, then choose the next P0 slice from Section 5.
+**Do not start a new feature yet.** Complete **CI remote verification**, then choose the next P0 slice from Section 5.
 
 Proposed order after Slice 1:
 
 1. CI remote verification.
 2. Launch env contract and secret checklist.
-3. Legal pages.
+3. Legal copy approval.
 4. Accessibility pass.
 5. Payment/email sandbox harness.
 6. Production deploy rehearsal.

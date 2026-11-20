@@ -3,7 +3,7 @@ import type { AxiosError, AxiosRequestConfig } from 'axios'
 
 /**
  * Admin API client.
- * - Relative baseURL so calls go through the Vite dev proxy (/api → :5001).
+ * - Uses VITE_API_URL in production and the Vite proxy in development.
  * - Attaches the stored admin access token.
  * - On 401, tries one refresh-token rotation, then gives up (authStore clears).
  */
@@ -22,8 +22,10 @@ export const clearTokens = () => {
   localStorage.removeItem(REFRESH_KEY)
 }
 
+const apiBaseUrl = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') || ''
+
 export const api = axios.create({
-  baseURL: '/api',
+  baseURL: `${apiBaseUrl}/api`,
   headers: { 'Content-Type': 'application/json' },
 })
 
@@ -40,7 +42,7 @@ async function refreshAccessToken(): Promise<string | null> {
   const refreshToken = getStoredRefresh()
   if (!refreshToken) return null
   try {
-    const res = await axios.post('/api/auth/refresh', { refreshToken })
+    const res = await axios.post(`${apiBaseUrl}/api/auth/refresh`, { refreshToken })
     const { accessToken, refreshToken: next } = res.data?.data ?? {}
     if (!accessToken) return null
     storeTokens(accessToken, next ?? refreshToken)

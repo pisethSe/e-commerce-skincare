@@ -61,7 +61,7 @@
 | FR-AUTH-02 | A registered user can sign in and receives an access token and a refresh token. Invalid credentials return `401`. | M | ✅ | `auth.test.mjs`; login endpoint |
 | FR-AUTH-03 | An expired access token is refreshed silently and the original request is retried. Concurrent 401s share one refresh request. | M | ✅ | `frontend/src/lib/api.test.ts`; `apiFetch` dedupe |
 | FR-AUTH-04 | Refresh tokens rotate on use. A refresh token is revoked on logout and on password change/reset. | M | 🟡 | Rotation is implemented, but concurrent refreshes across tabs are not transactionally serialized |
-| FR-AUTH-05 | A user can sign in with Google OAuth2. | M | 🔒 | Code exists; `GOOGLE_CLIENT_ID`/`SECRET` missing; no `state` parameter yet |
+| FR-AUTH-05 | A user can sign in with Google OAuth2. | M | 🔒 | Authorization-code flow with signed `state`; requires Google client credentials |
 | FR-AUTH-06 | A user can request a password reset by email. The link is single-use, expires after one hour, and revokes existing sessions when used. | M | ✅ | `auth.test.mjs`; SHA-256 token hash; 1-hour expiry |
 | FR-AUTH-07 | A signed-in user can change their password by confirming the current one; all refresh tokens are revoked. | M | ✅ | `auth.test.mjs`; change-password endpoint |
 | FR-AUTH-08 | Only `ADMIN` users can access admin endpoints. Anonymous users receive `401`; non-admins receive `403`. | M | ✅ | `requireAdmin`; admin API tests |
@@ -73,7 +73,7 @@
 
 **Known auth gaps**
 
-- Google OAuth has no `state` parameter and returns tokens in the redirect URL query string.
+- Google OAuth still returns tokens in the redirect URL query string; a short-lived server-side handoff code is recommended before production.
 - Refresh rotation is not atomic; two tabs refreshing the same token can race.
 - Password-reset links are always written to the server log, including in production.
 - Access tokens live in `localStorage`, so an XSS bug can read them.
@@ -149,10 +149,10 @@ Search loads up to `SEARCH_CANDIDATE_CAP = 500` in-stock products into memory an
 | FR-PAY-03 | Bakong KHQR generates a QR payload/image when `BAKONG_ACCOUNT_ID` is configured; verification marks the order paid. | M | 🟡 | QR + verify implemented; demo fallback when unconfigured |
 | FR-PAY-04 | ABA PayWay is selectable and shows a demo/coming-soon path until merchant credentials and the hosted checkout are implemented. | M | 🔒 | `/api/payments/aba/session` is a placeholder |
 | FR-PAY-05 | When a gateway is not configured, the UI clearly labels the payment as demo/simulated. | M | ✅ | `gatewayDemo`; checkout notices |
-| FR-PAY-06 | The admin can mark a COD order paid when cash is collected, with an audit trail. | M | ⬜ | Admin only displays payment status |
+| FR-PAY-06 | The admin can mark a COD order paid when cash is collected, with an audit trail. | M | 🟡 | Admin settlement exists; audit trail is still missing |
 | FR-PAY-07 | A Stripe/Bakong payment that completes while the shopper closes the tab is reconciled and the order becomes paid. | M | ⬜ | No webhook or background reconciliation |
-| FR-PAY-08 | Demo settlement is impossible in production; an order can only become paid through a verified gateway or an authorized admin action. | M | ⬜ | Bakong demo verify marks paid when unconfigured |
-| FR-PAY-09 | Refunds/chargebacks update both order status and payment status. | S | ⬜ | Status `REFUNDED` exists; payment status is not changed |
+| FR-PAY-08 | Demo settlement is impossible in production; an order can only become paid through a verified gateway or an authorized admin action. | M | ✅ | Production guard plus inactive-order payment protection |
+| FR-PAY-09 | Refunds/chargebacks update both order status and payment status. | S | ✅ | Status transitions map cancellations/refunds to payment state |
 | FR-PAY-10 | Payment amounts are calculated server-side in the configured currency; the client cannot change the charge amount. | M | ✅ | Order total used for gateway session |
 | FR-PAY-11 | Payment configuration is exposed to the storefront without leaking secrets. | M | ✅ | `GET /api/payments/config` returns booleans/currency |
 
@@ -173,7 +173,7 @@ Search loads up to `SEARCH_CANDIDATE_CAP = 500` in-stock products into memory an
 | FR-ORD-05 | Order numbers are readable, unique, and shown consistently (`LUM-…`). | M | ✅ | `orderNumber` unique; order pages |
 | FR-ORD-06 | A customer can list their own orders with pagination and see accurate lifetime order/spend totals. | M | ✅ | `GET /api/orders/my` summary; `AccountPage` |
 | FR-ORD-07 | Order statuses are `PENDING`, `PROCESSING`, `SHIPPED`, `DELIVERED`, `CANCELLED`, `REFUNDED`. | M | ✅ | Admin order UI; status endpoint |
-| FR-ORD-08 | Status changes follow a valid state machine; illegal transitions are rejected. | S | ⬜ | Any status can currently move to any other status |
+| FR-ORD-08 | Status changes follow a valid state machine; illegal transitions are rejected. | S | ✅ | `orderStatus.ts`; lifecycle regression tests |
 | FR-ORD-09 | Cancelling or refunding an order restocks items and releases coupon usage exactly once; reactivating re-reserves them. | M | ✅ | Workflow tests; idempotent logic |
 | FR-ORD-10 | An admin can attach or clear a tracking number; it appears on the account and public tracking pages. | M | ✅ | Tracking endpoint; tracking page |
 | FR-ORD-11 | A shopper can track an order with order number + checkout email, without signing in. The lookup is rate-limited. | M | ✅ | `tracking.test.mjs`; `RATE_LIMIT_TRACK_MAX` |
@@ -391,7 +391,7 @@ Search loads up to `SEARCH_CANDIDATE_CAP = 500` in-stock products into memory an
 | --- | --- | --- | --- | --- |
 | NFR-MAINT-01 | TypeScript strict mode is enabled in all apps. | M | 🟡 | Frontend/backend strict; admin `strict: false` |
 | NFR-MAINT-02 | Lint and formatting are automated. | S | ⬜ | No ESLint/Prettier |
-| NFR-MAINT-03 | README, env examples, and deployment notes match the code. | M | 🟡 | README/env drift; Slice 1 |
+| NFR-MAINT-03 | README, env examples, and deployment notes match the code. | M | ✅ | README, env examples, and WBS reconciled |
 | NFR-MAINT-04 | Shared UI follows one design system (Quiet Ledger tokens). | M | ✅ | Storefront/admin palette |
 | NFR-MAINT-05 | API contracts are documented and versioned. | C | ⬜ | README list only |
 | NFR-MAINT-06 | No unused dependencies or dead feature code remains. | S | 🟡 | Swiper/Zod removed; `NewsletterSection.tsx` unused |
@@ -400,8 +400,8 @@ Search loads up to `SEARCH_CANDIDATE_CAP = 500` in-stock products into memory an
 
 | ID | Requirement / target | Priority | Status | Verification |
 | --- | --- | --- | --- | --- |
-| NFR-TEST-01 | Backend behavior is covered by an API suite against PostgreSQL. | M | ✅ | 176 tests: 175 pass, 1 credential skip |
-| NFR-TEST-02 | Storefront logic/components are covered by Vitest + Testing Library. | M | ✅ | 38 tests across 9 files |
+| NFR-TEST-01 | Backend behavior is covered by an API suite against PostgreSQL. | M | ✅ | 190 tests pass against PostgreSQL |
+| NFR-TEST-02 | Storefront logic/components are covered by Vitest + Testing Library. | M | ✅ | 80 tests across 20 files |
 | NFR-TEST-03 | TypeScript and production builds pass for all apps. | M | ✅ | `tsc` + Vite builds |
 | NFR-TEST-04 | CI runs backend, storefront, and admin jobs on push/PR. | M | ✅ | `.github/workflows/ci.yml`; remote run unverified |
 | NFR-TEST-05 | A browser smoke suite covers the main revenue flows. | M | 🟡 | Manual browser validation done; not automated |
@@ -449,24 +449,24 @@ Prioritized gaps discovered while turning scope into requirements. **P0 = launch
 
 | ID | Gap | Priority | Requirement | Recommended action |
 | --- | --- | --- | --- | --- |
-| G-01 | Demo payment settlement can mark orders paid in production | P0 | FR-PAY-08 | Block demo settlement when `NODE_ENV=production`; require explicit demo flag |
-| G-02 | Admin cannot mark a COD order paid | P0 | FR-PAY-06 | Add admin “mark paid” action + audit note |
+| G-01 | Demo payment settlement can mark orders paid in production | P0 | FR-PAY-08 | ✅ Guarded by environment and explicit demo flag |
+| G-02 | Admin cannot mark a COD order paid | P0 | FR-PAY-06 | 🟡 Settlement exists; add an audit trail before launch |
 | G-03 | Stripe has no webhook/reconciliation | P0 | FR-PAY-07 | Add webhook or scheduled reconciliation by session/payment ID |
 | G-04 | ABA PayWay is a placeholder, not a real integration | P0 | FR-PAY-04 | Implement hosted checkout when credentials exist; keep demo label |
 | G-05 | Google OAuth lacks `state` and puts tokens in the URL | P0 | NFR-SEC-05 | Add state/nonce, exchange code server-side, use a short-lived handoff code |
-| G-06 | Legal pages (privacy/terms/shipping/returns) missing | P0 | NFR-PRIV-02 | Publish pages + footer links |
+| G-06 | Legal pages (privacy/terms/shipping/returns) missing | P0 | NFR-PRIV-02 | ✅ Pages and footer links implemented; copy approval remains |
 | G-07 | No monitoring, uptime alerts, or log rotation | P0 | NFR-OBS-02/03/04 | Add uptime/error tracking + rotation |
 | G-08 | No backup/restore drill | P0 | NFR-DATA-01 | Enable daily backups; document restore |
-| G-09 | Docs/env examples drift from code | P0 | NFR-MAINT-03 | Slice 1 docs truth-up |
+| G-09 | Docs/env examples drift from code | P0 | NFR-MAINT-03 | ✅ Slice 1 docs truth-up completed |
 | G-10 | CI remote run unverified | P0 | NFR-TEST-04 | Push, inspect Actions, add badge |
 | G-11 | Stock/coupon concurrency race | P1 | FR-ORD-04, NFR-REL-03 | Conditional stock update or serializable transaction |
-| G-12 | No order status state machine | P1 | FR-ORD-08 | Validate transitions; map payment status |
+| G-12 | No order status state machine | P1 | FR-ORD-08 | ✅ Transitions validated; payment state mapped |
 | G-13 | Accessibility not audited | P1 | NFR-A11Y-01 | WCAG pass on nav, modal, checkout |
 | G-14 | SEO metadata incomplete | P1 | NFR-SEO-02/03/04 | Canonical/OG/sitemap/JSON-LD; `noindex` admin |
 | G-15 | Admin audit log/MFA missing | P1 | FR-ADM-14/17, NFR-SEC-08/11 | Add audit trail; MFA before launch |
 | G-16 | Uploads are local disk; SVG allowed | P1 | FR-API-13, NFR-SEC-04 | Object storage + CDN; remove SVG or sanitize |
 | G-17 | Email is fire-and-forget | P1 | FR-NEWS-07, FR-ORD-14 | Queue/retry or provider webhooks |
-| G-18 | Password-reset link logged in production | P0 | NFR-SEC-07 | Log only in non-production |
+| G-18 | Password-reset link logged in production | P0 | NFR-SEC-07 | ✅ Reset links log only outside production |
 | G-19 | No performance/load test | P1 | NFR-PERF-01/02/07 | Lighthouse + k6/autocannon baseline |
 | G-20 | Admin TypeScript not strict; no lint | P2 | NFR-MAINT-01/02 | Enable strict; add ESLint/Prettier |
 | G-21 | Search cap 500 | P2 | FR-CAT-12 | DB search or indexed search when catalog grows |

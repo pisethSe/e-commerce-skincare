@@ -17,6 +17,8 @@ model User {
   id            String   @id @default(cuid())
   email         String   @unique
   password      String
+  oauthProvider String?
+  oauthProviderId String?
   firstName     String
   lastName      String
   avatar        String?
@@ -136,6 +138,15 @@ model Order {
   paymentStatus  String      @default("UNPAID")
   paymentMethod  String?
   paymentId      String?
+  bakongAmount   Decimal?  @db.Decimal(10, 2)
+  bakongCurrency String?
+  bakongHash     String?
+  fromAccountId  String?
+  paidAt         DateTime?
+  qrCode         String?
+  qrExpiration   DateTime?
+  qrMd5          String?
+  toAccountId    String?
   trackingNumber String?
   notes          String?
   addressId      String

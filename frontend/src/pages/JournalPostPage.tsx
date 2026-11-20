@@ -5,6 +5,7 @@ import ImageWithFallback from '../components/ui/ImageWithFallback'
 import { getApiUrl } from '../lib/api'
 import { useLang, useT } from '../lib/i18n'
 import type { BlogPost } from '../types'
+import Seo from '../components/seo/Seo'
 
 export default function JournalPostPage() {
   const { slug } = useParams<{ slug: string }>()
@@ -39,9 +40,8 @@ export default function JournalPostPage() {
   }, [slug])
 
   useEffect(() => {
-    if (post) document.title = `Calesta — ${post.title}`
-    else if (status === 'missing') document.title = 'Calesta — Story not found'
-  }, [post, status])
+    if (status === 'missing') document.title = 'Calesta — Story not found'
+  }, [status])
 
   const paragraphs = (post?.body ?? '')
     .split(/\n{2,}/)
@@ -90,6 +90,22 @@ export default function JournalPostPage() {
 
           {status === 'ready' && post && (
             <article className="mx-auto max-w-[860px] overflow-hidden rounded-[32px] bg-white">
+              <Seo
+                title={`Calesta — ${post.title}`}
+                description={post.excerpt}
+                image={post.coverImage}
+                type="article"
+                jsonLd={{
+                  '@context': 'https://schema.org',
+                  '@type': 'Article',
+                  headline: post.title,
+                  description: post.excerpt,
+                  image: post.coverImage ? [post.coverImage] : undefined,
+                  datePublished: post.publishedAt,
+                  author: { '@type': 'Person', name: post.author },
+                  publisher: { '@type': 'Organization', name: 'Calesta' },
+                }}
+              />
               {post.coverImage && (
                 <ImageWithFallback
                   src={post.coverImage}

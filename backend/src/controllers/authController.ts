@@ -6,6 +6,7 @@ import { prisma } from '../lib/prisma'
 import { ApiError } from '../middleware/errorHandler'
 import { AuthRequest } from '../middleware/auth'
 import { sendMail, passwordResetEmail } from '../lib/email'
+import { shouldLogResetLink } from '../lib/guards'
 
 const generateTokens = (userId: string, email: string, role: string) => {
   const jwtSecret = process.env.JWT_SECRET as Secret
@@ -184,20 +185,25 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
 
 /* ── Google OAuth2 (authorization-code flow, no extra deps) ── */
 
+const googleRedirectUri = () =>
+  process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5001/api/auth/google/callback'
+
 // GET /api/auth/google — redirect to Google's consent screen
 export const googleAuth = (_req: Request, res: Response): void => {
   const clientId = process.env.GOOGLE_CLIENT_ID
-  if (!clientId) {
-    res.status(501).json({ success: false, message: 'Google sign-in is not configured' }); return
+  if (!clientId || !process.env.GOOGLE_CLIENT_SECRET || !process.env.JWT_SECRET) {
+    res.status(501).json({ success: false, message: 'Google sign-in is not configured' })
+    return
   }
-  const redirectUri = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5001/api/auth/google/callback'
+  const state = jwt.sign({ purpose: 'google-oauth' }, process.env.JWT_SECRET, { expiresIn: '10m' })
   const params = new URLSearchParams({
     client_id: clientId,
-    redirect_uri: redirectUri,
+    redirect_uri: googleRedirectUri(),
     response_type: 'code',
     scope: 'openid email profile',
     access_type: 'online',
     prompt: 'select_account',
+    state,
   })
   res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`)
 }
@@ -206,6 +212,7 @@ export const googleAuth = (_req: Request, res: Response): void => {
 export const googleCallback = async (req: Request, res: Response): Promise<void> => {
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3003'
   const code = typeof req.query.code === 'string' ? req.query.code : undefined
+  const state = typeof req.query.state === 'string' ? req.query.state : undefined
   const oauthError = typeof req.query.error === 'string' ? req.query.error : undefined
 
   const backWithError = (message: string) => {
@@ -218,8 +225,16 @@ export const googleCallback = async (req: Request, res: Response): Promise<void>
   if (!code) {
     backWithError('Missing authorization code'); return
   }
+  if (!state || !process.env.JWT_SECRET) {
+    backWithError('Invalid Google sign-in state'); return
+  }
 
   try {
+    const statePayload = jwt.verify(state, process.env.JWT_SECRET) as { purpose?: string }
+    if (statePayload.purpose !== 'google-oauth') {
+      backWithError('Invalid Google sign-in state'); return
+    }
+
     // Exchange the authorization code for Google tokens
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
@@ -228,7 +243,7 @@ export const googleCallback = async (req: Request, res: Response): Promise<void>
         code,
         client_id: process.env.GOOGLE_CLIENT_ID ?? '',
         client_secret: process.env.GOOGLE_CLIENT_SECRET ?? '',
-        redirect_uri: process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5001/api/auth/google/callback',
+        redirect_uri: googleRedirectUri(),
         grant_type: 'authorization_code',
       }),
     })
@@ -330,8 +345,11 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
     subject: 'Reset your Calesta password',
     html: passwordResetEmail({ customerName: user.firstName || 'there', resetUrl }),
   })
-  // Without SMTP configured the link is logged so the flow stays testable
-  console.log(`🔗 [password reset] link for ${user.email}: ${resetUrl}`)
+  // Without SMTP configured the link is logged so the flow stays testable.
+  // Never write reset links (or the email they belong to) to production logs.
+  if (shouldLogResetLink()) {
+    console.log(`🔗 [password reset] link for ${user.email}: ${resetUrl}`)
+  }
   res.json(generic)
 }
 

@@ -20,6 +20,7 @@ import couponRoutes from './routes/coupons'
 import adminRoutes from './routes/admin'
 import uploadRoutes from './routes/uploads'
 import { errorHandler, notFound } from './middleware/errorHandler'
+import { startTelegramBotPolling } from './lib/telegram'
 
 dotenv.config()
 
@@ -33,11 +34,23 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
 }))
 
+const allowedOrigins = [
+  process.env.FRONTEND_URL || 'http://localhost:3000',
+  process.env.ADMIN_URL || 'http://localhost:3001',
+  ...(process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean),
+]
+
 app.use(cors({
-  origin: [
-    process.env.FRONTEND_URL || 'http://localhost:3000',
-    process.env.ADMIN_URL || 'http://localhost:3001',
-  ],
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true)
+      return
+    }
+    callback(new Error(`Origin not allowed by CORS: ${origin}`))
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -124,6 +137,7 @@ app.listen(PORT, () => {
   ║     Env:  ${process.env.NODE_ENV?.padEnd(12) || 'development '}          ║
   ╚══════════════════════════════════════╝
   `)
+  startTelegramBotPolling()
 })
 
 export default app

@@ -22,8 +22,17 @@ test('POST /api/reviews creates a review with a verified purchase badge', async 
   })
 
   // Deliver it — "verified purchase" requires a DELIVERED or SHIPPED order
+  const admin = await adminToken()
   await call('PATCH', `/api/orders/${created.data.id}/status`, {
-    token: await adminToken(),
+    token: admin,
+    body: { status: 'PROCESSING' },
+  })
+  await call('PATCH', `/api/orders/${created.data.id}/status`, {
+    token: admin,
+    body: { status: 'SHIPPED' },
+  })
+  await call('PATCH', `/api/orders/${created.data.id}/status`, {
+    token: admin,
     body: { status: 'DELIVERED' },
   })
 

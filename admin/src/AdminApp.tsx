@@ -38,7 +38,7 @@ export default function AdminApp() {
   const authenticated = hasToken && user !== null
 
   return (
-    <BrowserRouter basename="/admin">
+    <BrowserRouter>
       <Toaster
         position="bottom-right"
         toastOptions={{

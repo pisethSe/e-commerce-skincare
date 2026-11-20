@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Check, Heart, Share2 } from 'lucide-react'
 import { normalizeProduct, useCatalogStore } from '../lib/catalog'
@@ -11,6 +11,7 @@ import { useCartStore, useWishlistStore } from '../lib/store'
 import ProductCard from '../components/ui/ProductCard'
 import ProductReviews from '../components/product/ProductReviews'
 import ImageWithFallback from '../components/ui/ImageWithFallback'
+import Seo from '../components/seo/Seo'
 
 export default function ProductPage() {
   const { slug } = useParams<{ slug: string }>()
@@ -105,12 +106,37 @@ export default function ProductPage() {
   }
 
   useEffect(() => {
-    if (product) {
-      document.title = `Calesta — ${product.name}`
-    }
     setSelectedImage(0)
     setQuantity(1)
   }, [product, slug])
+
+  const productJsonLd = useMemo(() => {
+    if (!product) return undefined
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: product.name,
+      description: product.description,
+      image: product.images,
+      sku: product.id,
+      brand: { '@type': 'Brand', name: 'Calesta' },
+      offers: {
+        '@type': 'Offer',
+        priceCurrency: 'USD',
+        price: Number(product.price).toFixed(2),
+        availability: product.inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      },
+      ...(product.reviewCount > 0
+        ? {
+            aggregateRating: {
+              '@type': 'AggregateRating',
+              ratingValue: Number(product.rating).toFixed(1),
+              reviewCount: product.reviewCount,
+            },
+          }
+        : {}),
+    }
+  }, [product])
 
   if (!product) {
     return (
@@ -128,6 +154,13 @@ export default function ProductPage() {
 
   return (
     <div className="bg-Mneutral-50 pt-[92px] text-Mneutral-900">
+      <Seo
+        title={`Calesta — ${product.name}`}
+        description={product.tagline || product.description}
+        image={product.images[0]}
+        type="product"
+        jsonLd={productJsonLd}
+      />
       <section className="px-4 pt-[20px] !pb-0 lg:pt-0">
         <div className="relative minW1600:mx-auto minW1600:w-[1300px]">
           <button

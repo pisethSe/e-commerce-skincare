@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Eye, EyeOff, X } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { getApiUrl } from '../../lib/api'
 import { useAuthStore, useUIStore } from '../../lib/store'
 import { useT } from '../../lib/i18n'
@@ -42,6 +43,7 @@ function GoogleIcon() {
 export default function AuthModal() {
   const { isAuthModalOpen, authMode, closeAuthModal, openAuthModal } = useUIStore()
   const setSession = useAuthStore((s) => s.setSession)
+  const navigate = useNavigate()
   const t = useT()
   const [form, setForm] = useState(initialForm)
   const [showPassword, setShowPassword] = useState(false)
@@ -50,6 +52,7 @@ export default function AuthModal() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [acceptTerms, setAcceptTerms] = useState(false)
+  const closeTimer = useRef<number | null>(null)
 
   const title = useMemo(
     () => (authMode === 'login' ? t('auth.login') : authMode === 'forgot' ? t('auth.resetPassword') : t('auth.createAccount')),
@@ -57,6 +60,10 @@ export default function AuthModal() {
   )
 
   const resetState = () => {
+    if (closeTimer.current !== null) {
+      window.clearTimeout(closeTimer.current)
+      closeTimer.current = null
+    }
     setForm(initialForm)
     setShowPassword(false)
     setShowConfirmPassword(false)
@@ -65,6 +72,12 @@ export default function AuthModal() {
     setAcceptTerms(false)
     setLoading(false)
   }
+
+  useEffect(() => () => {
+    if (closeTimer.current !== null) {
+      window.clearTimeout(closeTimer.current)
+    }
+  }, [])
 
   const handleClose = () => {
     closeAuthModal()
@@ -169,8 +182,10 @@ export default function AuthModal() {
       })
 
       setSuccess(authMode === 'login' ? 'Logged in successfully.' : 'Account created successfully.')
-      window.setTimeout(() => {
+      closeTimer.current = window.setTimeout(() => {
+        closeTimer.current = null
         handleClose()
+        navigate('/')
       }, 700)
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Unable to continue.')
@@ -406,6 +421,7 @@ function FieldInput({
         type={type}
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        aria-label={placeholder}
         className="h-[44px] w-full border-none bg-transparent text-Mneutral-900 text__14 outline-none placeholder:text-Mneutral-400"
         placeholder={placeholder}
       />
@@ -432,6 +448,7 @@ function PasswordInput({
         type={visible ? 'text' : 'password'}
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        aria-label={placeholder}
         className="h-[44px] w-full border-none bg-transparent text-Mneutral-900 text__14 outline-none placeholder:text-Mneutral-400"
         placeholder={placeholder}
       />

@@ -87,11 +87,16 @@ export default function Footer() {
           <img src="/images/Group 1.svg" className="w-full object-cover" alt="" />
         </div>
 
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text__14 text-Mneutral-500">{t('footer.rights')}</p>
-          <Link to="/about" className="text__14 text-Mneutral-500">
-            {t('footer.about')}
-          </Link>
+          <div className="flex flex-wrap items-center gap-4">
+            <Link to="/privacy" className="text__14 text-Mneutral-500">{t('footer.privacy')}</Link>
+            <Link to="/terms" className="text__14 text-Mneutral-500">{t('footer.terms')}</Link>
+            <Link to="/shipping-returns" className="text__14 text-Mneutral-500">{t('footer.shipping')}</Link>
+            <Link to="/about" className="text__14 text-Mneutral-500">
+              {t('footer.about')}
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

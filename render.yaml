@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: calesta-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm ci && npm run db:generate && npm run build
+    preDeployCommand: npm run db:push
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        sync: false
+      - key: ADMIN_URL
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false

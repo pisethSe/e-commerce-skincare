@@ -7,7 +7,7 @@ import {
   BadgeCheck,
   Banknote,
   CheckCircle2,
-  CreditCard,
+  Download,
   Lock,
   ChevronDown,
   MapPin,
@@ -36,11 +36,12 @@ import ConfirmDialog from '../components/ui/ConfirmDialog'
 const steps = ['info', 'shipping', 'payment'] as const
 type Step = (typeof steps)[number]
 
-type PaymentChoice = 'card' | 'aba_payway' | 'bakong' | 'cod'
+type PaymentChoice = 'aba_payway' | 'cod'
 
 interface PaymentConfig {
   stripe: boolean
   bakong: boolean
+  abaPayway: boolean
   currency: 'USD' | 'KHR'
 }
 
@@ -82,14 +83,21 @@ export default function CheckoutPage() {
   const [stepError, setStepError] = useState<string | null>(null)
   const [placing, setPlacing] = useState(false)
   const [orderNumber, setOrderNumber] = useState<string | null>(null)
+  const [receiptOrderId, setReceiptOrderId] = useState<string | null>(null)
   const [orderError, setOrderError] = useState<string | null>(null)
-  const [card, setCard] = useState({ number: '', expiry: '', cvc: '', name: '' })
   // Cash on delivery is the default in Cambodia — no app or card required.
   const [paymentChoice, setPaymentChoice] = useState<PaymentChoice>('cod')
   const [confirmPlace, setConfirmPlace] = useState(false)
-  const [paymentConfig, setPaymentConfig] = useState<PaymentConfig>({ stripe: false, bakong: false, currency: 'USD' })
-  const [bakongPayment, setBakongPayment] = useState<{ orderId: string; orderNumber: string; total: number } | null>(null)
-  const [bakongQr, setBakongQr] = useState<{ qrImage: string; qr: string; currency: string } | null>(null)
+  const [paymentConfig, setPaymentConfig] = useState<PaymentConfig>({
+    stripe: false,
+    bakong: false,
+    abaPayway: false,
+    currency: 'USD',
+  })
+  const [abaPayment, setAbaPayment] = useState<{ orderId: string; orderNumber: string; total: number } | null>(null)
+  const [abaQr, setAbaQr] = useState<{ qrImage: string; qr: string; amount: string } | null>(null)
+  const [abaSeconds, setAbaSeconds] = useState(180)
+  const [abaExpired, setAbaExpired] = useState(false)
   const [verifying, setVerifying] = useState(false)
   const [notes, setNotes] = useState('')
   const [couponDraft, setCouponDraft] = useState('')
@@ -123,18 +131,15 @@ export default function CheckoutPage() {
 
   const subtotal = total()
   const discount = coupon?.discount ?? 0
+  // Sandbox/test products should not incur delivery or VAT fees.
+  const isTestOrder = subtotal > 0 && subtotal < 1
   // One shipping method — standard, free over $75 (after discount)
-  const shipping = subtotal - discount >= 75 ? 0 : STANDARD_SHIPPING
+  const shipping = isTestOrder || subtotal - discount >= 75 ? 0 : STANDARD_SHIPPING
   // Cambodia VAT — 10%
-  const tax = (subtotal - discount) * 0.10
+  const tax = isTestOrder ? 0 : (subtotal - discount) * 0.10
   const orderTotal = subtotal - discount + shipping + tax
 
-  // Only warn about simulated gateways when the selected one is not live.
-  const gatewayDemo =
-    paymentChoice !== 'cod' &&
-    ((paymentChoice === 'card' && !paymentConfig.stripe) ||
-      paymentChoice === 'aba_payway' ||
-      (paymentChoice === 'bakong' && !paymentConfig.bakong))
+  const gatewayDemo = paymentChoice === 'aba_payway' && !paymentConfig.abaPayway
 
   const setField = (key: keyof CheckoutForm, value: string) =>
     setForm((f) => ({ ...f, [key]: value }))
@@ -236,7 +241,11 @@ export default function CheckoutPage() {
         method: 'POST',
         token: accessToken, headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          items: items.map((i) => ({ productId: i.product.id, quantity: i.quantity })),
+          items: items.map((i) => ({
+            productId: i.product.id,
+            productSlug: i.product.slug,
+            quantity: i.quantity,
+          })),
           addressId: addressResult.data.id,
           ...(coupon ? { couponCode: coupon.code } : {}),
           paymentMethod: paymentChoice,
@@ -251,25 +260,18 @@ export default function CheckoutPage() {
 
       const orderId: string = orderResult.data.id
       setOrderNumber(orderResult.data.orderNumber)
+      setReceiptOrderId(orderId)
 
-      // Card + Stripe configured → hosted Stripe Checkout
-      if (paymentChoice === 'card' && paymentConfig.stripe) {
-        const sessionRes = await apiFetch('/api/payments/stripe/session', {
-          method: 'POST',
-          token: accessToken, headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ orderId }),
+      // ABA PayWay — show the live KHQR and verify payment.
+      if (paymentChoice === 'aba_payway') {
+        setAbaPayment({
+          orderId,
+          orderNumber: orderResult.data.orderNumber,
+          total: Number(orderResult.data.total),
         })
-        const sessionJson = await sessionRes.json()
-        if (sessionJson.success && sessionJson.data?.url) {
-          window.location.href = sessionJson.data.url
-          return
-        }
-        // Stripe unavailable — fall through to the demo confirmation
-      }
-
-      // Bakong → show the KHQR and settle on verify
-      if (paymentChoice === 'bakong') {
-        setBakongPayment({ orderId, orderNumber: orderResult.data.orderNumber, total: orderTotal })
+        setAbaQr(null)
+        setAbaSeconds(180)
+        setAbaExpired(false)
         setStep('payment')
         return
       }
@@ -286,22 +288,25 @@ export default function CheckoutPage() {
     }
   }
 
-  /* ---------- Bakong KHQR payment ---------- */
+  /* ---------- ABA PayWay KHQR payment ---------- */
   useEffect(() => {
-    if (!bakongPayment || !accessToken) return
+    if (!abaPayment || !accessToken) return
     let alive = true
-    apiFetch('/api/payments/bakong/qr', {
+    apiFetch('/api/payments/aba/qr', {
       method: 'POST',
       token: accessToken, headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ orderId: bakongPayment.orderId }),
+      body: JSON.stringify({ orderId: abaPayment.orderId }),
     })
       .then((r) => r.json())
       .then((json) => {
         if (!alive) return
         if (json.success && json.data?.qrImage) {
-          setBakongQr({ qrImage: json.data.qrImage, qr: json.data.qr, currency: json.data.currency })
+          setAbaQr({
+            qrImage: json.data.qrImage,
+            qr: json.data.qr,
+            amount: json.data.amount,
+          })
         } else {
-          // Gateway not configured — the demo flow still completes below
           setOrderError(json.message ?? null)
         }
       })
@@ -309,33 +314,89 @@ export default function CheckoutPage() {
     return () => {
       alive = false
     }
-  }, [bakongPayment, accessToken])
+  }, [abaPayment, accessToken])
 
-  const verifyBakong = async () => {
-    if (!bakongPayment || !accessToken) return
-    setVerifying(true)
-    setOrderError(null)
+  useEffect(() => {
+    if (!abaPayment) return
+    const countdown = window.setInterval(() => {
+      setAbaSeconds((seconds) => {
+        if (seconds <= 1) {
+          window.clearInterval(countdown)
+          setAbaExpired(true)
+          return 0
+        }
+        return seconds - 1
+      })
+    }, 1000)
+    return () => window.clearInterval(countdown)
+  }, [abaPayment])
+
+  useEffect(() => {
+    if (!abaPayment || !accessToken || abaExpired) return
+    let alive = true
+    const checkPayment = async () => {
+      setVerifying(true)
+      try {
+        const res = await apiFetch('/api/payments/aba/verify', {
+          method: 'POST',
+          token: accessToken,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId: abaPayment.orderId }),
+        })
+        const json = await res.json()
+        if (!alive) return
+        if (json.success && json.data?.paymentStatus === 'PAID') {
+          setAbaPayment(null)
+          setAbaExpired(false)
+          setOrderError(null)
+          clearCart()
+        }
+      } catch {
+        // Keep polling; transient gateway failures do not close the payment.
+      } finally {
+        if (alive) setVerifying(false)
+      }
+    }
+
+    const poll = window.setInterval(checkPayment, 3000)
+    void checkPayment()
+    return () => {
+      alive = false
+      window.clearInterval(poll)
+    }
+  }, [abaPayment, accessToken, abaExpired])
+
+  const downloadReceipt = async () => {
+    if (!receiptOrderId || !accessToken) return
     try {
-      const res = await apiFetch('/api/payments/bakong/verify', {
-        method: 'POST',
-        token: accessToken, headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId: bakongPayment.orderId }),
+      const res = await apiFetch(`/api/orders/${encodeURIComponent(receiptOrderId)}`, {
+        token: accessToken,
+        headers: {},
       })
       const json = await res.json()
-      if (json.success && json.data?.paymentStatus === 'PAID') {
-        setBakongPayment(null) // the confirmation view takes over
-      } else {
-        setOrderError(json.message ?? 'Payment not found yet — scan the QR and try again.')
-      }
-    } catch {
-      setOrderError('Verification is unavailable right now — try again.')
-    } finally {
-      setVerifying(false)
+      if (!res.ok || !json.success) throw new Error(json.message || 'Could not load receipt')
+      const order = json.data
+      const escapeHtml = (value: unknown) =>
+        String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      const itemRows = (order.items || []).map((item: { name: string; quantity: number; price: unknown }) =>
+        `<tr><td>${escapeHtml(item.name)} × ${item.quantity}</td><td>$${Number(item.price).toFixed(2)}</td></tr>`
+      ).join('')
+      const html = `<!doctype html><html><head><meta charset="utf-8"><title>Receipt ${escapeHtml(order.orderNumber)}</title><style>body{font-family:Arial,sans-serif;max-width:680px;margin:40px auto;color:#102d26}h1{margin-bottom:4px}table{width:100%;border-collapse:collapse;margin-top:24px}td{padding:10px;border-bottom:1px solid #ddd}td:last-child{text-align:right}.totals td{border:0}.track{margin-top:24px}</style></head><body><h1>Calesta Receipt</h1><p>${escapeHtml(order.orderNumber)}</p><table>${itemRows}</table><table class="totals"><tr><td>Subtotal</td><td>$${Number(order.subtotal).toFixed(2)}</td></tr><tr><td>Shipping</td><td>$${Number(order.shipping).toFixed(2)}</td></tr><tr><td>VAT</td><td>$${Number(order.tax).toFixed(2)}</td></tr><tr><td><strong>Total</strong></td><td><strong>$${Number(order.total).toFixed(2)}</strong></td></tr></table><p class="track">Tracking: ${escapeHtml(order.orderNumber)}</p></body></html>`
+      const url = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' }))
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `calesta-receipt-${order.orderNumber}.html`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      setOrderError(err instanceof Error ? err.message : 'Could not download receipt')
     }
   }
 
   /* ---------- Confirmation ---------- */
-  if (orderNumber && !bakongPayment) {
+  if (orderNumber && !abaPayment) {
     return (
       <div className="bg-Mneutral-50 pt-[92px] text-Mneutral-900">
         <div className="container-custom py-16">
@@ -366,6 +427,18 @@ export default function CheckoutPage() {
               >
                 {t('track.submit')}
               </Link>
+              <button type="button" onClick={downloadReceipt} className="outline-pill-button">
+                <Download size={15} />
+                Download Receipt
+              </button>
+              <a
+                href={`https://t.me/Calestaskincarebot?start=${encodeURIComponent(orderNumber)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="outline-pill-button"
+              >
+                Open Telegram
+              </a>
             </div>
           </motion.div>
         </div>
@@ -373,65 +446,96 @@ export default function CheckoutPage() {
     )
   }
 
-  /* ---------- Bakong QR view ---------- */
-  if (bakongPayment) {
+  /* ---------- ABA PayWay QR view ---------- */
+  if (abaPayment) {
+    const closeAbaPayment = async () => {
+      try {
+        await apiFetch(`/api/orders/${encodeURIComponent(abaPayment.orderId)}/cancel`, {
+          method: 'PATCH',
+          token: accessToken || undefined,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      } catch {
+        // Keep the cart and payment step available even if cancellation refreshes in flight.
+      } finally {
+        setAbaPayment(null)
+        setAbaQr(null)
+        setAbaExpired(false)
+        setOrderNumber(null)
+        setReceiptOrderId(null)
+        setStep('payment')
+        setOrderError(null)
+      }
+    }
+    const abaMinutes = Math.floor(abaSeconds / 60)
+    const abaRemainder = abaSeconds % 60
+
     return (
-      <div className="bg-Mneutral-50 pt-[92px] text-Mneutral-900">
-        <div className="container-custom py-12">
-          <motion.div
-            className="mx-auto max-w-[560px] rounded-[32px] bg-white px-[20px] py-[48px] text-center xs:px-[40px]"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          >
-            <p className="text__14 uppercase tracking-[0.28em] text-Mneutral-400">BAKONG KHQR</p>
-            <h1 className="mt-3 text__40 font-medium">Scan to pay</h1>
-            <p className="mt-2 text__18 text-Mneutral-600">
-              Order <span className="font-medium tabular-nums">{bakongPayment.orderNumber}</span> ·{' '}
-              {money(bakongPayment.total)}
-              {paymentConfig.currency === 'KHR' && ' (KHR)'}
-            </p>
-
-            <div className="mx-auto mt-8 w-fit rounded-[28px] border border-Mneutral-100 p-4">
-              {bakongQr ? (
-                <img src={bakongQr.qrImage} alt="Bakong KHQR payment code" className="h-[280px] w-[280px]" />
-              ) : (
-                <div className="flex h-[280px] w-[280px] items-center justify-center rounded-[20px] bg-Mneutral-50">
-                  <p className="text__14 text-Mneutral-400">Preparing QR…</p>
-                </div>
-              )}
+      <div
+        className="fixed inset-0 z-[95] flex items-center justify-center bg-Mneutral-900/55 p-3 backdrop-blur-sm"
+        role="dialog"
+        aria-modal="true"
+        aria-label="ABA PayWay payment"
+      >
+        <motion.div
+          className="w-full max-w-[360px] overflow-hidden rounded-[16px] bg-white text-center shadow-2xl"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.16, ease: 'easeOut' }}
+        >
+          <div className="relative flex h-14 items-center px-5">
+            <p className="text__16 font-semibold text-Mneutral-900">KHQRcc</p>
+            <div className="ml-auto mr-7 flex items-center gap-2 text__12 text-Mneutral-500 tabular-nums">
+              <svg className="h-5 w-5 text-sky-500" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 3a9 9 0 1 1-8.2 5.25" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <path d="M3.8 8.25V3.7h4.55" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {abaMinutes}:{abaRemainder.toString().padStart(2, '0')}
             </div>
-
-            <p className="mt-5 text__14 text-Mneutral-500">
-              Open any Cambodian bank app, scan the code, and pay{' '}
-              <span className="font-medium text-Mneutral-700">{money(bakongPayment.total)}</span>.
-            </p>
-
-            {orderError && (
-              <p role="alert" className="mt-4 rounded-[16px] bg-blush-50 px-4 py-3 text__14 text-blush-700">
-                {orderError}
-              </p>
-            )}
-
             <button
               type="button"
-              onClick={verifyBakong}
-              disabled={verifying}
-              className="filled-pill-button mt-6 w-full justify-center disabled:opacity-60"
+              onClick={closeAbaPayment}
+              aria-label="Close ABA PayWay payment"
+              className="absolute right-4 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-Mneutral-400 hover:bg-Mneutral-50 hover:text-Mneutral-900"
             >
-              <CheckCircle2 size={16} />
-              {verifying ? t('checkout.checkingPayment') : t('checkout.verifyPayment')}
+              <X size={18} />
             </button>
-            {!paymentConfig.bakong && (
-              <p className="mt-3 text__12 text-Mneutral-400">
-                {t('checkout.bakongDemo')}
+          </div>
+
+          <div className="mx-5 rounded-[12px] bg-[#ed1c24] px-5 pb-5 pt-4 text-white">
+            <p className="text__12 font-medium">KHQR</p>
+            <div className="mt-4">
+              <p className="text__12 text-white/80">{form.firstName || abaPayment.orderNumber}</p>
+              <p className="mt-1 text__18 font-semibold tabular-nums">{abaQr?.amount ? `$${abaQr.amount}` : money(abaPayment.total)} <span className="text__12 font-normal">USD</span></p>
+            </div>
+          </div>
+
+          <div className="mx-5 -mt-1 rounded-b-[12px] bg-white px-5 pb-5">
+            <div className="mx-auto flex h-[230px] w-[230px] items-center justify-center rounded-[12px] border border-Mneutral-100 bg-white p-3">
+              {abaQr ? (
+                <img src={abaQr.qrImage} alt="ABA PayWay KHQR payment code" className="h-full w-full object-contain" />
+              ) : (
+                <p className="text__12 text-Mneutral-400">Preparing QR…</p>
+              )}
+            </div>
+          </div>
+
+          <div className="px-8 pb-6">
+            {abaExpired ? (
+              <p role="status" className="text__14 text-[#a83636]">This QR code has expired. Close and try again.</p>
+            ) : (
+              <p className="text__14 leading-5 text-Mneutral-500">
+                Scan with <span className="font-medium text-Mneutral-700">ABA Mobile</span>, or other mobile banking apps supporting KHQR
               </p>
             )}
-            <Link to="/" className="mt-4 inline-block text__14 text-Mneutral-500 underline">
-              {t('checkout.payLater')}
-            </Link>
-          </motion.div>
-        </div>
+            {verifying && !abaExpired && (
+              <p role="status" className="mt-3 text__12 text-Mneutral-400">Checking payment…</p>
+            )}
+            {orderError && (
+              <p role="alert" className="mt-3 text__12 text-[#a83636]">{orderError}</p>
+            )}
+          </div>
+        </motion.div>
       </div>
     )
   }
@@ -603,7 +707,7 @@ export default function CheckoutPage() {
                     <p className="text__14 text-Mneutral-500">{t('checkout.standardDeliveryDesc')}</p>
                   </div>
                   <span className="text__16 font-medium">
-                    {subtotal - discount >= 75 ? t('common.free') : money(STANDARD_SHIPPING)}
+                    {shipping === 0 ? t('common.free') : money(shipping)}
                   </span>
                 </div>
                 {stepError && (
@@ -631,9 +735,7 @@ export default function CheckoutPage() {
 
                 {[
                   { value: 'cod' as const, label: t('checkout.cod'), desc: t('checkout.codDesc'), icon: Banknote, recommended: false },
-                  { value: 'aba_payway' as const, label: t('checkout.aba'), desc: t('checkout.abaDesc'), icon: Wallet, recommended: false },
-                  { value: 'bakong' as const, label: t('checkout.bakong'), desc: t('checkout.bakongDesc'), icon: QrCode, recommended: false },
-                  { value: 'card' as const, label: t('checkout.card'), desc: t('checkout.cardDesc'), icon: CreditCard, recommended: true },
+                  { value: 'aba_payway' as const, label: t('checkout.aba'), desc: t('checkout.abaDesc'), icon: Wallet, recommended: true },
                 ].map((option) => {
                   const Icon = option.icon
                   return (
@@ -648,9 +750,15 @@ export default function CheckoutPage() {
                         onChange={() => setPaymentChoice(option.value)}
                         className="accent-[#102d26]"
                       />
-                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-Mneutral-100 text-Mneutral-700">
-                        <Icon size={16} />
-                      </div>
+                      {option.value === 'aba_payway' ? (
+                        <div className="flex h-10 w-[72px] flex-shrink-0 items-center justify-center rounded-lg border border-Mneutral-100 bg-white p-1.5">
+                          <img src="/images/aba-payway.png" alt="" className="h-full w-full object-contain" />
+                        </div>
+                      ) : (
+                        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-Mneutral-100 text-Mneutral-700">
+                          <Icon size={16} />
+                        </div>
+                      )}
                       <div className="flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="text__16 font-medium">{option.label}</p>
@@ -666,29 +774,11 @@ export default function CheckoutPage() {
                   )
                 })}
 
-                {paymentChoice === 'card' && (
-                  <div className="space-y-5 border-t border-Mneutral-100 pt-5">
-                    <CheckoutInput label={t('checkout.cardNumber')} placeholder="4242 4242 4242 4242" value={card.number} onChange={(v) => setCard((c) => ({ ...c, number: v }))} />
-                    <div className="grid gap-5 sm:grid-cols-2">
-                      <CheckoutInput label={t('checkout.expiry')} placeholder="MM / YY" value={card.expiry} onChange={(v) => setCard((c) => ({ ...c, expiry: v }))} />
-                      <CheckoutInput label={t('checkout.cvc')} placeholder="123" value={card.cvc} onChange={(v) => setCard((c) => ({ ...c, cvc: v }))} />
-                    </div>
-                    <CheckoutInput label={t('checkout.nameOnCard')} placeholder="Sophie Martin" value={card.name} onChange={(v) => setCard((c) => ({ ...c, name: v }))} />
-                  </div>
-                )}
-
                 {paymentChoice === 'aba_payway' && (
-                  <p className="flex items-center gap-2 rounded-[20px] bg-cream-100/50 px-4 py-3 text__12 text-Mneutral-600">
-                    <BadgeCheck size={14} className="flex-shrink-0 text-sage-600" />
-                    {t('checkout.abaRedirect')}
-                  </p>
-                )}
-
-                {paymentChoice === 'bakong' && (
-                  <p className="flex items-center gap-2 rounded-[20px] bg-cream-100/50 px-4 py-3 text__12 text-Mneutral-600">
-                    <BadgeCheck size={14} className="flex-shrink-0 text-sage-600" />
-                    {t('checkout.bakongNote')}
-                  </p>
+                  <div className="flex items-center gap-3 rounded-[20px] bg-cream-100/50 px-4 py-3 text__12 text-Mneutral-600">
+                    <img src="/images/aba-payway.png" alt="" className="h-7 w-[110px] object-contain" />
+                    <span>{t('checkout.abaRedirect')}</span>
+                  </div>
                 )}
 
                 {paymentChoice === 'cod' && (
@@ -739,10 +829,8 @@ export default function CheckoutPage() {
                   >
                     {paymentChoice === 'cod' ? (
                       <Banknote size={16} />
-                    ) : paymentChoice === 'bakong' ? (
-                      <QrCode size={16} />
                     ) : (
-                      <CreditCard size={16} />
+                      <QrCode size={16} />
                     )}
                     {placing
                       ? t('checkout.placing')
@@ -890,10 +978,12 @@ function CheckoutInput({
   value: string
   onChange: (value: string) => void
 }) {
+  const id = React.useId()
   return (
     <div>
-      <label className="mb-2 block text__14 text-Mneutral-500">{label}</label>
+      <label htmlFor={id} className="mb-2 block text__14 text-Mneutral-500">{label}</label>
       <input
+        id={id}
         type={type}
         inputMode={inputMode}
         placeholder={placeholder}

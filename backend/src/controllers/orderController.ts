@@ -3,6 +3,8 @@ import { prisma } from '../lib/prisma'
 import { ApiError } from '../middleware/errorHandler'
 import { AuthRequest } from '../middleware/auth'
 import { sendMail, orderConfirmationEmail, orderStatusEmail } from '../lib/email'
+import { canTransition, isInactiveStatus, isOrderStatus } from '../lib/orderStatus'
+import { sendTelegramPaymentReceipt } from '../lib/telegram'
 
 // Generate readable order number
 const generateOrderNumber = (): string => {
@@ -40,9 +42,19 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
   if (!address) throw new ApiError('Invalid shipping address', 400)
 
   // Fetch products and verify stock
-  const productIds = items.map((i: { productId: string }) => i.productId)
+  const productIds = items
+    .map((i: { productId?: string }) => i.productId)
+    .filter((id: string | undefined): id is string => typeof id === 'string' && id.length > 0)
+  const productSlugs = items
+    .map((i: { productSlug?: string }) => i.productSlug)
+    .filter((slug: string | undefined): slug is string => typeof slug === 'string' && slug.length > 0)
   const products = await prisma.product.findMany({
-    where: { id: { in: productIds } },
+    where: {
+      OR: [
+        ...(productIds.length ? [{ id: { in: productIds } }] : []),
+        ...(productSlugs.length ? [{ slug: { in: productSlugs } }] : []),
+      ],
+    },
   })
 
   // Quantities must be positive whole numbers, aggregated per product so
@@ -56,7 +68,14 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
     if (qty > 99) {
       throw new ApiError('Maximum 99 units of a product per order', 400)
     }
-    quantityByProduct.set(item.productId, (quantityByProduct.get(item.productId) ?? 0) + qty)
+    const product = products.find((candidate) =>
+      candidate.id === item.productId ||
+      (typeof item.productSlug === 'string' && candidate.slug === item.productSlug)
+    )
+    if (!product) {
+      throw new ApiError(`Product ${item.productSlug || item.productId} not found`, 404)
+    }
+    quantityByProduct.set(product.id, (quantityByProduct.get(product.id) ?? 0) + qty)
   }
 
   const orderItems = [...quantityByProduct.entries()].map(([productId, quantity]) => {
@@ -105,10 +124,12 @@ export const createOrder = async (req: AuthRequest, res: Response): Promise<void
     couponId = coupon.id
   }
 
+  // Sandbox/test products must not gain delivery or VAT charges.
+  const isTestOrder = subtotal > 0 && subtotal < 1
   // Standard ships free over $75 (after discount)
-  const shipping = subtotal - discount >= 75 ? 0 : 8.95
+  const shipping = isTestOrder || subtotal - discount >= 75 ? 0 : 8.95
   // Cambodia VAT — 10%
-  const tax = (subtotal - discount) * 0.10
+  const tax = isTestOrder ? 0 : (subtotal - discount) * 0.10
   const total = subtotal - discount + shipping + tax
 
   // Create order in transaction
@@ -257,14 +278,24 @@ export const updatePaymentStatus = async (req: AuthRequest, res: Response): Prom
 
   const existing = await prisma.order.findUnique({
     where: { id: req.params.id as string },
-    select: { id: true },
+    select: { id: true, status: true },
   })
   if (!existing) throw new ApiError('Order not found', 404)
+  if (paymentStatus === 'PAID' && isInactiveStatus(existing.status)) {
+    throw new ApiError('Inactive orders cannot be marked paid', 409)
+  }
 
   const updated = await prisma.order.update({
     where: { id: existing.id },
     data: { paymentStatus },
   })
+  if (paymentStatus === 'PAID') {
+    const receiptOrder = await prisma.order.findUnique({
+      where: { id: existing.id },
+      include: { items: true, address: true },
+    })
+    if (receiptOrder) void sendTelegramPaymentReceipt(receiptOrder)
+  }
   res.json({ success: true, data: updated })
 }
 
@@ -428,8 +459,7 @@ export const trackOrder = async (req: Request, res: Response): Promise<void> => 
 // PATCH /api/orders/:id/status — Admin only
 export const updateOrderStatus = async (req: AuthRequest, res: Response): Promise<void> => {
   const { status } = req.body
-  const validStatuses = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED']
-  if (!validStatuses.includes(status)) throw new ApiError('Invalid status', 400)
+  if (!isOrderStatus(status)) throw new ApiError('Invalid status', 400)
 
   const order = await prisma.order.findUnique({
     where: { id: req.params.id as string },
@@ -437,14 +467,26 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response): Promis
   })
   if (!order) throw new ApiError('Order not found', 404)
 
+  if (!canTransition(order.status, status)) {
+    throw new ApiError(`Cannot move an order from ${order.status} to ${status}`, 400)
+  }
+
   // Leaving the sales pipeline (cancel/refund) restocks items and releases the
   // coupon; re-activating a cancelled order re-reserves them. Symmetric so
   // stock and coupon usage never drift, and idempotent (no double-restock).
-  const wasActive = order.status !== 'CANCELLED' && order.status !== 'REFUNDED'
-  const nowInactive = status === 'CANCELLED' || status === 'REFUNDED'
+  const wasActive = !isInactiveStatus(order.status)
+  const nowInactive = isInactiveStatus(status)
 
   const updated = await prisma.$transaction(async (tx) => {
-    const u = await tx.order.update({ where: { id: order.id }, data: { status } })
+    const paymentStatus = status === 'REFUNDED'
+      ? 'REFUNDED'
+      : status === 'CANCELLED' && order.paymentStatus === 'PAID'
+        ? 'REFUNDED'
+        : order.paymentStatus
+    const u = await tx.order.update({
+      where: { id: order.id },
+      data: { status, paymentStatus },
+    })
 
     if (wasActive && nowInactive) {
       for (const item of order.items) {
@@ -466,14 +508,25 @@ export const updateOrderStatus = async (req: AuthRequest, res: Response): Promis
       }
     } else if (!wasActive && !nowInactive && order.status !== status) {
       for (const item of order.items) {
-        const product = await tx.product.update({
-          where: { id: item.productId },
+        const reserved = await tx.product.updateMany({
+          where: {
+            id: item.productId,
+            stockCount: { gte: item.quantity },
+          },
           data: { stockCount: { decrement: item.quantity } },
+        })
+        if (reserved.count === 0) {
+          throw new ApiError('Cannot reactivate order: insufficient stock', 409)
+        }
+
+        const product = await tx.product.findUniqueOrThrow({
+          where: { id: item.productId },
           select: { stockCount: true },
         })
-        if (product.stockCount <= 0) {
-          await tx.product.update({ where: { id: item.productId }, data: { inStock: false } })
-        }
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { inStock: product.stockCount > 0 },
+        })
       }
       if (order.couponId) {
         await tx.coupon.update({ where: { id: order.couponId }, data: { usedCount: { increment: 1 } } })

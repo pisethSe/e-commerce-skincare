@@ -15,8 +15,7 @@ A full-stack, production-ready e-commerce platform for premium skincare, built w
 - **Lenis** — buttery smooth scrolling
 - **AOS** (Animate On Scroll) — section reveal animations
 - **Zustand** — lightweight global state (cart, wishlist, UI)
-- **React Router v6** — client-side routing
-- **Swiper** — product/testimonial carousels
+- **React Router v7** — client-side routing
 - **Lucide React** — icon system
 - **Vitest + Testing Library** — unit and component tests (jsdom)
 - **Route-level code splitting** — pages load on demand; vendor chunks
@@ -54,7 +53,7 @@ A full-stack, production-ready e-commerce platform for premium skincare, built w
 - **JWT** auth with refresh token rotation
 - **bcryptjs** — password hashing
 - **Helmet** + **CORS** + **Rate limiting** — security
-- **Zod** — request validation
+- **express-validator** — request validation
 - **Stripe** — payment processing (ready)
 - **Nodemailer** — transactional emails (order confirmation, newsletter welcome; gracefully logs when unconfigured)
 - **Multer** — local image uploads at `POST /api/uploads` (admin-only, served at `/uploads`)
@@ -142,7 +141,7 @@ STRIPE_SECRET_KEY=sk_test_...
 GOOGLE_CLIENT_ID=...apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=GOCSPX-...
 GOOGLE_REDIRECT_URI=http://localhost:5001/api/auth/google/callback
-FRONTEND_URL=http://localhost:3003
+FRONTEND_URL=http://localhost:3000
 ```
 
 > **Google sign-in:** in your Google Cloud console (Credentials → OAuth client),
@@ -189,7 +188,7 @@ npm run dev:admin      # Admin on :3001 (console at /admin)
 
 ## 🧪 Testing
 
-### Backend — 176 end-to-end tests
+### Backend — 190 end-to-end tests
 ```bash
 # Start the API and seed the database first (see Getting Started)
 cd backend
@@ -203,15 +202,15 @@ cart, reviews with moderation, wishlist, addresses, newsletter, coupons, uploads
 role guards, payments config, and the business-workflow rules (order cancellation
 restocks, coupon usage limits, slug/category guards).
 
-One test is skipped when Google OAuth credentials are absent; everything else
-runs offline. Test runs create throwaway fixtures — clean them afterwards:
+The suite runs against PostgreSQL and creates throwaway fixtures — clean them
+afterwards:
 
 ```bash
 cd backend
 npm run db:clean
 ```
 
-### Storefront — 33 unit & component tests
+### Storefront — 80 unit & component tests
 ```bash
 cd frontend
 npm test          # single run (CI)

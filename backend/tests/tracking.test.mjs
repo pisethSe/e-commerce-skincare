@@ -94,6 +94,10 @@ test('POST /api/orders/track reflects admin status and tracking updates', async 
   const orderNumber = fixture.order.orderNumber
   const email = fixture.user.email
 
+  await call('PATCH', `/api/orders/${orderId}/status`, {
+    token: admin,
+    body: { status: 'PROCESSING' },
+  })
   const shipped = await call('PATCH', `/api/orders/${orderId}/status`, {
     token: admin,
     body: { status: 'SHIPPED' },

@@ -86,6 +86,9 @@ export const dictionary = {
   'cart.title': { en: 'Your Bag', km: 'កន្ត្រករបស់អ្នក' },
   'cart.cancel': { en: 'Cancel', km: 'បោះបង់' },
   'cart.close': { en: 'Close cart', km: 'បិទកន្ត្រក' },
+  'cart.decrease': { en: 'Decrease quantity of {name}', km: 'បន្ថយចំនួន {name}' },
+  'cart.increase': { en: 'Increase quantity of {name}', km: 'បង្កើនចំនួន {name}' },
+  'cart.remove': { en: 'Remove {name}', km: 'ដក {name} ចេញ' },
   'cart.empty': { en: 'Your bag is empty', km: 'កន្ត្រករបស់អ្នកទទេ' },
   'cart.emptyHint': { en: 'Add some luxurious treats', km: 'បន្ថែមផលិតផលថែទាំស្បែកដ៏ប្រណិត' },
   'cart.viewFullCart': { en: 'View full cart', km: 'មើលកន្ត្រកពេញលេញ' },
@@ -492,8 +495,8 @@ export const dictionary = {
   'checkout.cvc': { en: 'CVC', km: 'CVC' },
   'checkout.nameOnCard': { en: 'Name on Card', km: 'ឈ្មោះលើកាត' },
   'checkout.abaRedirect': {
-    en: "You'll be redirected to ABA PayWay to complete the payment securely.",
-    km: 'អ្នកនឹងត្រូវបញ្ជូនទៅ ABA PayWay ដើម្បីបញ្ចប់ការទូទាត់ដោយសុវត្ថិភាព។',
+    en: 'Scan the ABA PayWay KHQR code securely after you confirm the order.',
+    km: 'ស្កេនកូដ ABA PayWay KHQR ដោយសុវត្ថិភាពបន្ទាប់ពីអ្នកបញ្ជាក់ការបញ្ជាទិញ។',
   },
   'checkout.bakongNote': {
     en: 'A KHQR code will be shown after you confirm — scan it with any Cambodian bank app.',
@@ -619,6 +622,7 @@ export const dictionary = {
   'account.orderHistory': { en: 'ORDER HISTORY', km: 'ប្រវត្តិការបញ្ជាទិញ' },
   'account.yourRituals': { en: 'Your Rituals', km: 'ផលិតផលរបស់អ្នក' },
   'account.ordersCount': { en: '{count} orders', km: 'ការបញ្ជាទិញ {count}' },
+  'account.oneOrder': { en: '1 order', km: 'ការបញ្ជាទិញ 1' },
   'account.noOrders': { en: 'No orders yet', km: 'មិនទាន់មានការបញ្ជាទិញ' },
   'account.noOrdersHint': {
     en: 'When you buy something, it will appear here.',
@@ -849,6 +853,72 @@ export const dictionary = {
   'footer.rights': { en: '©2026 Calesta. All rights reserved.', km: '©2026 Calesta។ រក្សាសិទ្ធិគ្រប់យ៉ាង។' },
   'footer.about': { en: 'About', km: 'អំពី' },
   'footer.track': { en: 'Track Order', km: 'តាមដានការបញ្ជាទិញ' },
+  'footer.privacy': { en: 'Privacy', km: 'ឯកជនភាព' },
+  'footer.terms': { en: 'Terms', km: 'លក្ខខណ្ឌ' },
+  'footer.shipping': { en: 'Shipping & Returns', km: 'ការដឹកជញ្ជូន និងការត្រឡប់វិញ' },
+
+  // Legal pages
+  'legal.lastUpdated': { en: 'Last updated 7 November 2026', km: 'ធ្វើបច្ចុប្បន្នភាពចុងក្រោយ 7 វិច្ឆិកា 2026' },
+  'legal.privacy': { en: 'Privacy Policy', km: 'គោលនយោបាយឯកជនភាព' },
+  'legal.privacyIntro': {
+    en: 'Calesta collects only the information needed to take your order, deliver it, and support you afterwards. This policy explains what we keep and why.',
+    km: 'Calesta ប្រមូលតែព័ត៌មានដែលចាំបាច់ដើម្បីទទួលការបញ្ជាទិញ ដឹកជញ្ជូន និងគាំទ្រអ្នកបន្ទាប់ពីនោះ។ គោលនយោបាយនេះពន្យល់ពីអ្វីដែលយើងរក្សាទុក និងហេតុអ្វី។',
+  },
+  'legal.privacyData': {
+    en: 'Account details: name, email, phone, and password hash. Order details: delivery address, items, payment method, and order history. We never store full card numbers; online card payments are handled by the payment provider.',
+    km: 'ព័ត៌មានគណនី៖ ឈ្មោះ អ៊ីមែល លេខទូរស័ព្ទ និង hash ពាក្យសម្ងាត់។ ព័ត៌មានការបញ្ជាទិញ៖ អាសយដ្ឋានដឹកជញ្ជូន ទំនិញ វិធីបង់ប្រាក់ និងប្រវត្តិការបញ្ជាទិញ។ យើងមិនរក្សាទុកលេខកាតពេញលេញទេ។ ការបង់ប្រាក់តាមកាតត្រូវបានដោះស្រាយដោយអ្នកផ្តល់សេវាបង់ប្រាក់។',
+  },
+  'legal.privacyUse': {
+    en: 'We use your information to fulfil orders, send order updates, prevent fraud, and improve the store. Marketing email is sent only when you subscribe, and every message includes an unsubscribe link.',
+    km: 'យើងប្រើព័ត៌មានរបស់អ្នកដើម្បីបំពេញការបញ្ជាទិញ ផ្ញើព័ត៌មានអំពីការបញ្ជាទិញ ការពារការឆបោក និងកែលម្អហាង។ អ៊ីមែលទីផ្សារត្រូវបានផ្ញើតែពេលអ្នកជាវប៉ុណ្ណោះ ហើយសារនីមួយៗមានតំណឈប់ជាវ។',
+  },
+  'legal.privacyRights': {
+    en: 'You can ask to access, correct, or delete your account data, subject to records we must keep for tax and fraud prevention. Contact us and we will respond within 30 days.',
+    km: 'អ្នកអាចស្នើសុំមើល កែតម្រូវ ឬលុបទិន្នន័យគណនីរបស់អ្នក ដោយគោរពតាមកំណត់ត្រាដែលយើងត្រូវរក្សាសម្រាប់ពន្ធ និងការការពារការឆបោក។ ទាក់ទងមកយើង ហើយយើងនឹងឆ្លើយតបក្នុងរយៈពេល 30 ថ្ងៃ។',
+  },
+  'legal.privacyContact': {
+    en: 'Privacy questions: hello@calesta.kh. We keep order records for seven years where Cambodian tax law requires it, and newsletter data until you unsubscribe.',
+    km: 'សំណួរអំពីឯកជនភាព៖ hello@calesta.kh។ យើងរក្សាកំណត់ត្រាការបញ្ជាទិញរយៈពេលប្រាំពីរឆ្នាំ តាមការតម្រូវរបស់ច្បាប់ពន្ធកម្ពុជា និងទិន្នន័យព្រឹត្តិបត្ររហូតដល់អ្នកឈប់ជាវ។',
+  },
+  'legal.terms': { en: 'Terms of Service', km: 'លក្ខខណ្ឌប្រើប្រាស់' },
+  'legal.termsIntro': {
+    en: 'By shopping with Calesta you agree to these terms. They apply to orders placed through this storefront and cover pricing, delivery, and cancellations.',
+    km: 'ការទិញទំនិញពី Calesta មានន័យថាអ្នកយល់ព្រមនឹងលក្ខខណ្ឌទាំងនេះ។ ពួកវាអនុវត្តចំពោះការបញ្ជាទិញតាមហាងនេះ និងគ្របដណ្តប់តម្លៃ ការដឹកជញ្ជូន និងការបោះបង់។',
+  },
+  'legal.termsOrders': {
+    en: 'Orders are confirmed when payment is authorised or, for cash on delivery, when the order is accepted. We may cancel an order if stock is unavailable or payment cannot be verified; any captured payment is refunded.',
+    km: 'ការបញ្ជាទិញត្រូវបានបញ្ជាក់នៅពេលការបង់ប្រាក់ត្រូវបានអនុម័ត ឬសម្រាប់ការបង់ប្រាក់ពេលទទួលទំនិញ នៅពេលការបញ្ជាទិញត្រូវបានទទួលយក។ យើងអាចបោះបង់ការបញ្ជាទិញ ប្រសិនបើទំនិញអស់ពីស្តុក ឬមិនអាចផ្ទៀងផ្ទាត់ការបង់ប្រាក់បាន។ ការបង់ប្រាក់ដែលបានកាត់ហើយនឹងត្រូវបង្វិលជូនវិញ។',
+  },
+  'legal.termsPricing': {
+    en: 'Prices are shown in USD and include 10% VAT where applicable. Shipping is $8.95 and free on orders over $75 after discounts. KHR amounts are an estimate at the displayed rate; the USD total is the ledger amount.',
+    km: 'តម្លៃបង្ហាញជាដុល្លារអាមេរិក និងរួមបញ្ចូល VAT 10% តាមករណី។ ការដឹកជញ្ជូនគឺ $8.95 និងឥតគិតថ្លៃសម្រាប់ការបញ្ជាទិញលើស $75 បន្ទាប់ពីបញ្ចុះតម្លៃ។ ចំនួនរៀលគឺជាការប៉ាន់ស្មានតាមអត្រាដែលបានបង្ហាញ។ សរុបជាដុល្លារគឺជាចំនួនគណនេយ្យ។',
+  },
+  'legal.termsLiability': {
+    en: 'Products are cosmetics, not medicine. Stop use if irritation occurs and contact a qualified healthcare professional. Our liability is limited to the value of the order, except where the law says otherwise.',
+    km: 'ផលិតផលគឺជាគ្រឿងសម្អាង មិនមែនថ្នាំទេ។ ឈប់ប្រើប្រសិនបើមានការរលាក ហើយទាក់ទងអ្នកជំនាញសុខាភិបាល។ ការទទួលខុសត្រូវរបស់យើងកំណត់ត្រឹមតម្លៃនៃការបញ្ជាទិញ លើកលែងតែច្បាប់កំណត់ផ្សេង។',
+  },
+  'legal.termsContact': {
+    en: 'Questions about these terms: hello@calesta.kh. Cambodian law governs this agreement.',
+    km: 'សំណួរអំពីលក្ខខណ្ឌទាំងនេះ៖ hello@calesta.kh។ កិច្ចព្រមព្រៀងនេះគ្រប់គ្រងដោយច្បាប់កម្ពុជា។',
+  },
+  'legal.shipping': { en: 'Shipping & Returns', km: 'ការដឹកជញ្ជូន និងការត្រឡប់វិញ' },
+  'legal.shippingIntro': {
+    en: 'We deliver across Cambodia with one standard service. Delivery times depend on your province and are confirmed after your order is packed.',
+    km: 'យើងដឹកជញ្ជូនទូទាំងប្រទេសកម្ពុជាដោយសេវាស្តង់ដារមួយ។ ពេលវេលាដឹកជញ្ជូនអាស្រ័យលើខេត្តរបស់អ្នក ហើយត្រូវបានបញ្ជាក់បន្ទាប់ពីការបញ្ជាទិញរបស់អ្នកត្រូវបានវេចខ្ចប់។',
+  },
+  'legal.shippingDelivery': {
+    en: 'Phnom Penh orders usually arrive in 1–2 business days; other provinces in 2–5 business days. Shipping is $8.95 and free on orders over $75 after discounts. Cash on delivery is available.',
+    km: 'ការបញ្ជាទិញនៅភ្នំពេញជាធម្មតាមកដល់ក្នុងរយៈពេល 1–2 ថ្ងៃធ្វើការ។ ខេត្តផ្សេងទៀតក្នុងរយៈពេល 2–5 ថ្ងៃធ្វើការ។ ការដឹកជញ្ជូនគឺ $8.95 និងឥតគិតថ្លៃសម្រាប់ការបញ្ជាទិញលើស $75 បន្ទាប់ពីបញ្ចុះតម្លៃ។ ការបង់ប្រាក់ពេលទទួលទំនិញមាន។',
+  },
+  'legal.shippingReturns': {
+    en: 'Unopened products can be returned within 7 days of delivery. Contact us with your order number before sending anything back. Opened cosmetics cannot be returned for hygiene reasons unless the product is faulty.',
+    km: 'ផលិតផលដែលមិនទាន់បើកអាចត្រឡប់វិញក្នុងរយៈពេល 7 ថ្ងៃបន្ទាប់ពីទទួល។ សូមទាក់ទងមកយើងជាមួយលេខការបញ្ជាទិញ មុននឹងផ្ញើអ្វីមួយត្រឡប់មកវិញ។ គ្រឿងសម្អាងដែលបើកហើយមិនអាចត្រឡប់វិញបានទេ ដោយសារហេតុផលអនាម័យ លើកលែងតែផលិតផលមានបញ្ហា។',
+  },
+  'legal.shippingContact': {
+    en: 'Delivery or return help: hello@calesta.kh. Include your order number and a photo of any damaged item.',
+    km: 'ជំនួយអំពីការដឹកជញ្ជូន ឬការត្រឡប់វិញ៖ hello@calesta.kh។ សូមបញ្ចូលលេខការបញ្ជាទិញ និងរូបថតនៃទំនិញដែលខូច។',
+  },
+
 
   // Category labels (DB slugs)
   'category.cleansers': { en: 'Cleansers', km: 'ផលិតផលសម្អាត' },

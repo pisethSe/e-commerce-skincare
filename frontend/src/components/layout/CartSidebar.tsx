@@ -108,6 +108,7 @@ export default function CartSidebar() {
                           <div className="mt-2 flex items-center gap-3">
                             <button
                               onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                              aria-label={t('cart.decrease', { name: item.product.name })}
                               className="flex h-7 w-7 items-center justify-center rounded-full border border-Mneutral-200 transition-colors hover:border-Mneutral-900"
                             >
                               <Minus size={12} />
@@ -115,6 +116,7 @@ export default function CartSidebar() {
                             <span className="w-4 text-center text__14 font-medium">{item.quantity}</span>
                             <button
                               onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                              aria-label={t('cart.increase', { name: item.product.name })}
                               className="flex h-7 w-7 items-center justify-center rounded-full border border-Mneutral-200 transition-colors hover:border-Mneutral-900"
                             >
                               <Plus size={12} />
@@ -125,6 +127,7 @@ export default function CartSidebar() {
                         {/* Remove */}
                         <button
                           onClick={() => removeItem(item.product.id)}
+                          aria-label={t('cart.remove', { name: item.product.name })}
                           className="self-start p-1 text-Mneutral-400 transition-colors hover:text-Mneutral-900"
                         >
                           <Trash2 size={15} strokeWidth={1.5} />

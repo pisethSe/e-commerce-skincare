@@ -262,6 +262,44 @@ test('re-activating a cancelled order re-reserves stock and coupon usage', async
   assert.equal(Number(couponRow.usedCount), 1, 'coupon usage must be re-consumed on re-activation')
 })
 
+test('reactivating a cancelled order fails when its stock was sold meanwhile', async () => {
+  if (!serverUp) return
+  const product = await makeProduct({ stockCount: 1, price: 30 })
+  const firstUser = await makeUser('wf-reactivate-stock')
+  const firstAddress = await makeAddress(firstUser.token)
+  const { body: firstOrder } = await call('POST', '/api/orders', {
+    token: firstUser.token,
+    body: { items: [{ productId: product.id, quantity: 1 }], addressId: firstAddress },
+  })
+
+  const admin = await adminToken()
+  const cancelled = await call('PATCH', `/api/orders/${firstOrder.data.id}/status`, {
+    token: admin,
+    body: { status: 'CANCELLED' },
+  })
+  assert.equal(cancelled.status, 200)
+
+  const secondUser = await makeUser('wf-reactivate-stock-consumer')
+  const secondAddress = await makeAddress(secondUser.token)
+  const secondOrder = await call('POST', '/api/orders', {
+    token: secondUser.token,
+    body: { items: [{ productId: product.id, quantity: 1 }], addressId: secondAddress },
+  })
+  assert.equal(secondOrder.status, 201)
+
+  const reactivated = await call('PATCH', `/api/orders/${firstOrder.data.id}/status`, {
+    token: admin,
+    body: { status: 'PROCESSING' },
+  })
+  assert.equal(reactivated.status, 409)
+  assert.match(reactivated.body.message, /insufficient stock/i)
+
+  const current = await productById(product.id)
+  assert.equal(current.stockCount, 0, 'failed reactivation must not decrement stock')
+  const firstDetail = await call('GET', `/api/orders/${firstOrder.data.id}`, { token: firstUser.token })
+  assert.equal(firstDetail.body.data.status, 'CANCELLED')
+})
+
 test('double-cancel does not double-restock (idempotent)', async () => {
   if (!serverUp) return
   const product = await makeProduct({ stockCount: 4, price: 15 })
@@ -298,6 +336,7 @@ test('status change emails are attempted for the customer (graceful without SMTP
   })
   const admin = await adminToken()
   // A status change must succeed end-to-end even with no SMTP configured
+  await call('PATCH', `/api/orders/${body.data.id}/status`, { token: admin, body: { status: 'PROCESSING' } })
   const { status, body: updated } = await call('PATCH', `/api/orders/${body.data.id}/status`, {
     token: admin, body: { status: 'SHIPPED' },
   })

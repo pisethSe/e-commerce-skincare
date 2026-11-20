@@ -378,12 +378,36 @@ test('PATCH /api/orders/:id/status updates the order status (admin)', async () =
     body: { items: [{ productId: product.id, quantity: 1 }], addressId },
   })
 
+  const admin = await adminToken()
+  const processing = await call('PATCH', `/api/orders/${created.data.id}/status`, {
+    token: admin,
+    body: { status: 'PROCESSING' },
+  })
+  assert.equal(processing.status, 200)
   const { status, body } = await call('PATCH', `/api/orders/${created.data.id}/status`, {
-    token: await adminToken(),
+    token: admin,
     body: { status: 'SHIPPED' },
   })
   assert.equal(status, 200)
   assert.equal(body.data.status, 'SHIPPED')
+})
+
+test('PATCH /api/orders/:id/status rejects illegal transitions', async () => {
+  if (!serverUp) return
+  const user = await makeUser('o9b')
+  const addressId = await makeAddress(user.token)
+  const product = await pickStockedProduct(1)
+  const { body: created } = await call('POST', '/api/orders', {
+    token: user.token,
+    body: { items: [{ productId: product.id, quantity: 1 }], addressId },
+  })
+
+  const { status, body } = await call('PATCH', `/api/orders/${created.data.id}/status`, {
+    token: await adminToken(),
+    body: { status: 'SHIPPED' },
+  })
+  assert.equal(status, 400, 'pending orders cannot skip processing')
+  assert.match(body.message, /cannot move an order from PENDING to SHIPPED/i)
 })
 
 test('PATCH /api/orders/:id/status rejects invalid statuses', async () => {
@@ -409,6 +433,38 @@ test('PATCH /api/orders/:id/status rejects non-admin users', async () => {
     body: { status: 'SHIPPED' },
   })
   assert.equal(status, 403)
+})
+
+test('PATCH /api/orders/:id/status marks payment refunded with a refunded order', async () => {
+  if (!serverUp) return
+  const user = await makeUser('o9c')
+  const addressId = await makeAddress(user.token)
+  const product = await pickStockedProduct(1)
+  const { body: created } = await call('POST', '/api/orders', {
+    token: user.token,
+    body: { items: [{ productId: product.id, quantity: 1 }], addressId, paymentMethod: 'cod' },
+  })
+
+  const admin = await adminToken()
+  await call('PATCH', `/api/orders/${created.data.id}/payment`, {
+    token: admin,
+    body: { paymentStatus: 'PAID' },
+  })
+  await call('PATCH', `/api/orders/${created.data.id}/status`, {
+    token: admin,
+    body: { status: 'PROCESSING' },
+  })
+  await call('PATCH', `/api/orders/${created.data.id}/status`, {
+    token: admin,
+    body: { status: 'SHIPPED' },
+  })
+  const { status, body } = await call('PATCH', `/api/orders/${created.data.id}/status`, {
+    token: admin,
+    body: { status: 'REFUNDED' },
+  })
+  assert.equal(status, 200)
+  assert.equal(body.data.status, 'REFUNDED')
+  assert.equal(body.data.paymentStatus, 'REFUNDED', 'refunds update both order and payment state')
 })
 
 /* ── Admin stats ──────────────────────────────── */

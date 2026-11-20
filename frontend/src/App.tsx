@@ -20,6 +20,7 @@ const TrackOrderPage = lazy(() => import('./pages/TrackOrderPage'))
 const AuthCallbackPage = lazy(() => import('./pages/AuthCallbackPage'))
 const PaymentSuccessPage = lazy(() => import('./pages/PaymentSuccessPage'))
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'))
+const LegalPage = lazy(() => import('./pages/LegalPage'))
 
 // AOS init
 declare global {
@@ -63,6 +64,9 @@ export default function App() {
             <Route path="/auth/callback" element={<AuthCallbackPage />} />
             <Route path="/payment/success" element={<PaymentSuccessPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/privacy" element={<LegalPage kind="privacy" />} />
+            <Route path="/terms" element={<LegalPage kind="terms" />} />
+            <Route path="/shipping-returns" element={<LegalPage kind="shipping" />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
