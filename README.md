@@ -1,451 +1,283 @@
-# 🌸 Lumière — Premium Skincare & Beauty Platform
+# Calesta — Skincare & Beauty
 
-A full-stack, production-ready e-commerce platform for premium skincare, built with modern technologies and a luxurious aesthetic.
+Calesta is a full-stack e-commerce platform for a premium skincare brand. It includes a localized customer storefront, a live admin console, and a PostgreSQL-backed REST API.
 
----
+## Applications
 
-## ✨ Tech Stack
+| Application | Technology | Local port |
+| --- | --- | --- |
+| [Storefront](frontend/) | React, TypeScript, Vite, Zustand | `3000` |
+| [Admin console](admin/) | React, TypeScript, Vite, Recharts | `3001` |
+| [REST API](backend/) | Node.js, Express, TypeScript, Prisma | `5001` |
 
-### Frontend (`/frontend`) — Port 3000
-- **React 18** + **TypeScript**
-- **Vite** (fast build tooling)
-- **Tailwind CSS** (utility-first styling)
-- **Framer Motion** — page transitions, card animations, parallax
-- **GSAP** — hero animations, scroll-triggered effects
-- **Lenis** — buttery smooth scrolling
-- **AOS** (Animate On Scroll) — section reveal animations
-- **Zustand** — lightweight global state (cart, wishlist, UI)
-- **React Router v7** — client-side routing
-- **Lucide React** — icon system
-- **Vitest + Testing Library** — unit and component tests (jsdom)
-- **Route-level code splitting** — pages load on demand; vendor chunks
-      (React, Motion, GSAP, Recharts) are cached across deploys
+## Storefront
 
-### Admin Dashboard (`/admin`, port 3001)
-- **JWT-protected admin login gate** (admin role required)
-- All pages wired to the live API — no demo data
-- KPI stat cards with real month-over-month deltas
-- Revenue area chart + revenue sparkline (Recharts, real data)
-- Catalog mix donut from live category counts
-- Top products table with real sales figures
-- Recent orders feed with live statuses
-- **Products CRUD** — search, category filter, pagination, add/edit drawer with image previews and **file upload**, delete
-- Cart is **persisted across page reloads** (localStorage)
-- **Inventory** — stock levels with per-product low-stock thresholds, one-click
-  restock, out-of-stock + low-stock KPIs, and the number of customers waiting
-  for each product
-- **Orders** — server-side status filter tabs, search, inline status update (persists), order detail drawer, CSV export
-- **Customers** — live customer list with verification status
-- **Analytics** — 7/30/90-day, this-month, last-month and custom date ranges;
-  revenue trend, status mix, top products and collection revenue, each compared
-  with the previous period
-- **CSV exports** — orders, products, customers, and reviews as UTF-8
-  attachments (BOM for Excel, proper quoting) straight from the API
-- **Reviews** — approve / unpublish / delete, verified purchase badges, rating recalculation
-- **Journal** — create, edit, publish/draft, delete posts
-- **Coupons** — create percentage/fixed codes, activate/deactivate, usage tracking
-- **Settings** — profile editing, password change, store info, sign out
+- Responsive product catalog with search, filters, sorting, categories, and pagination
+- English and Khmer interface with persisted language preference
+- USD and Khmer Riel pricing
+- Product details, related products, reviews, verified-purchase badges, and wishlists
+- Persistent cart and server-synchronized cart for signed-in customers
+- Cambodia-focused checkout with Phnom Penh and provincial delivery locations
+- Cash on delivery, ABA PayWay, KHQR, and card payment flows
+- Public order tracking by order number and checkout email
+- Account profile, order history, saved addresses, password reset, and Google OAuth
+- Back-in-stock notifications, coupons, newsletter, journal, and SEO metadata
 
-### Backend (`/backend`) — Port 5001
-- **Node.js** + **Express** + **TypeScript**
-- **Prisma ORM** — type-safe database queries
-- **PostgreSQL** via **Neon** (serverless cloud DB)
-- **JWT** auth with refresh token rotation
-- **bcryptjs** — password hashing
-- **Helmet** + **CORS** + **Rate limiting** — security
-- **express-validator** — request validation
-- **Stripe** — payment processing (ready)
-- **Nodemailer** — transactional emails (order confirmation, newsletter welcome; gracefully logs when unconfigured)
-- **Multer** — local image uploads at `POST /api/uploads` (admin-only, served at `/uploads`)
+## Admin Console
 
----
+- JWT-protected access for administrator accounts
+- Dashboard KPIs, revenue trends, sales mix, inventory alerts, and recent orders
+- Product, category, customer, review, coupon, journal, and order management
+- Image uploads, stock thresholds, restocking, and low-stock reporting
+- Order status updates, tracking numbers, order details, and CSV exports
+- Analytics for custom and preset date ranges
 
-## 🗂️ Project Structure
+## API
 
-```
-lumiere-skincare/
-├── frontend/          # Customer-facing storefront
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── layout/    # Navbar, Footer, CartSidebar, Layout
-│   │   │   ├── sections/  # Hero, Featured, Categories, Testimonials...
-│   │   │   └── ui/        # ProductCard, reusable components
-│   │   ├── pages/         # Home, Shop, Product, Cart, Checkout, About, Journal
-│   │   ├── lib/           # store.ts (Zustand), data.ts, utils.ts
-│   │   ├── hooks/         # useLenis (smooth scroll)
-│   │   ├── types/         # Full TypeScript type definitions
-│   │   └── styles/        # globals.css with Tailwind + custom
-│   └── ...
-│
-├── admin/             # Admin dashboard
-│   ├── src/
-│   │   ├── components/layout/  # Sidebar, AdminHeader, AdminLayout
-│   │   └── pages/             # Dashboard, Products, Orders
-│   └── ...
-│
-└── backend/           # REST API
-    ├── prisma/
-    │   ├── schema.prisma  # Full DB schema (10+ models)
-    │   └── seed.ts        # Sample data seeder
-    └── src/
-        ├── controllers/   # authController, productController, orderController...
-        ├── middleware/     # auth.ts (JWT), errorHandler.ts
-        ├── routes/        # auth, products, orders, cart, reviews, blog...
-        ├── lib/           # prisma.ts singleton
-        └── index.ts       # Express server entry
-```
+The API provides endpoints for authentication, products, search, categories, cart, orders, reviews, wishlists, addresses, payments, journal posts, coupons, newsletter subscriptions, uploads, and admin reporting.
 
----
+### Authentication
 
-## 🚀 Getting Started
+| Method | Endpoint | Access |
+| --- | --- | --- |
+| `POST` | `/api/auth/register` | Public |
+| `POST` | `/api/auth/login` | Public |
+| `POST` | `/api/auth/google` | Public |
+| `POST` | `/api/auth/refresh` | Public |
+| `POST` | `/api/auth/logout` | Authenticated |
+| `GET` | `/api/auth/me` | Authenticated |
 
-### 1. Clone & Install
+### Products and Catalog
+
+| Method | Endpoint | Access |
+| --- | --- | --- |
+| `GET` | `/api/products` | Public |
+| `GET` | `/api/products/suggest?q=` | Public |
+| `GET` | `/api/products/:slug` | Public |
+| `GET` | `/api/products/:id/related` | Public |
+| `POST` | `/api/products/:id/stock-notification` | Public |
+| `POST`, `PUT`, `DELETE` | `/api/products...` | Admin |
+| `GET`, `POST`, `PUT`, `DELETE` | `/api/categories...` | Public read, admin write |
+
+### Orders and Payments
+
+| Method | Endpoint | Access |
+| --- | --- | --- |
+| `POST` | `/api/orders/track` | Public |
+| `GET`, `POST` | `/api/orders` | Customer or public creation |
+| `GET` | `/api/orders/:id` | Authenticated |
+| `PATCH` | `/api/orders/:id/status` | Admin |
+| `PATCH` | `/api/orders/:id/tracking` | Admin |
+| `GET` | `/api/payments/config` | Public |
+| `POST` | `/api/payments/create-intent` | Authenticated |
+
+Health check: `GET /health`
+
+## Tech Stack
+
+- **Frontend:** React 18, React Router, TypeScript, Vite, Zustand, Tailwind CSS
+- **Admin:** React 18, Recharts, TypeScript, Vite
+- **Backend:** Node.js, Express 5, TypeScript, Prisma
+- **Database:** PostgreSQL
+- **Authentication:** JWT access/refresh tokens, bcrypt, Google OAuth
+- **Payments:** Stripe, ABA PayWay, Bakong/KHQR
+- **Media:** Multer uploads and Cloudinary configuration
+- **Notifications:** Nodemailer and Telegram
+- **Testing:** Vitest, Testing Library, Node test runner
+
+## Prerequisites
+
+- Node.js 22+
+- npm
+- PostgreSQL 17 or a hosted PostgreSQL database such as Neon
+
+## Local Setup
+
+### 1. Clone and install
 
 ```bash
-git clone <your-repo>
-cd lumiere-skincare
+git clone https://github.com/pisethSe/e-commerce-skincare.git
+cd e-commerce-skincare
 npm run install:all
 ```
 
-### 2. Set Up Database
-
-**Option A — Local PostgreSQL (fastest for development):**
-
-```bash
-brew install postgresql@17
-brew services start postgresql@17
-createdb lumiere
-```
-
-Set `DATABASE_URL="postgresql://<you>@localhost:5432/lumiere?schema=public"` in `backend/.env`.
-
-**Option B — Neon (cloud):**
-
-1. Go to [neon.tech](https://neon.tech) → Create free account
-2. Create a new project → Copy your **Connection String**
-3. Create `backend/.env` from the example:
+### 2. Configure the backend
 
 ```bash
 cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+cp admin/.env.example admin/.env
 ```
 
-4. Fill in your values in `backend/.env`:
+Set `DATABASE_URL` to a PostgreSQL connection string and use strong values for `JWT_SECRET` and `JWT_REFRESH_SECRET`.
+
+Example:
 
 ```env
-DATABASE_URL="postgresql://user:password@ep-xxx.neon.tech/lumiere?sslmode=require"
-JWT_SECRET=your-super-secret-key-min-32-chars
-JWT_REFRESH_SECRET=your-refresh-secret-min-32-chars
-STRIPE_SECRET_KEY=sk_test_...
-
-# Google sign-in (optional)
-GOOGLE_CLIENT_ID=...apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=GOCSPX-...
-GOOGLE_REDIRECT_URI=http://localhost:5001/api/auth/google/callback
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/lumiere?schema=public"
+JWT_SECRET=replace-with-a-long-random-secret
+JWT_REFRESH_SECRET=replace-with-a-different-random-secret
+JWT_EXPIRES_IN=15m
+JWT_REFRESH_EXPIRES_IN=7d
 FRONTEND_URL=http://localhost:3000
+ADMIN_URL=http://localhost:3001
 ```
 
-> **Google sign-in:** in your Google Cloud console (Credentials → OAuth client),
-> add the backend callback to **Authorized redirect URIs**:
-> `http://localhost:5001/api/auth/google/callback` (adjust the port to wherever
-> the backend runs). The *JavaScript origins* entry is only needed for Google's
-> popup sign-in mode — this app uses the server-side redirect flow.
-
-### 3. Initialize Database
+### 3. Initialize PostgreSQL
 
 ```bash
-# Generate Prisma client
 npm run db:generate
-
-# Push schema to Neon
 npm run db:push
-
-# Seed with sample data
 npm run db:seed
 ```
 
-### 4. Run Development Servers
+### 4. Start the applications
 
 ```bash
-# All three servers simultaneously
 npm run dev
-
-# Or individually:
-npm run dev:backend    # API on :5001
-npm run dev:frontend   # Store on :3000
-npm run dev:admin      # Admin on :3001 (console at /admin)
 ```
 
----
+The storefront, admin console, and API start on ports `3000`, `3001`, and `5001` respectively. Individual commands are also available:
 
-## 🔑 Default Credentials (after seed)
-
-| Role     | Email                  | Password          |
-|----------|------------------------|-------------------|
-| Admin    | admin@lumiere.com      | Admin@lumiere123  |
-| Customer | sophie@example.com     | User@lumiere123   |
-
----
-
-## 🧪 Testing
-
-### Backend — 190 end-to-end tests
 ```bash
-# Start the API and seed the database first (see Getting Started)
+npm run dev:frontend
+npm run dev:admin
+npm run dev:backend
+```
+
+## Demo Accounts
+
+Seeded accounts are for local development only.
+
+| Role | Email | Password |
+| --- | --- | --- |
+| Admin | `admin@lumiere.com` | `Admin@lumiere123` |
+| Customer | `sophie@example.com` | `User@lumiere123` |
+
+Change or remove demo credentials before deploying to production.
+
+## Environment Variables
+
+### Backend
+
+The complete template is in [backend/.env.example](backend/.env.example).
+
+Important variables:
+
+| Variable | Purpose |
+| --- | --- |
+| `DATABASE_URL` | PostgreSQL connection string |
+| `JWT_SECRET` | Access-token signing secret |
+| `JWT_REFRESH_SECRET` | Refresh-token signing secret |
+| `FRONTEND_URL` | Storefront origin for CORS and redirects |
+| `ADMIN_URL` | Admin origin for CORS |
+| `ALLOWED_ORIGINS` | Optional comma-separated additional origins |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` | Google OAuth |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Stripe payments |
+| `ABA_PAYWAY_PROFILE_ID`, `ABA_PAYWAY_SECRET_KEY`, `ABA_PAYWAY_API_BASE` | ABA PayWay |
+| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_ADMIN_CHAT_ID` | Telegram notifications |
+| `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASS`, `EMAIL_FROM` | Transactional email |
+
+### Storefront
+
+| Variable | Purpose |
+| --- | --- |
+| `VITE_API_URL` | Backend API origin |
+| `VITE_SITE_URL` | Public storefront URL for SEO metadata |
+| `VITE_USD_TO_KHR` | USD-to-KHR display rate; defaults to `4100` |
+
+### Admin
+
+| Variable | Purpose |
+| --- | --- |
+| `VITE_API_URL` | Backend API origin |
+
+## Testing
+
+### Backend
+
+Requires a running PostgreSQL instance:
+
+```bash
 cd backend
+npm run db:push
+npm run db:seed
+npm run build
 npm test
 ```
 
-The suite exercises every feature against a real PostgreSQL database and running
-API: auth & token rotation, password reset, products/categories/blog CRUD, search
-ranking and typo tolerance, orders with coupon math, shipping and stock handling,
-cart, reviews with moderation, wishlist, addresses, newsletter, coupons, uploads,
-role guards, payments config, and the business-workflow rules (order cancellation
-restocks, coupon usage limits, slug/category guards).
+The API tests cover authentication, authorization, catalog, checkout, order workflows, reviews, payments, tracking, uploads, and security behavior.
 
-The suite runs against PostgreSQL and creates throwaway fixtures — clean them
-afterwards:
+### Storefront
 
-```bash
-cd backend
-npm run db:clean
-```
-
-### Storefront — 80 unit & component tests
 ```bash
 cd frontend
-npm test          # single run (CI)
-npm run test:watch
-```
-Vitest + Testing Library run in jsdom and cover currency conversion, the Khmer/
-English dictionary, catalog normalisation, cart/wishlist state & persistence, the
-review section (summary, verified badges, validation, moderation state), the
-public tracking page (shared-link prefill, lookup payload, error/retry, reset),
-and Cambodian delivery areas (khan/province mapping, postal-code rules, phone
-validation).
-
-### Continuous integration
-`.github/workflows/ci.yml` runs on every push to `main` and every pull request:
-
-| Job | What it does |
-| --- | --- |
-| **Backend** | Postgres 17 service → `prisma db push` → seed → `tsc` → boots the API → full test suite |
-| **Storefront** | `npm ci` → Vitest → `tsc` + production build |
-| **Admin** | `npm ci` → `tsc` + production build |
-
-The backend job uploads the API log as an artifact when tests fail. The same
-steps can be reproduced locally with a scratch database, e.g.
-`createdb lumiere_ci` + `DATABASE_URL=… npm run db:push && npm run db:seed`.
-
----
-
-## 🛒 Features
-
-### Customer Storefront
-- ✅ Hero section with parallax mouse tracking
-- ✅ Animated marquee ticker (Framer Motion)
-- ✅ Featured products grid with hover effects
-- ✅ Category grid with asymmetric layout
-- ✅ Brand story section with scroll parallax
-- ✅ Testimonials with horizontal scroll animation
-- ✅ Journal/blog preview section
-- ✅ Instagram-style image grid
-- ✅ Newsletter signup with discount offer
-- ✅ Smooth Lenis scrolling
-- ✅ AOS reveal animations on scroll
-- ✅ Cart sidebar with slide animation (Framer Motion)
-- ✅ Mobile menu with clip-path reveal animation
-- ✅ Shop page with filters, sort, category pills
-- ✅ Product detail with image gallery, accordion, related products
-- ✅ Cart page with coupon input
-- ✅ Multi-step checkout: Cambodia-only delivery with a **Phnom Penh / province**
-      choice, khan or province picker, house number & street, phone validation,
-      one standard delivery method (free over $75), and payment via **cash on
-      delivery**, ABA PayWay, Bakong (KHQR), or Credit/Debit Card, with an order
-      confirmation step
-- ✅ Sign in with Google (OAuth2) + password strength meter on signup
-- ✅ English / ខ្មែរ toggle — storefront chrome, dates, and category labels
-      localized; the choice is persisted per browser
-- ✅ USD / KHR dual pricing — switch currencies in the header; product cards
-      show the secondary amount. Rate configurable via `VITE_USD_TO_KHR`
-      (default 4,100 riel per dollar)
-- ✅ Account page (/account): profile, order history, spending stats
-- ✅ Public order tracking (/track) — look up any order with its number and the
-      email used at checkout; shows the status timeline, items, totals, payment
-      state, destination, and tracking number. Order confirmation and status
-      emails deep-link straight to it with the number prefilled
-- ✅ Order tracking timeline with tracking number once an order ships
-- ✅ Product reviews — rating summary with 5-star distribution, approved review
-      list with verified-purchase badges, and a moderated write form (one review
-      per customer; verified buyers are marked automatically)
-- ✅ Wishlist — heart products from any product page; saved items persist on the
-      device and live on their own /wishlist page, including sold-out saves
-- ✅ Catalog search — typo-tolerant matching across names, taglines, tags,
-      categories, descriptions and ingredients, with relevance ranking,
-      category/price/rating filters, facet counts, and a "did you mean" hint.
-      The header search icon opens a live typeahead overlay
-- ✅ "Email me when it's back" on sold-out products — the customer is emailed
-      automatically the moment stock returns
-- ✅ Password reset by emailed link (single-use, 1-hour expiry)
-- ✅ Silent token refresh — expired sessions recover without re-login
-- ✅ About page with timeline
-- ✅ Journal listing page
-- ✅ 404 page
-- ✅ Wishlist (Zustand, persistent in session)
-- ✅ Custom scrollbar + CSS animations
-
-### Admin Dashboard
-- ✅ KPI stat cards with trend indicators
-- ✅ Revenue area chart (Recharts)
-- ✅ Sales by category donut chart
-- ✅ Top products table
-- ✅ Recent orders feed
-- ✅ Products CRUD table with search, filter, pagination
-- ✅ Product add/edit slide-out drawer with image upload UI
-- ✅ Orders table with status filter tabs, inline status update
-- ✅ Sidebar navigation with active states
-
-### Backend API
-- ✅ JWT auth (access + refresh token rotation)
-- ✅ Register / Login / Logout / Change password
-- ✅ Google OAuth2 sign-in (`GET /api/auth/google` → consent → `/api/auth/google/callback`)
-- ✅ Products: CRUD, filtering, pagination, related
-- ✅ Search: relevance ranking + typo tolerance (Levenshtein), facet counts
-      (category, price, rating), and `GET /api/products/suggest?q=` typeahead
-- ✅ Categories: CRUD
-- ✅ Orders: create, list, detail, status update (cancel restocks stock),
-      public tracking by order number + email (rate-limited, no account needed)
-- ✅ Cart: server-side sync for authenticated users
-- ✅ Reviews: create, list, verified purchase badge
-- ✅ Wishlist: add/remove per user
-- ✅ Addresses: manage shipping addresses (Cambodia-only validation)
-- ✅ Blog: CRUD, published/draft
-- ✅ Coupons: validate, percentage/fixed discount
-- ✅ Newsletter: subscribe/unsubscribe
-- ✅ Admin dashboard stats endpoint
-- ✅ Rate limiting, CORS, Helmet security
-
----
-
-## 🎨 Design System
-
-### Colors
-| Token           | Value     | Usage                    |
-|-----------------|-----------|--------------------------|
-| Cream primary   | `#faf0e4` | Page background          |
-| Gold accent     | `#c9a96e` | CTAs, highlights, links  |
-| Sage            | `#6f8a4a` | Success, nature, badges  |
-| Charcoal        | `#1a1a1a` | Text, buttons, dark areas|
-| Blush           | `#e85050` | Sale badges, wishlist    |
-
-### Typography
-- **Display:** Playfair Display (headings, brand, editorial)
-- **Body:** DM Sans (UI, paragraphs, labels)
-- **Accent:** Cormorant Garamond (italic callouts, taglines)
-
-### Animations
-- **Framer Motion:** Page transitions, cart sidebar, mobile menu, card hovers, stat reveals
-- **GSAP:** Hero parallax, scroll-driven effects
-- **Lenis:** Native-feel smooth scrolling
-- **AOS:** Section entrance animations
-- **CSS:** Marquee ticker, floating product images, shimmer effects
-
----
-
-## 🌐 API Endpoints
-
-```
-POST   /api/auth/register
-POST   /api/auth/login
-POST   /api/auth/refresh
-POST   /api/auth/logout
-GET    /api/auth/me
-
-GET    /api/products?page&limit&category&minPrice&maxPrice&rating&sortBy&search
-GET    /api/products/suggest?q=          (typeahead + "did you mean")
-GET    /api/products/:slug
-GET    /api/products/:id/related
-POST   /api/products/:id/stock-notification   (notify me when back in stock)
-POST   /api/products          (admin)
-PUT    /api/products/:id      (admin)
-DELETE /api/products/:id      (admin)
-
-GET    /api/categories
-POST   /api/categories        (admin)
-
-POST   /api/orders/track                (public: order number + email)
-GET    /api/orders/my
-GET    /api/orders/:id
-POST   /api/orders
-GET    /api/orders            (admin)
-PATCH  /api/orders/:id/status (admin)
-PATCH  /api/orders/:id/tracking (admin)
-
-GET    /api/cart
-POST   /api/cart
-PATCH  /api/cart/:productId
-DELETE /api/cart/:productId
-DELETE /api/cart
-
-POST   /api/reviews
-GET    /api/reviews/product/:productId        (approved list + rating summary)
-GET    /api/reviews/product/:productId/mine   (the signed-in customer's review)
-
-GET    /api/blog
-GET    /api/blog/:slug
-POST   /api/blog              (admin)
-
-POST   /api/newsletter/subscribe
-POST   /api/newsletter/unsubscribe
-
-POST   /api/coupons/validate
-GET    /api/coupons           (admin)
-PATCH  /api/coupons/:id       (admin)
-POST   /api/uploads           (admin, image upload)
-
-GET    /api/admin/stats       (admin)
-GET    /api/admin/inventory?lowStock=1        (admin)
-PATCH  /api/admin/inventory/:id               (admin — stock, threshold, inStock)
-GET    /api/admin/analytics?from&to           (admin)
-GET    /api/admin/export/:type?from&to        (admin — orders|products|customers|reviews CSV)
-
-GET    /api/users/me
-PATCH  /api/users/me
-GET    /api/users/wishlist
-POST   /api/users/wishlist/:productId
-DELETE /api/users/wishlist/:productId
-GET    /api/users/addresses
-POST   /api/users/addresses
+npm test
+npm run build
 ```
 
----
+### Admin
 
-## 🚢 Deployment
-
-### Frontend / Admin → Vercel
 ```bash
-# Install Vercel CLI
-npm i -g vercel
-
-# Deploy frontend
-cd frontend && vercel --prod
-
-# Deploy admin
-cd admin && vercel --prod
+cd admin
+npm test
+npm run build
 ```
 
-### Backend → Railway / Render / Fly.io
+GitHub Actions runs backend integration tests with PostgreSQL 17 and builds and tests the frontend and admin applications.
+
+## Build
+
+Build all applications:
+
 ```bash
-# Build
+npm run build
+```
+
+Or build one application:
+
+```bash
 npm run build:backend
-
-# Set environment variables in your hosting dashboard
-# Start: node dist/index.js
+npm run build:frontend
+npm run build:admin
 ```
 
-### Database → Neon (already cloud-hosted!)
+## Deployment
 
----
+Deployment definitions are included for [Render](render.yaml) and [Vercel](vercel.json).
 
-## 📄 License
+- **Backend:** deploy `backend/` as a Node.js web service on Render or another Node host.
+- **Storefront:** deploy `frontend/` as a Vite application on Vercel.
+- **Admin:** deploy `admin/` as a separate Vite application on Vercel.
+- **Database:** use a managed PostgreSQL service and set `DATABASE_URL` at deployment time.
+- **Uploads:** configure persistent storage or Cloudinary for production media.
 
-MIT © 2025 Lumière Beauty. Built with ❤️ and caffeine.
+Before production:
+
+1. Replace every seed credential and JWT secret.
+2. Set exact frontend and admin origins.
+3. Configure payment webhook URLs and callback URLs.
+4. Configure SMTP or another mail provider.
+5. Run database migrations and seed only when appropriate.
+6. Enable HTTPS and review rate limits and CORS origins.
+
+## Repository Structure
+
+```text
+.
+├── frontend/              Customer storefront
+├── admin/                 Administrator console
+├── backend/
+│   ├── prisma/            Schema and seed data
+│   ├── src/controllers/   HTTP request handlers
+│   ├── src/routes/        API route definitions
+│   ├── src/middleware/    Authentication and error handling
+│   └── tests/             API integration tests
+├── docs/                  Product scope and requirements
+├── render.yaml            Render backend configuration
+└── vercel.json            Storefront Vercel configuration
+```
+
+## License
+
+Private project.
