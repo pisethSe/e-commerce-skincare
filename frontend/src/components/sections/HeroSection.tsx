@@ -79,7 +79,7 @@ export default function HeroSection() {
             }}
           >
             <img
-              src="https://images.unsplash.com/photo-1574156863536-37fbc5e1cfef?w=400&q=80"
+              src="/images/figma-products/product-05.png"
               alt="Lumière Moisturizer"
               className="w-full h-full object-cover"
             />

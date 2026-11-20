@@ -4,12 +4,12 @@ import { useT } from '../../lib/i18n'
 import { Instagram } from 'lucide-react'
 
 const IG_IMAGES = [
-  'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&q=80',
-  'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=400&q=80',
-  'https://images.unsplash.com/photo-1574156863536-37fbc5e1cfef?w=400&q=80',
-  'https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=400&q=80',
-  'https://images.unsplash.com/photo-1567721913486-6585f069b3f4?w=400&q=80',
-  'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=400&q=80',
+  '/images/figma-products/product-01.png',
+  '/images/figma-products/product-03.png',
+  '/images/figma-products/product-05.png',
+  '/images/figma-products/product-07.png',
+  '/images/figma-products/product-09.png',
+  '/images/figma-products/product-11.png',
 ]
 
 export default function InstagramSection() {
