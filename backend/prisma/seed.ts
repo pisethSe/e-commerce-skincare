@@ -8,12 +8,12 @@ async function main() {
 
   // ── Categories ────────────────────────────────
   const categories = await Promise.all([
-    prisma.category.upsert({ where: { slug: 'cleansers' }, update: {}, create: { name: 'Cleansers', slug: 'cleansers', description: 'Gentle yet effective formulas', image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=800&q=80', sortOrder: 1 } }),
-    prisma.category.upsert({ where: { slug: 'serums' }, update: {}, create: { name: 'Serums', slug: 'serums', description: 'Targeted treatment solutions', image: 'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=800&q=80', sortOrder: 2 } }),
-    prisma.category.upsert({ where: { slug: 'moisturizers' }, update: {}, create: { name: 'Moisturizers', slug: 'moisturizers', description: 'Deep hydration & nourishment', image: 'https://images.unsplash.com/photo-1574156863536-37fbc5e1cfef?w=800&q=80', sortOrder: 3 } }),
-    prisma.category.upsert({ where: { slug: 'sunscreen' }, update: {}, create: { name: 'Sunscreen', slug: 'sunscreen', description: 'Broad spectrum protection', image: 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=800&q=80', sortOrder: 4 } }),
-    prisma.category.upsert({ where: { slug: 'eye-care' }, update: {}, create: { name: 'Eye Care', slug: 'eye-care', description: 'Delicate eye area treatments', image: 'https://images.unsplash.com/photo-1567721913486-6585f069b3f4?w=800&q=80', sortOrder: 5 } }),
-    prisma.category.upsert({ where: { slug: 'masks' }, update: {}, create: { name: 'Masks', slug: 'masks', description: 'Intensive weekly rituals', image: 'https://images.unsplash.com/photo-1599305445671-ac291c95aaa9?w=800&q=80', sortOrder: 6 } }),
+    prisma.category.upsert({ where: { slug: 'cleansers' }, update: { image: '/images/figma-products/product-02.png' }, create: { name: 'Cleansers', slug: 'cleansers', description: 'Gentle yet effective formulas', image: '/images/figma-products/product-02.png', sortOrder: 1 } }),
+    prisma.category.upsert({ where: { slug: 'serums' }, update: { image: '/images/figma-products/product-04.png' }, create: { name: 'Serums', slug: 'serums', description: 'Targeted treatment solutions', image: '/images/figma-products/product-04.png', sortOrder: 2 } }),
+    prisma.category.upsert({ where: { slug: 'moisturizers' }, update: { image: '/images/figma-products/product-06.png' }, create: { name: 'Moisturizers', slug: 'moisturizers', description: 'Deep hydration & nourishment', image: '/images/figma-products/product-06.png', sortOrder: 3 } }),
+    prisma.category.upsert({ where: { slug: 'sunscreen' }, update: { image: '/images/figma-products/product-08.png' }, create: { name: 'Sunscreen', slug: 'sunscreen', description: 'Broad spectrum protection', image: '/images/figma-products/product-08.png', sortOrder: 4 } }),
+    prisma.category.upsert({ where: { slug: 'eye-care' }, update: { image: '/images/figma-products/product-10.png' }, create: { name: 'Eye Care', slug: 'eye-care', description: 'Delicate eye area treatments', image: '/images/figma-products/product-10.png', sortOrder: 5 } }),
+    prisma.category.upsert({ where: { slug: 'masks' }, update: { image: '/images/figma-products/product-12.png' }, create: { name: 'Masks', slug: 'masks', description: 'Intensive weekly rituals', image: '/images/figma-products/product-12.png', sortOrder: 6 } }),
   ])
 
   const [cleansers, serums, moisturizers, sunscreen, eyeCare, masks] = categories
@@ -23,7 +23,7 @@ async function main() {
   const adminPassword = await bcrypt.hash('Admin@lumiere123', 12)
   const admin = await prisma.user.upsert({
     where: { email: 'admin@lumiere.com' },
-    update: {},
+    update: { coverImage: '/images/figma-products/product-04.png' },
     create: {
       email: 'admin@lumiere.com',
       password: adminPassword,
@@ -239,7 +239,7 @@ async function main() {
         slug: 'science-behind-vitamin-c-serums',
         excerpt: 'Discover why Vitamin C is the gold standard in brightening skincare.',
         body: 'Vitamin C (ascorbic acid) is one of the most well-researched antioxidants in skincare...',
-        coverImage: 'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=800&q=80',
+        coverImage: '/images/figma-products/product-04.png',
         category: 'Ingredient Deep Dive',
         author: 'Dr. Sophie Martin',
         readTime: 6,
@@ -249,13 +249,13 @@ async function main() {
     }),
     prisma.blogPost.upsert({
       where: { slug: 'building-perfect-morning-routine' },
-      update: {},
+      update: { coverImage: '/images/figma-products/product-02.png' },
       create: {
         title: 'Building Your Perfect Morning Routine',
         slug: 'building-perfect-morning-routine',
         excerpt: 'From cleanser to SPF, we break down the exact order for maximum efficacy.',
         body: 'A consistent morning skincare routine is the cornerstone of healthy, radiant skin...',
-        coverImage: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=800&q=80',
+        coverImage: '/images/figma-products/product-02.png',
         category: 'Routines',
         author: 'Emma Caldwell',
         readTime: 5,
@@ -265,13 +265,13 @@ async function main() {
     }),
     prisma.blogPost.upsert({
       where: { slug: 'retinol-101-everything-need-to-know' },
-      update: {},
+      update: { coverImage: '/images/figma-products/product-12.png' },
       create: {
         title: 'Retinol 101: Everything You Need to Know',
         slug: 'retinol-101-everything-need-to-know',
         excerpt: 'The most powerful anti-aging ingredient, demystified.',
         body: 'Retinol is a derivative of vitamin A and one of the most studied ingredients in dermatology...',
-        coverImage: 'https://images.unsplash.com/photo-1567721913486-6585f069b3f4?w=800&q=80',
+        coverImage: '/images/figma-products/product-12.png',
         category: 'Ingredient Deep Dive',
         author: 'Dr. Sophie Martin',
         readTime: 8,

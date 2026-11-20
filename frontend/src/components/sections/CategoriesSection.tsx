@@ -9,6 +9,14 @@ export default function CategoriesSection() {
   const { categories } = useCatalogStore()
   const t = useT()
   const categoryName = useCategoryName()
+  const localCategoryImages: Record<string, string> = {
+    cleansers: '/images/figma-products/product-02.png',
+    serums: '/images/figma-products/product-04.png',
+    moisturizers: '/images/figma-products/product-06.png',
+    sunscreen: '/images/figma-products/product-08.png',
+    'eye-care': '/images/figma-products/product-10.png',
+    masks: '/images/figma-products/product-12.png',
+  }
 
   return (
     <section className="section-padding bg-white">
@@ -38,7 +46,7 @@ export default function CategoriesSection() {
                   i === 0 ? 'aspect-[4/5]' : 'aspect-square'
                 }`}>
                   <img
-                    src={cat.image}
+                    src={localCategoryImages[cat.slug] || cat.image}
                     alt={cat.name}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                   />
