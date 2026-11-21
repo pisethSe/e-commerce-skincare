@@ -358,6 +358,15 @@ router.post('/aba/verify', authenticate, async (req: any, res) => {
   }
 })
 
+// ABA PayWay callbacks must use POST. A browser-friendly response for GET
+// prevents the endpoint from being mistaken for a successful payment route.
+router.get('/aba/callback', (_req, res) => {
+  res.status(405).json({
+    success: false,
+    message: 'ABA PayWay callback requires POST',
+  })
+})
+
 // POST /api/payments/aba/callback — signed server notification
 router.post('/aba/callback', async (req, res) => {
   const secret = process.env.ABA_PAYWAY_SECRET_KEY

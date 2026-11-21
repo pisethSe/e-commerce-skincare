@@ -82,6 +82,13 @@ test('GET /api/payments/config reports gateway availability', async () => {
   assert.ok(['USD', 'KHR'].includes(body.data.currency))
 })
 
+test('ABA PayWay callback rejects browser GET requests clearly', async () => {
+  if (!serverUp) return
+  const { status, body } = await call('GET', '/api/payments/aba/callback')
+  assert.equal(status, 405)
+  assert.equal(body.message, 'ABA PayWay callback requires POST')
+})
+
 test('Bakong QR requires authentication and a configured account', async () => {
   if (!serverUp) return
   const anon = await call('POST', '/api/payments/bakong/qr', { body: { orderId: 'x' } })
