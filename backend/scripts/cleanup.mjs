@@ -2,7 +2,7 @@
  * Removes test fixtures from the database in FK-safe order, leaving the real
  * seeded/demo data intact:
  *   - throwaway test users (*@test.*)
- *   - test-created products (test-*, test-wf-*, put-diag-*)
+ *    - test-created products (test-*, test-wf-*, wf-test-product-*, put-diag-*)
  *   - test coupons (TEST*, WFT*)
  * Reviews, carts, wishlists, addresses, and orders owned by test users go with
  * them. Product rating aggregates are recalculated afterwards.
@@ -14,12 +14,16 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 const isTestUser = (email) => /@test\./i.test(email)
-const isTestProduct = (slug) => /^(test-|test-wf-|put-diag-)/i.test(slug)
+const isTestProduct = (slug) => /^(test-|test-wf-|wf-test-product-|put-diag-)/i.test(slug)
 
 async function main() {
   const testUsers = await prisma.user.findMany({ where: { email: { contains: '@test.' } }, select: { id: true } })
   const testProducts = await prisma.product.findMany({
-    where: { slug: { startsWith: 'test-' } },
+    where: { OR: [
+      { slug: { startsWith: 'test-' } },
+      { slug: { startsWith: 'wf-test-product-' } },
+      { name: { startsWith: 'WF Test Product' } },
+    ] },
     select: { id: true },
   })
   // put-diag / test-wf slugs too

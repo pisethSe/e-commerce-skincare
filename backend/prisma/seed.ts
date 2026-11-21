@@ -57,6 +57,10 @@ async function main() {
       where: { slug: 'radiance-brightening-serum' },
       update: {
         images: ['/images/Card (2).png', '/images/Content.png'],
+        price: 68,
+        comparePrice: 85,
+        inStock: true,
+        stockCount: 284,
       },
       create: {
         name: 'Radiance Brightening Serum',
@@ -81,6 +85,10 @@ async function main() {
       where: { slug: 'gentle-foam-cleanser' },
       update: {
         images: ['/images/fg1.png', '/images/Card (1).png'],
+        price: 38,
+        comparePrice: null,
+        inStock: true,
+        stockCount: 156,
       },
       create: {
         name: 'Gentle Foam Cleanser',
@@ -102,6 +110,10 @@ async function main() {
       where: { slug: 'silk-barrier-moisturizer' },
       update: {
         images: ['/images/Card 3.png', '/images/Content (2).png'],
+        price: 72,
+        comparePrice: 90,
+        inStock: true,
+        stockCount: 98,
       },
       create: {
         name: 'Silk Barrier Moisturizer',
@@ -124,6 +136,10 @@ async function main() {
       where: { slug: 'solar-shield-spf-50' },
       update: {
         images: ['/images/Card 2.png', '/images/Content (3).png'],
+        price: 45,
+        comparePrice: null,
+        inStock: true,
+        stockCount: 203,
       },
       create: {
         name: 'Solar Shield SPF 50+',
@@ -145,6 +161,10 @@ async function main() {
       where: { slug: 'retinol-renewal-night-cream' },
       update: {
         images: ['/images/Card 4.png', '/images/Content (4).png'],
+        price: 95,
+        comparePrice: null,
+        inStock: true,
+        stockCount: 67,
       },
       create: {
         name: 'Retinol Renewal Night Cream',
@@ -166,6 +186,10 @@ async function main() {
       where: { slug: 'luminous-eye-concentrate' },
       update: {
         images: ['/images/Card 5.png', '/images/Content (5).png'],
+        price: 58,
+        comparePrice: null,
+        inStock: true,
+        stockCount: 112,
       },
       create: {
         name: 'Luminous Eye Concentrate',
@@ -187,6 +211,10 @@ async function main() {
       where: { slug: 'kaolin-clay-detox-mask' },
       update: {
         images: ['/images/fg2.png', '/images/Content 2.png'],
+        price: 42,
+        comparePrice: null,
+        inStock: true,
+        stockCount: 23,
       },
       create: {
         name: 'Kaolin Clay Detox Mask',
@@ -208,6 +236,10 @@ async function main() {
       where: { slug: 'hyaluronic-acid-booster' },
       update: {
         images: ['/images/Card (1).png', '/images/Content 3.png'],
+        price: 55,
+        comparePrice: 68,
+        inStock: true,
+        stockCount: 201,
       },
       create: {
         name: 'Hyaluronic Acid Booster',
