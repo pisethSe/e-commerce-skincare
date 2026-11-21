@@ -270,24 +270,31 @@ router.post('/aba/qr', authenticate, async (req: any, res) => {
       responseCode?: number
       responseMessage?: string
       data?: { qr?: string; qr_url?: string }
+      status?: { code?: string; message?: string }
+      qrString?: string
+      qrImage?: string
+      abapay_deeplink?: string
     }
-    if (!response.ok || result.responseCode !== 0 || !result.data?.qr_url) {
+    const qr = result.data?.qr || result.qrString
+    const qrImage = result.data?.qr_url || result.qrImage
+    const success = result.responseCode === 0 || result.status?.code === '0'
+    if (!response.ok || !success || !qrImage) {
       res.status(502).json({
         success: false,
-        message: result.responseMessage || 'ABA PayWay could not create the payment QR',
+        message: result.responseMessage || result.status?.message || 'ABA PayWay could not create the payment QR',
       })
       return
     }
 
     await prisma.order.update({
       where: { id: order.id },
-      data: { paymentId: transactionId, qrCode: result.data.qr ?? null },
+      data: { paymentId: transactionId, qrCode: qr ?? null },
     })
     res.json({
       success: true,
       data: {
-        qr: result.data.qr,
-        qrImage: result.data.qr_url,
+        qr,
+        qrImage,
         transactionId,
         orderNumber: order.orderNumber,
         amount,
@@ -381,23 +388,85 @@ router.post('/aba/callback', async (req, res) => {
     amount?: string
     status?: string
     hash?: string
+    tran_id?: string
+    return_params?: string
   }
-  if (!body.transaction_id || !body.amount || !body.req_time || !body.hash) {
+  let returnParams: Record<string, string> = {}
+  if (typeof body.return_params === 'string') {
+    try {
+      const decoded = Buffer.from(body.return_params, 'base64').toString('utf8')
+      returnParams = JSON.parse(decoded.startsWith('{') ? decoded : body.return_params)
+    } catch {
+      try {
+        returnParams = JSON.parse(body.return_params)
+      } catch {
+        returnParams = {}
+      }
+    }
+  }
+
+  const transactionId = body.tran_id || body.transaction_id ||
+    returnParams.tran_id || returnParams.transaction_id
+  if (!transactionId) {
+    res.status(400).json({ success: false, message: 'Invalid callback payload' })
+    return
+  }
+
+  const isOfficialSuccess = body.status === '0'
+  if (isOfficialSuccess) {
+    const order = returnParams.order_id
+      ? await prisma.order.findUnique({ where: { id: returnParams.order_id } })
+      : await prisma.order.findUnique({ where: { orderNumber: transactionId } })
+    if (!order) {
+      res.status(404).json({ success: false, message: 'Order not found' })
+      return
+    }
+
+    const profileId = process.env.ABA_PAYWAY_PROFILE_ID as string
+    const apiBase = process.env.ABA_PAYWAY_API_BASE || 'https://anajakpay.com/api'
+    const hash = crypto.createHash('sha1')
+      .update(secret + order.orderNumber)
+      .digest('hex')
+
+    try {
+      const verification = await fetch(`${apiBase}/${profileId}/payment-gateway/v1/payments/check-transv2-khqrcc`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ transaction_id: order.orderNumber, hash }),
+      })
+      const result = await verification.json() as {
+        responseCode?: number
+        data?: { status?: string }
+      }
+      if (result.responseCode === 0 && result.data?.status === 'success') {
+        await markPaid(order.id, transactionId)
+        res.json({ success: true })
+        return
+      }
+      res.status(402).json({ success: false, message: 'Payment could not be verified yet' })
+    } catch (err) {
+      console.error('ABA PayWay callback verification failed:', err instanceof Error ? err.message : err)
+      res.status(502).json({ success: false, message: 'Payment verification is unavailable' })
+    }
+    return
+  }
+
+  if (!body.amount || !body.req_time || !body.hash) {
     res.status(400).json({ success: false, message: 'Invalid callback payload' })
     return
   }
 
   const expected = crypto.createHash('sha256')
-    .update(secret + body.req_time + body.transaction_id + body.amount + 'SUCCESS')
+    .update(secret + body.req_time + transactionId + body.amount + 'SUCCESS')
     .digest('hex')
   if (body.status !== 'SUCCESS' || body.hash !== expected) {
     res.status(400).json({ success: false, message: 'Invalid callback signature' })
     return
   }
 
-  const order = await prisma.order.findUnique({ where: { orderNumber: body.transaction_id } })
+  const order = await prisma.order.findUnique({ where: { orderNumber: transactionId } })
   if (!order) { res.status(404).json({ success: false, message: 'Order not found' }); return }
-  await markPaid(order.id, body.transaction_id)
+  await markPaid(order.id, transactionId)
   res.json({ success: true })
 })
 
