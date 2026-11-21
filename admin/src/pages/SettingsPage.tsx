@@ -207,7 +207,7 @@ export default function SettingsPage() {
             {[
               ['Storefront', 'http://localhost:3000'],
               ['Admin console', 'http://localhost:3001/admin'],
-              ['API', 'http://localhost:5001/health'],
+              ['API', `${(import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') || window.location.origin}/health`],
               ['Member since', me?.createdAt ? formatDate(me.createdAt) : '—'],
             ].map(([label, value]) => (
               <div
