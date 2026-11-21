@@ -28,7 +28,11 @@ async function main() {
   })
   // put-diag / test-wf slugs too
   const extra = await prisma.product.findMany({
-    where: { OR: [{ slug: { startsWith: 'put-diag-' } }, { slug: { startsWith: 'test-wf-' } }] },
+    where: { OR: [
+      { slug: { startsWith: 'put-diag-' } },
+      { slug: { startsWith: 'test-wf-' } },
+      { slug: 'solar-shield-spf-50+' },
+    ] },
     select: { id: true },
   })
   const productIds = [...new Set([...testProducts, ...extra].map((p) => p.id))]
