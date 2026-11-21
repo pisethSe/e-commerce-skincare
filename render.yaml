@@ -22,3 +22,11 @@ services:
         sync: false
       - key: ALLOWED_ORIGINS
         sync: false
+      - key: ABA_PAYWAY_PROFILE_ID
+        sync: false
+      - key: ABA_PAYWAY_SECRET_KEY
+        sync: false
+      - key: ABA_PAYWAY_API_BASE
+        value: https://anajakpay.com/api
+      - key: PAYMENT_CURRENCY
+        value: USD
