@@ -4,6 +4,18 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Deployment target"
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - backend
+          - storefront
+          - admin
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -146,3 +158,73 @@ jobs:
 
       - name: Typecheck & production build
         run: npm run build
+
+  deploy:
+    name: Deploy · Render & Vercel
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    needs: [backend, frontend, admin]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    env:
+      DEPLOY_TARGET: ${{ inputs.target || 'all' }}
+      RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+      VERCEL_STOREFRONT_DEPLOY_HOOK_URL: ${{ secrets.VERCEL_STOREFRONT_DEPLOY_HOOK_URL }}
+      VERCEL_ADMIN_DEPLOY_HOOK_URL: ${{ secrets.VERCEL_ADMIN_DEPLOY_HOOK_URL }}
+
+    steps:
+      - name: Trigger deployments
+        shell: bash
+        run: |
+          set -e
+
+          deploy_backend=false
+          deploy_storefront=false
+          deploy_admin=false
+
+          case "$DEPLOY_TARGET" in
+            all)
+              deploy_backend=true
+              deploy_storefront=true
+              deploy_admin=true
+              ;;
+            backend)
+              deploy_backend=true
+              ;;
+            storefront)
+              deploy_storefront=true
+              ;;
+            admin)
+              deploy_admin=true
+              ;;
+            *)
+              echo "Unknown deployment target: $DEPLOY_TARGET"
+              exit 1
+              ;;
+          esac
+
+          deploy_hook() {
+            local name="$1"
+            local url="$2"
+
+            if [ -n "$url" ]; then
+              echo "Triggering $name deployment..."
+              curl --fail --silent --show-error --retry 3 --retry-delay 5 \
+                --request POST "$url"
+              echo "$name deployment triggered."
+            else
+              echo "Skipping $name: deploy hook secret is not configured."
+            fi
+          }
+
+          if [ "$deploy_backend" = true ]; then
+            deploy_hook "Render backend" "$RENDER_DEPLOY_HOOK_URL"
+          fi
+          if [ "$deploy_storefront" = true ]; then
+            deploy_hook "Vercel storefront" "$VERCEL_STOREFRONT_DEPLOY_HOOK_URL"
+          fi
+          if [ "$deploy_admin" = true ]; then
+            deploy_hook "Vercel admin" "$VERCEL_ADMIN_DEPLOY_HOOK_URL"
+          fi

@@ -261,6 +261,24 @@ Before production:
 5. Run database migrations and seed only when appropriate.
 6. Enable HTTPS and review rate limits and CORS origins.
 
+### GitHub Actions deployment
+
+The CI workflow also deploys after every successful push to `main`. It supports manual redeploys from the GitHub **Actions** tab:
+
+1. Open **CI** in Actions.
+2. Choose **Run workflow**.
+3. Select `all`, `backend`, `storefront`, or `admin`.
+
+Configure these repository secrets before enabling deployment:
+
+| Secret | Provider |
+| --- | --- |
+| `RENDER_DEPLOY_HOOK_URL` | Render deploy hook for `calesta-backend` |
+| `VERCEL_STOREFRONT_DEPLOY_HOOK_URL` | Vercel deploy hook for the storefront project |
+| `VERCEL_ADMIN_DEPLOY_HOOK_URL` | Vercel deploy hook for the admin project |
+
+Create the hooks in each provider's project settings. A Render deploy hook rebuilds and restarts the backend service. Vercel deploy hooks trigger a new storefront or admin deployment. The workflow skips a target when its hook secret is missing.
+
 ## Repository Structure
 
 ```text
