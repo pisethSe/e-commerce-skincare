@@ -25,7 +25,7 @@ describe('normalizeProduct', () => {
   })
 
   it('defaults optional collections and copy to safe empties', () => {
-    const product = normalizeProduct({ ...apiProduct, tagline: null }, [])
+    const product = normalizeProduct({ ...apiProduct, slug: 'unknown-product', tagline: null, images: null }, [])
     expect(product.tagline).toBe('')
     expect(product.images).toEqual([])
     expect(product.tags).toEqual([])

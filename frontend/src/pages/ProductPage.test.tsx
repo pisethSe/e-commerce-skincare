@@ -78,7 +78,7 @@ describe('ProductPage', () => {
     await user.click(increase)
     expect(increase).toBeDisabled()
 
-    await user.click(screen.getByRole('button', { name: /add to bag/i }))
+    await user.click(screen.getAllByRole('button', { name: /add to bag/i })[0])
     expect(useCartStore.getState().items[0].quantity).toBe(3)
   })
 
@@ -117,8 +117,8 @@ describe('ProductPage', () => {
     })
     renderProduct()
 
-    expect(screen.getByRole('button', { name: 'Sold out' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'BUY NOW' })).toBeDisabled()
+    expect(screen.getAllByRole('button', { name: 'Sold out' }).every((button) => button.hasAttribute('disabled'))).toBe(true)
+    expect(screen.getAllByRole('button', { name: 'BUY NOW' }).every((button) => button.hasAttribute('disabled'))).toBe(true)
     expect(screen.getByPlaceholderText(/email/i)).toBeInTheDocument()
   })
 })
