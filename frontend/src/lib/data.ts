@@ -20,7 +20,7 @@ export const PRODUCTS: Product[] = [
     price: 68,
     comparePrice: 85,
     images: [
-      '/images/Card-2.png',
+      '/images/Card (2).png',
       '/images/Card 6.png',
       '/images/Content.png',
     ],
@@ -46,7 +46,7 @@ export const PRODUCTS: Product[] = [
     description: 'A pH-balanced foaming cleanser with ceramides and green tea extract that cleanses without stripping.',
     price: 38,
     images: [
-      '/images/Card.png',
+      '/images/fg1.png',
       '/images/Content (1).png',
     ],
     category: CATEGORIES[0],
@@ -68,7 +68,7 @@ export const PRODUCTS: Product[] = [
     price: 72,
     comparePrice: 90,
     images: [
-      '/images/Card-3.png',
+      '/images/Card 3.png',
       '/images/Content (2).png',
     ],
     category: CATEGORIES[2],
@@ -149,7 +149,7 @@ export const PRODUCTS: Product[] = [
     description: 'A purifying kaolin and bentonite clay mask with activated charcoal and tea tree to draw out impurities.',
     price: 42,
     images: [
-      '/images/Card 6.png',
+      '/images/fg2.png',
       '/images/Content 2.png',
     ],
     category: CATEGORIES[5],
@@ -169,7 +169,7 @@ export const PRODUCTS: Product[] = [
     price: 55,
     comparePrice: 68,
     images: [
-      '/images/Card-1.png',
+      '/images/Card (1).png',
       '/images/Content 3.png',
     ],
     category: CATEGORIES[1],

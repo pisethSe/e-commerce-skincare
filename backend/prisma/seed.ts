@@ -23,7 +23,7 @@ async function main() {
   const adminPassword = await bcrypt.hash('Admin@lumiere123', 12)
   const admin = await prisma.user.upsert({
     where: { email: 'admin@lumiere.com' },
-    update: { coverImage: '/images/figma-products/product-04.png' },
+    update: {},
     create: {
       email: 'admin@lumiere.com',
       password: adminPassword,
@@ -56,7 +56,7 @@ async function main() {
     prisma.product.upsert({
       where: { slug: 'radiance-brightening-serum' },
       update: {
-        images: ['/images/figma-products/product-03.png', '/images/figma-products/product-11.png'],
+        images: ['/images/Card (2).png', '/images/Content.png'],
       },
       create: {
         name: 'Radiance Brightening Serum',
@@ -68,7 +68,7 @@ async function main() {
         comparePrice: 85,
         volume: '30ml / 1 fl oz',
         categoryId: serums.id,
-        images: ['/images/figma-products/product-03.png', '/images/figma-products/product-11.png'],
+        images: ['/images/Card (2).png', '/images/Content.png'],
         tags: ['brightening', 'vitamin c', 'anti-aging', 'bestseller'],
         ingredients: ['Ascorbic Acid 15%', 'Niacinamide 5%', 'Hyaluronic Acid', 'Ferulic Acid', 'Vitamin E'],
         benefits: ['Brightens dark spots', 'Evens skin tone', 'Hydrates deeply', 'Boosts collagen'],
@@ -80,7 +80,7 @@ async function main() {
     prisma.product.upsert({
       where: { slug: 'gentle-foam-cleanser' },
       update: {
-        images: ['/images/figma-products/product-01.png', '/images/figma-products/product-08.png'],
+        images: ['/images/fg1.png', '/images/Card (1).png'],
       },
       create: {
         name: 'Gentle Foam Cleanser',
@@ -90,7 +90,7 @@ async function main() {
         price: 38,
         volume: '150ml / 5 fl oz',
         categoryId: cleansers.id,
-        images: ['/images/figma-products/product-01.png', '/images/figma-products/product-08.png'],
+        images: ['/images/fg1.png', '/images/Card (1).png'],
         tags: ['cleanser', 'gentle', 'all skin types'],
         benefits: ['pH balanced', 'Non-stripping', 'Ceramide-rich', 'Gentle lather'],
         howToUse: 'Massage onto damp skin, lather, and rinse.',
@@ -101,7 +101,7 @@ async function main() {
     prisma.product.upsert({
       where: { slug: 'silk-barrier-moisturizer' },
       update: {
-        images: ['/images/figma-products/product-04.png', '/images/figma-products/product-06.png'],
+        images: ['/images/Card 3.png', '/images/Content (2).png'],
       },
       create: {
         name: 'Silk Barrier Moisturizer',
@@ -112,7 +112,7 @@ async function main() {
         comparePrice: 90,
         volume: '50ml / 1.7 fl oz',
         categoryId: moisturizers.id,
-        images: ['/images/figma-products/product-04.png', '/images/figma-products/product-06.png'],
+        images: ['/images/Card 3.png', '/images/Content (2).png'],
         tags: ['moisturizer', 'barrier', 'ceramides', 'bestseller'],
         benefits: ['Strengthens skin barrier', 'Deep hydration', 'Reduces redness', 'Non-greasy'],
         howToUse: 'Apply to face and neck morning and evening after serum.',
@@ -123,7 +123,7 @@ async function main() {
     prisma.product.upsert({
       where: { slug: 'solar-shield-spf-50' },
       update: {
-        images: ['/images/figma-products/product-12.png', '/images/figma-products/product-05.png'],
+        images: ['/images/Card 2.png', '/images/Content (3).png'],
       },
       create: {
         name: 'Solar Shield SPF 50+',
@@ -133,7 +133,7 @@ async function main() {
         price: 45,
         volume: '50ml / 1.7 fl oz',
         categoryId: sunscreen.id,
-        images: ['/images/figma-products/product-12.png', '/images/figma-products/product-05.png'],
+        images: ['/images/Card 2.png', '/images/Content (3).png'],
         tags: ['sunscreen', 'spf50', 'daily', 'blue light'],
         benefits: ['SPF 50+ UVA/UVB', 'Blue light protection', 'No white cast', 'Weightless'],
         howToUse: 'Apply generously as the last step of morning routine.',
@@ -144,7 +144,7 @@ async function main() {
     prisma.product.upsert({
       where: { slug: 'retinol-renewal-night-cream' },
       update: {
-        images: ['/images/figma-products/product-09.png', '/images/figma-products/product-04.png'],
+        images: ['/images/Card 4.png', '/images/Content (4).png'],
       },
       create: {
         name: 'Retinol Renewal Night Cream',
@@ -154,7 +154,7 @@ async function main() {
         price: 95,
         volume: '50ml / 1.7 fl oz',
         categoryId: moisturizers.id,
-        images: ['/images/figma-products/product-09.png', '/images/figma-products/product-04.png'],
+        images: ['/images/Card 4.png', '/images/Content (4).png'],
         tags: ['retinol', 'anti-aging', 'night', 'bestseller'],
         benefits: ['Reduces fine lines', 'Firms skin', 'Improves texture', 'Gentle formula'],
         howToUse: 'Apply pea-sized amount to face and neck at night, 2-3x per week.',
@@ -165,7 +165,7 @@ async function main() {
     prisma.product.upsert({
       where: { slug: 'luminous-eye-concentrate' },
       update: {
-        images: ['/images/figma-products/product-06.png', '/images/figma-products/product-09.png'],
+        images: ['/images/Card 5.png', '/images/Content (5).png'],
       },
       create: {
         name: 'Luminous Eye Concentrate',
@@ -175,7 +175,7 @@ async function main() {
         price: 58,
         volume: '15ml / 0.5 fl oz',
         categoryId: eyeCare.id,
-        images: ['/images/figma-products/product-06.png', '/images/figma-products/product-09.png'],
+        images: ['/images/Card 5.png', '/images/Content (5).png'],
         tags: ['eye cream', 'dark circles', 'peptides'],
         benefits: ['Reduces dark circles', 'Depuffs', 'Firms eye area', 'Hydrates'],
         howToUse: 'Gently pat around eye area morning and evening.',
@@ -186,7 +186,7 @@ async function main() {
     prisma.product.upsert({
       where: { slug: 'kaolin-clay-detox-mask' },
       update: {
-        images: ['/images/figma-products/product-11.png', '/images/figma-products/product-07.png'],
+        images: ['/images/fg2.png', '/images/Content 2.png'],
       },
       create: {
         name: 'Kaolin Clay Detox Mask',
@@ -196,7 +196,7 @@ async function main() {
         price: 42,
         volume: '75ml / 2.5 fl oz',
         categoryId: masks.id,
-        images: ['/images/figma-products/product-11.png', '/images/figma-products/product-07.png'],
+        images: ['/images/fg2.png', '/images/Content 2.png'],
         tags: ['mask', 'clay', 'detox', 'pores'],
         benefits: ['Unclogs pores', 'Absorbs excess oil', 'Brightens complexion', 'Smooths texture'],
         howToUse: 'Apply 2-3 times weekly. Leave for 10-15 minutes, rinse.',
@@ -207,7 +207,7 @@ async function main() {
     prisma.product.upsert({
       where: { slug: 'hyaluronic-acid-booster' },
       update: {
-        images: ['/images/figma-products/product-07.png', '/images/figma-products/product-03.png'],
+        images: ['/images/Card (1).png', '/images/Content 3.png'],
       },
       create: {
         name: 'Hyaluronic Acid Booster',
@@ -218,7 +218,7 @@ async function main() {
         comparePrice: 68,
         volume: '30ml / 1 fl oz',
         categoryId: serums.id,
-        images: ['/images/figma-products/product-07.png', '/images/figma-products/product-03.png'],
+        images: ['/images/Card (1).png', '/images/Content 3.png'],
         tags: ['hyaluronic', 'hydration', 'plumping', 'bestseller'],
         benefits: ['72hr hydration', 'Plumps fine lines', 'Lightweight', 'All skin types'],
         howToUse: 'Apply to damp skin before moisturizer, morning and evening.',

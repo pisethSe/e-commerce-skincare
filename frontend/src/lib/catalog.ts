@@ -26,6 +26,24 @@ function normalizeCategory(c: any): Category {
 }
 
 export function normalizeProduct(p: any, categories: Category[]): Product {
+  const lowQualityProductImage = /^\/images\/figma-products\/product-\d{2}\.png$/
+  const highQualityImages: Record<string, string[]> = {
+    'radiance-brightening-serum': ['/images/Card (2).png', '/images/Content.png'],
+    'gentle-foam-cleanser': ['/images/fg1.png', '/images/Card (1).png'],
+    'silk-barrier-moisturizer': ['/images/Card 3.png', '/images/Content (2).png'],
+    'solar-shield-spf-50': ['/images/Card 2.png', '/images/Content (3).png'],
+    'retinol-renewal-night-cream': ['/images/Card 4.png', '/images/Content (4).png'],
+    'luminous-eye-concentrate': ['/images/Card 5.png', '/images/Content (5).png'],
+    'kaolin-clay-detox-mask': ['/images/fg2.png', '/images/Content 2.png'],
+    'hyaluronic-acid-booster': ['/images/Card (1).png', '/images/Content 3.png'],
+  }
+  const normalizeImages = (images: unknown): string[] =>
+    Array.isArray(images)
+      ? images
+          .map((image) => typeof image === 'string' ? image : '')
+          .filter((image) => image && !lowQualityProductImage.test(image))
+      : []
+
   return {
     ...p,
     tagline: p.tagline ?? '',
@@ -37,7 +55,15 @@ export function normalizeProduct(p: any, categories: Category[]): Product {
     volume: p.volume ?? undefined,
     ingredients: p.ingredients ?? [],
     benefits: p.benefits ?? [],
-    images: Array.isArray(p.images) ? p.images : [],
+    images: [
+      ...normalizeImages(p.images),
+      ...(normalizeImages(p.images).length === 0 ? highQualityImages[p.slug] ?? [] : []),
+    ].length > 0
+      ? [
+          ...normalizeImages(p.images),
+          ...(normalizeImages(p.images).length === 0 ? highQualityImages[p.slug] ?? [] : []),
+        ]
+      : highQualityImages[p.slug] ?? [],
     tags: Array.isArray(p.tags) ? p.tags : [],
     category: p.category
       ? normalizeCategory(p.category)
