@@ -22,7 +22,9 @@ export const clearTokens = () => {
   localStorage.removeItem(REFRESH_KEY)
 }
 
-const apiBaseUrl = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') || ''
+const apiBaseUrl =
+  (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ||
+  'https://e-commerce-skincare.onrender.com'
 
 export const api = axios.create({
   baseURL: `${apiBaseUrl}/api`,

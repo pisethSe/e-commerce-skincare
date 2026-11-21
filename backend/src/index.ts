@@ -45,7 +45,10 @@ const allowedOrigins = [
 
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    const isCalestaVercelPreview =
+      /^https:\/\/e-commerce-skincare(?:-[a-z0-9-]+)?\.vercel\.app$/.test(origin || '')
+
+    if (!origin || allowedOrigins.includes(origin) || isCalestaVercelPreview) {
       callback(null, true)
       return
     }
