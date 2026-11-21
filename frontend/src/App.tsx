@@ -43,6 +43,9 @@ export default function App() {
     }
     // Load live catalog from the API (falls back to bundled mock data)
     loadCatalog()
+    const catalogRefreshInterval = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void loadCatalog()
+    }, 15_000)
     const refreshCatalog = () => {
       if (document.visibilityState === 'visible') void loadCatalog()
     }
@@ -51,6 +54,7 @@ export default function App() {
     return () => {
       window.removeEventListener('focus', refreshCatalog)
       document.removeEventListener('visibilitychange', refreshCatalog)
+      window.clearInterval(catalogRefreshInterval)
     }
   }, [loadCatalog])
 
