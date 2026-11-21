@@ -43,6 +43,15 @@ export default function App() {
     }
     // Load live catalog from the API (falls back to bundled mock data)
     loadCatalog()
+    const refreshCatalog = () => {
+      if (document.visibilityState === 'visible') void loadCatalog()
+    }
+    window.addEventListener('focus', refreshCatalog)
+    document.addEventListener('visibilitychange', refreshCatalog)
+    return () => {
+      window.removeEventListener('focus', refreshCatalog)
+      document.removeEventListener('visibilitychange', refreshCatalog)
+    }
   }, [loadCatalog])
 
   return (

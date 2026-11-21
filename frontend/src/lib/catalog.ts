@@ -79,9 +79,9 @@ export const useCatalogStore = create<CatalogState>((set) => ({
       const [productsRes, categoriesRes, postsRes] = await Promise.all([
         // In-stock only — the storefront must never list out-of-stock products
         // (all=1 is the admin-only flag that includes them)
-        fetch(getApiUrl('/api/products?limit=100')),
-        fetch(getApiUrl('/api/categories')),
-        fetch(getApiUrl('/api/blog?limit=24')),
+        fetch(getApiUrl('/api/products?limit=100'), { cache: 'no-store' }),
+        fetch(getApiUrl('/api/categories'), { cache: 'no-store' }),
+        fetch(getApiUrl('/api/blog?limit=24'), { cache: 'no-store' }),
       ])
       if (!productsRes.ok || !categoriesRes.ok || !postsRes.ok) throw new Error('API unavailable')
       const [productsJson, categoriesJson, postsJson] = await Promise.all([

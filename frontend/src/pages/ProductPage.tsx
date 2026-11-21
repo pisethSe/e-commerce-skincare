@@ -61,12 +61,9 @@ export default function ProductPage() {
 
   // Sold-out products are hidden from the listing, but direct links still work.
   useEffect(() => {
-    if (catalogProduct || !slug) {
-      setRemoteProduct(null)
-      return
-    }
+    if (!slug) return
     let alive = true
-    fetch(getApiUrl(`/api/products/${slug}`))
+    fetch(getApiUrl(`/api/products/${slug}`), { cache: 'no-store' })
       .then(async (res) => {
         if (!res.ok) return null
         const json = await res.json()
@@ -161,29 +158,70 @@ export default function ProductPage() {
         type="product"
         jsonLd={productJsonLd}
       />
-      <section className="px-4 pt-[20px] !pb-0 lg:pt-0">
-        <div className="relative minW1600:mx-auto minW1600:w-[1300px]">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="absolute left-5 top-5 z-10 inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text__14 font-medium text-Mneutral-900 backdrop-blur-sm"
-          >
-            <ArrowLeft size={14} />
-            {t('common.back')}
-          </button>
+      <section className="px-4 pt-5 lg:pt-8">
+        <div className="mx-auto grid max-w-[1300px] grid-cols-1 gap-5 md:grid-cols-[minmax(0,1fr)_minmax(380px,0.86fr)]">
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="absolute left-4 top-4 z-10 inline-flex size-11 items-center justify-center rounded-full bg-white text-Mneutral-900 shadow-md"
+              aria-label={t('common.back')}
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <ImageWithFallback
+              src={product.images[selectedImage]}
+              alt={product.name}
+              className="aspect-square w-full rounded-[28px] bg-cream-100 object-cover"
+              fallbackClassName="flex aspect-square w-full items-center justify-center rounded-[28px] bg-cream-100 text-Mneutral-500"
+              fallbackText={product.name}
+              loading="eager"
+            />
+          </div>
 
-          <h1 className="absolute bottom-[8%] left-1/2 z-10 w-full -translate-x-1/2 text-center text__64 text-white">
-            {t('product.careLine', { category: categoryName(product.category.slug, product.category.name) })}
-          </h1>
+          <div className="flex min-h-[480px] flex-col justify-between rounded-[28px] bg-white px-6 py-8 md:min-h-0 md:px-10 md:py-10 lg:px-12">
+            <div>
+              {product.isBestseller && (
+                <p className="mb-3 text-[11px] font-semibold uppercase text-Mneutral-500">
+                  {t('product.bestSellers')}
+                </p>
+              )}
+              <h1 className="max-w-[620px] text-balance text-[32px] leading-[1.08] text-Mneutral-900 md:text-[42px] lg:text-[48px]">
+                {product.name.toUpperCase()}
+              </h1>
+              {product.reviewCount > 0 && (
+                <a
+                  href="#reviews"
+                  className="mt-4 inline-flex items-center gap-2 text-[14px] text-Mneutral-900"
+                >
+                  <span className="text-[15px] tracking-normal">★★★★★</span>
+                  <span className="text-Mneutral-500">({product.reviewCount})</span>
+                </a>
+              )}
+            </div>
 
-          <ImageWithFallback
-            src={product.images[selectedImage]}
-            alt={product.name}
-            className="h-[680px] w-full rounded-[32px] object-cover md:h-[760px]"
-            fallbackClassName="flex h-[680px] w-full items-center justify-center rounded-[32px] bg-[linear-gradient(180deg,#8cc8bb,#6aa89a)] md:h-[760px]"
-            fallbackText={product.name}
-            loading="eager"
-          />
+            <div>
+              <button
+                type="button"
+                onClick={() => addItem(product, quantity)}
+                disabled={outOfStock}
+                className="flex h-[54px] w-full items-center justify-center rounded-full bg-Mneutral-900 text-[13px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {outOfStock
+                  ? t('product.soldOut')
+                  : `${t('common.addToBag')} · ${money(product.price)}`}
+              </button>
+
+              <div className="mt-7 border-t border-Mneutral-100 pt-5">
+                <p className="text-[13px] font-semibold text-Mneutral-900">
+                  {t('product.shippingAndReturn')}
+                </p>
+                <p className="mt-2 max-w-[520px] text-pretty text-[13px] leading-5 text-Mneutral-500">
+                  {t('product.shippingHint')}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 

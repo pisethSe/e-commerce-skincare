@@ -305,6 +305,12 @@ export const dictionary = {
   },
 
   // Back in stock
+  'product.bestSellers': { en: 'Best sellers', km: 'លក់ដាច់ជាងគេ' },
+  'product.shippingAndReturn': { en: 'Shipping & return', km: 'ការដឹកជញ្ជូន និងការប្តូត្រឡប់' },
+  'product.shippingHint': {
+    en: 'For orders shipped within Cambodia, please allow 3 to 7 business days for delivery. For international orders, delivery times may vary depending on the destination.',
+    km: 'សម្រាប់ការកុម៉្មង់ក្នុងប្រទេសកម្ពុជា សូមរង់ចាំ 3 ទៅ 7 ថ្ងៃធ្វើការ។ ការដឹកជញ្ជូនក្រៅប្រទេសអាចមានភាពខុសគ្នាតាមទិសដៅ។',
+  },
   'product.soldOut': { en: 'Sold out', km: 'អស់ស្តុក' },
   'product.onlyLeft': { en: 'Only {count} left', km: 'នៅសល់តែ {count} ប៉ុណ្ណោះ' },
   'product.buyNow': { en: 'BUY NOW', km: 'ទិញឥឡូវនេះ' },
